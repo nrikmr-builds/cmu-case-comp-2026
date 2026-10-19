@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+/* Shared design tokens. Use as bg-brand-orange, text-brand-navy, etc. */
+@theme {
+  --color-brand-orange: #ef6a00;
+  --color-brand-navy: #0f2a4a;
+  --color-brand-blue: #1d5fa8;
+  --color-surface: #f6f7f9;
+}
+
+body {
+  @apply bg-surface text-slate-900 antialiased;
+}

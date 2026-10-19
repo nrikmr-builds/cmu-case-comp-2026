@@ -7,6 +7,8 @@ To show the capability, the demo walks through one example: **Certificate of Dep
 
 All data in the prototype is synthetic.
 
+> **Numbers are placeholders.** The KPIs, targets, and segment figures below are stand-ins until the rest of the team confirms the real ones. Always read numbers from `src/data/` and never hardcode them in a page, so swapping in the final values is a one-file change.
+
 | Developer | Page | Route | Branch |
 |---|---|---|---|
 | Nripesh Kumar | Portfolio Overview | `/` | `feature/portfolio-overview` |
@@ -121,18 +123,43 @@ Derive the expected value, gap, status, and potential accounts from these values
 
 ---
 
+## Quick Start
+
+```bash
+git clone https://github.com/nrikmr-builds/cmu-case-comp-2026.git
+cd cmu-case-comp-2026
+npm install
+npm run dev        # http://localhost:5173
+git checkout -b feature/cd-opportunity-intelligence   # or feature/portfolio-overview
+```
+
+Before opening a pull request, run `npm run build` and `npm run lint`.
+
 ## Tech Stack
 
 React, TypeScript, Vite, Tailwind CSS, React Router, Recharts, Lucide icons. Local data only, with no backend or external APIs.
 
 ```text
 src/
-├── components/   Header, StatusBadge, KPIProgressBar (shared) + page-specific components
-├── pages/        PortfolioOverview.tsx (Nripesh), CDOpportunityIntelligence.tsx (Kem)
-├── data/         productMetrics.ts, cdSegments.ts (shared)
-├── types/        index.ts (shared)
-└── App.tsx       routes
+├── App.tsx                        routes for / and /cd-opportunities (shared)
+├── index.css                      Tailwind + brand color tokens (shared)
+├── types/index.ts                 Kpi, Product, CustomerSegment types (shared)
+├── data/
+│   ├── productMetrics.ts          all KPIs + cdAcquisitionMetric (shared, placeholder)
+│   └── cdSegments.ts              the three CD segments (shared, placeholder)
+├── lib/metrics.ts                 expected pace, status, gap, remaining, potential accounts (shared)
+├── components/
+│   ├── Header.tsx                 app header (shared)
+│   ├── StatusBadge.tsx            On Track / Watch / At Risk badge (shared)
+│   └── KPIProgressBar.tsx         progress bar capped at 100% (shared)
+└── pages/
+    ├── PortfolioOverview.tsx      Nripesh — placeholder
+    └── CDOpportunityIntelligence.tsx  Kem — placeholder
 ```
+
+Put page-specific components in `src/components/` with a clear name (for example `SegmentTable.tsx`).
+
+**Useful helpers in `lib/metrics.ts`:** `getStatus`, `getPaceGap`, `getRemainingToTarget`, `getPotentialAccounts`, `formatValue`. Rates are stored as fractions (`0.75`) and money as dollars (`25_000_000`).
 
 ## Design
 
@@ -143,8 +170,8 @@ src/
 
 ## Workflow
 
-1. One developer scaffolds the app on `main`: setup, shared data and types, shared components, routes, and placeholder pages.
-2. Each developer then works on their own branch and opens a pull request into `main` for the other to review.
+1. ✅ The app is scaffolded on `main`: setup, shared data and types, shared components, routes, and placeholder pages.
+2. Each developer works on their own branch and opens a pull request into `main` for the other to review.
 3. Talk to each other before changing shared files (`data/`, `types/`, shared components, `App.tsx`).
 
 ## Done When
