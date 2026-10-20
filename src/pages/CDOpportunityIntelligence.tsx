@@ -1,14 +1,36 @@
-// Owner: Kem (Developer 2). Placeholder until the CD page is built.
+// Owner: Kem (Developer 2). Shows evidence and trade-offs; the decision stays with the Product Owner.
+import { ArrowLeft } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import AIInsightPanel from '../components/AIInsightPanel'
+import GapSummary from '../components/GapSummary'
+import SegmentTable from '../components/SegmentTable'
+import { cdCustomerSegments } from '../data/cdSegments'
+import { cdAcquisitionMetric, reportingPeriod } from '../data/productMetrics'
 
 export default function CDOpportunityIntelligence() {
+  const { quarter, quarterElapsed } = reportingPeriod
+
   return (
-    <section className="space-y-4">
-      <Link to="/" className="font-medium text-brand-blue underline">
+    <section className="space-y-6">
+      <Link
+        to="/"
+        className="inline-flex items-center gap-1 rounded font-medium text-brand-blue hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue"
+      >
+        <ArrowLeft className="h-4 w-4" aria-hidden />
         Back to Portfolio
       </Link>
-      <h1 className="text-2xl font-semibold text-brand-navy">CD Opportunity Intelligence</h1>
-      <p className="text-slate-600">Placeholder: gap summary, customer segments, and AI insight go here.</p>
+
+      <div>
+        <h1 className="text-2xl font-semibold text-brand-navy">CD Opportunity Intelligence</h1>
+        <p className="mt-1 text-slate-600">
+          Evidence, trade-offs, and open questions behind the CD openings gap for {quarter}. All figures are
+          illustrative.
+        </p>
+      </div>
+
+      <GapSummary kpi={cdAcquisitionMetric} quarter={quarter} quarterElapsed={quarterElapsed} />
+      <SegmentTable segments={cdCustomerSegments} />
+      <AIInsightPanel kpi={cdAcquisitionMetric} quarterElapsed={quarterElapsed} segments={cdCustomerSegments} />
     </section>
   )
 }
