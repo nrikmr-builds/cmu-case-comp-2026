@@ -1,5 +1,6 @@
 // Owner: Kem (Developer 2). Shows evidence and trade-offs; the decision stays with the Product Owner.
 import { ArrowLeft } from 'lucide-react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import AIInsightPanel from '../components/AIInsightPanel'
 import GapSummary from '../components/GapSummary'
@@ -7,8 +8,15 @@ import SegmentTable from '../components/SegmentTable'
 import { cdCustomerSegments } from '../data/cdSegments'
 import { cdAcquisitionMetric, reportingPeriod } from '../data/productMetrics'
 
+const baselineRates: Record<string, number> = Object.fromEntries(
+  cdCustomerSegments.map((s) => [s.id, s.estimatedConversionRate]),
+)
+
 export default function CDOpportunityIntelligence() {
   const { quarter, quarterElapsed } = reportingPeriod
+  // The Product Owner's what-if conversion rates. Starts at the shared data; never written back to it.
+  const [rates, setRates] = useState(baselineRates)
+  const segments = cdCustomerSegments.map((s) => ({ ...s, estimatedConversionRate: rates[s.id] }))
 
   return (
     <section className="space-y-6">
@@ -29,8 +37,13 @@ export default function CDOpportunityIntelligence() {
       </div>
 
       <GapSummary kpi={cdAcquisitionMetric} quarter={quarter} quarterElapsed={quarterElapsed} />
-      <SegmentTable segments={cdCustomerSegments} />
-      <AIInsightPanel kpi={cdAcquisitionMetric} quarterElapsed={quarterElapsed} segments={cdCustomerSegments} />
+      <SegmentTable
+        segments={segments}
+        baselineRates={baselineRates}
+        onRateChange={(id, rate) => setRates((prev) => ({ ...prev, [id]: rate }))}
+        onReset={() => setRates(baselineRates)}
+      />
+      <AIInsightPanel kpi={cdAcquisitionMetric} quarterElapsed={quarterElapsed} segments={segments} />
     </section>
   )
 }
