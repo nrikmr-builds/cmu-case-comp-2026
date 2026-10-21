@@ -11,13 +11,14 @@ interface Props {
 export default function GapSummary({ kpi, quarter, quarterElapsed }: Props) {
   const expected = getExpected(kpi, quarterElapsed)
   const paceGap = getPaceGap(kpi, quarterElapsed)
+  const paceSurplus = Math.max(0, kpi.actual - expected)
   const remaining = getRemainingToTarget(kpi)
   const fmt = (n: number) => formatValue(n, kpi.unit)
 
   return (
-    <section aria-labelledby="gap-heading" className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 id="gap-heading" className="text-lg font-semibold text-brand-navy">
+    <section aria-labelledby="gap-heading" className="rounded-md border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <h2 id="gap-heading" className="heading-accent text-lg font-semibold text-brand-ink">
           Gap Summary · {kpi.label}
         </h2>
         <StatusBadge status={getStatus(kpi, quarterElapsed)} />
@@ -30,7 +31,11 @@ export default function GapSummary({ kpi, quarter, quarterElapsed }: Props) {
           value={fmt(expected)}
           note={`Current is ${formatPercent(getPaceRatio(kpi, quarterElapsed))} of expected pace`}
         />
-        <Stat label="Pace gap" value={fmt(paceGap)} note="Behind where we should be today" emphasis="pace" />
+        {paceGap > 0 ? (
+          <Stat label="Pace gap" value={fmt(paceGap)} note="Behind where we should be today" emphasis="pace" />
+        ) : (
+          <Stat label="Ahead of pace" value={fmt(paceSurplus)} note="Above where we should be today" emphasis="ahead" />
+        )}
         <Stat label="Still needed to hit target" value={fmt(remaining)} note="Openings left before quarter end" emphasis="target" />
       </dl>
     </section>
@@ -41,11 +46,12 @@ interface StatProps {
   label: string
   value: string
   note: string
-  emphasis?: 'pace' | 'target'
+  emphasis?: 'pace' | 'ahead' | 'target'
 }
 
 const EMPHASIS_STYLES = {
   pace: 'border-red-200 bg-red-50',
+  ahead: 'border-green-200 bg-green-50',
   target: 'border-brand-blue/30 bg-blue-50',
 }
 
@@ -53,7 +59,7 @@ function Stat({ label, value, note, emphasis }: StatProps) {
   return (
     <div className={`rounded-lg border p-4 ${emphasis ? EMPHASIS_STYLES[emphasis] : 'border-slate-200 bg-slate-50'}`}>
       <dt className="text-sm text-slate-600">{label}</dt>
-      <dd className="mt-1 text-2xl font-semibold tabular-nums text-brand-navy">{value}</dd>
+      <dd className="mt-1 text-2xl font-semibold tabular-nums text-brand-ink">{value}</dd>
       <dd className="mt-1 text-xs text-slate-500">{note}</dd>
     </div>
   )

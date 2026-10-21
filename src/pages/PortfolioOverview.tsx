@@ -1,41 +1,66 @@
 // Owner: Nripesh (Developer 1). Landing page: portfolio KPIs and where they stand against pace.
-import { AlertTriangle, ArrowRight } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { AlertTriangle, ArrowRight, Bookmark, LayoutDashboard, X } from 'lucide-react'
+import { useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import DashboardPromptBar from '../components/DashboardPromptBar'
+import PageHero from '../components/PageHero'
 import ProductCard from '../components/ProductCard'
+import SavedViewsNav from '../components/SavedViewsNav'
 import StatusBadge from '../components/StatusBadge'
 import { products, reportingPeriod } from '../data/productMetrics'
-import { formatPercent, formatValue, getExpected, getPaceRatio, getStatus } from '../lib/metrics'
-import type { KpiStatus, ProductId } from '../types'
-
-/** Products with a drill-down page. */
-const DETAIL_PATHS: Partial<Record<ProductId, string>> = {
-  cd: '/cd-opportunities',
-}
+import { DEFAULT_VIEW } from '../lib/dashboardPrompt'
+import { formatPercent, formatTimestamp, formatValue, getExpected, getPaceRatio, getStatus } from '../lib/metrics'
+import { useSavedViews } from '../lib/useSavedViews'
+import type { DashboardView, KpiStatus, ProductId } from '../types'
 
 const STATUS_ORDER: KpiStatus[] = ['on-track', 'watch', 'at-risk']
 
+const detailPath = (productId: ProductId) => `/opportunities/${productId}`
+
 export default function PortfolioOverview() {
   const { quarter, quarterElapsed } = reportingPeriod
+  const { views, saveView, deleteView, isUserView } = useSavedViews()
+  const [searchParams, setSearchParams] = useSearchParams()
+  // A generated view the Product Owner hasn't saved yet. Saved views are addressed by ?view= instead.
+  const [draft, setDraft] = useState<DashboardView | null>(null)
+  const activeView = draft ?? views.find((v) => v.id === searchParams.get('view')) ?? DEFAULT_VIEW
+
   const kpis = products.flatMap((p) => p.kpis)
   const statusCounts = STATUS_ORDER.map((status) => ({
     status,
     count: kpis.filter((kpi) => getStatus(kpi, quarterElapsed) === status).length,
   }))
   const atRiskKpis = kpis.filter((kpi) => getStatus(kpi, quarterElapsed) === 'at-risk')
+  const visibleProducts = products
+    .map((p) => ({ ...p, kpis: p.kpis.filter((k) => activeView.kpiIds.includes(k.id)) }))
+    .filter((p) => p.kpis.length > 0)
+
+  function selectView(id: string) {
+    setDraft(null)
+    setSearchParams(id === DEFAULT_VIEW.id ? {} : { view: id })
+  }
+
+  function saveDraft() {
+    if (!draft) return
+    saveView(draft)
+    setDraft(null)
+    setSearchParams({ view: draft.id })
+  }
+
+  function handleDelete(id: string) {
+    deleteView(id)
+    if (activeView.id === id) selectView(DEFAULT_VIEW.id)
+  }
 
   return (
-    <section className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-brand-navy">Portfolio Overview</h1>
-          <p className="mt-1 text-sm text-slate-600">
-            {quarter} · {formatPercent(quarterElapsed)} of the quarter elapsed · {kpis.length} KPIs across{' '}
-            {products.length} products
-          </p>
-        </div>
-        <dl className="flex flex-wrap gap-2">
+    <>
+      <PageHero title="Portfolio Overview" eyebrow={`Deposit products · ${quarter}`} icon={LayoutDashboard}>
+        <p className="mt-4 text-slate-700">
+          {formatPercent(quarterElapsed)} of the quarter elapsed · {kpis.length} KPIs across {products.length} products
+        </p>
+        <dl className="mt-4 flex flex-wrap gap-2">
           {statusCounts.map(({ status, count }) => (
-            <div key={status} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2">
+            <div key={status} className="flex items-center gap-2 rounded border border-slate-200 bg-white px-3 py-2 shadow-sm">
               <dt>
                 <StatusBadge status={status} />
               </dt>
@@ -43,55 +68,129 @@ export default function PortfolioOverview() {
             </div>
           ))}
         </dl>
-      </div>
+      </PageHero>
 
-      {atRiskKpis.map((kpi) => {
-        const detailPath = DETAIL_PATHS[kpi.productId]
-        return (
-          <div
-            key={kpi.id}
-            role="status"
-            className="flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between"
-          >
-            <div className="flex gap-3">
-              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" aria-hidden />
-              <div>
-                <p className="font-semibold text-red-900">{kpi.label} is behind pace</p>
-                <p className="text-sm text-red-800">
-                  {formatValue(kpi.actual, kpi.unit)} so far vs. {formatValue(getExpected(kpi, quarterElapsed), kpi.unit)}{' '}
-                  expected by now ({formatPercent(getPaceRatio(kpi, quarterElapsed))} of pace).
-                </p>
+      <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[15rem_minmax(0,1fr)]">
+        <SavedViewsNav
+          defaultView={DEFAULT_VIEW}
+          views={views}
+          activeId={draft ? null : activeView.id}
+          onSelect={selectView}
+          onDelete={handleDelete}
+          isDeletable={isUserView}
+        />
+
+        <section className="min-w-0 space-y-6">
+          {atRiskKpis.map((kpi) => (
+            <div
+              key={kpi.id}
+              role="status"
+              className="flex flex-col gap-3 rounded border border-l-4 border-red-200 border-l-red-600 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="flex gap-3">
+                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" aria-hidden />
+                <div>
+                  <p className="font-semibold text-red-900">
+                    {products.find((p) => p.id === kpi.productId)?.name} {kpi.label} is behind pace
+                  </p>
+                  <p className="text-sm text-red-800">
+                    {formatValue(kpi.actual, kpi.unit)} so far vs. {formatValue(getExpected(kpi, quarterElapsed), kpi.unit)}{' '}
+                    expected by now ({formatPercent(getPaceRatio(kpi, quarterElapsed))} of pace).
+                  </p>
+                </div>
               </div>
-            </div>
-            {detailPath && (
               <Link
-                to={detailPath}
-                className="inline-flex shrink-0 items-center gap-1 self-start rounded-lg bg-brand-navy px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue sm:self-auto"
+                to={detailPath(kpi.productId)}
+                className="inline-flex shrink-0 items-center gap-1 self-start rounded bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue sm:self-auto"
               >
                 View opportunity insights
                 <ArrowRight className="h-4 w-4" aria-hidden />
               </Link>
-            )}
-          </div>
-        )
-      })}
+            </div>
+          ))}
 
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-        {products.map((product) => (
-          <ProductCard
-            key={product.id}
-            product={product}
-            quarterElapsed={quarterElapsed}
-            detailPath={DETAIL_PATHS[product.id]}
+          <DashboardPromptBar onGenerate={setDraft} />
+
+          <ActiveViewHeader
+            view={activeView}
+            isDraft={draft !== null}
+            onSave={saveDraft}
+            onReset={() => selectView(DEFAULT_VIEW.id)}
           />
-        ))}
-      </div>
 
-      <p className="text-xs text-slate-500">
-        Status compares progress with expected pace: account and deposit KPIs against{' '}
-        {formatPercent(quarterElapsed)} of target, rate KPIs against target. On Track ≥ 95%, Watch 85–95%, At Risk
-        &lt; 85%.
-      </p>
-    </section>
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {visibleProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                quarterElapsed={quarterElapsed}
+                detailPath={detailPath(product.id)}
+              />
+            ))}
+          </div>
+
+          <p className="text-xs text-slate-500">
+            Status compares progress with expected pace: account and deposit KPIs against{' '}
+            {formatPercent(quarterElapsed)} of target, rate KPIs against target. On Track ≥ 95%, Watch 85–95%, At Risk
+            &lt; 85%.
+          </p>
+        </section>
+      </div>
+    </>
+  )
+}
+
+interface ActiveViewHeaderProps {
+  view: DashboardView
+  isDraft: boolean
+  onSave: () => void
+  onReset: () => void
+}
+
+function ActiveViewHeader({ view, isDraft, onSave, onReset }: ActiveViewHeaderProps) {
+  const isDefault = view.id === DEFAULT_VIEW.id
+  const metricCount = `${view.kpiIds.length} ${view.kpiIds.length === 1 ? 'metric' : 'metrics'}`
+
+  return (
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="heading-accent text-xl font-semibold text-brand-ink">{view.label}</h2>
+          {isDraft && <span className="rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-800">Unsaved</span>}
+        </div>
+        <p className="text-sm text-slate-500">
+          {view.prompt ? (
+            <>
+              “{view.prompt}” · {metricCount}
+              {!isDraft && ` · saved ${formatTimestamp(view.createdAt)}`}
+            </>
+          ) : (
+            `Default view · ${metricCount}`
+          )}
+        </p>
+      </div>
+      {!isDefault && (
+        <div className="flex shrink-0 gap-2">
+          {isDraft && (
+            <button
+              type="button"
+              onClick={onSave}
+              className="inline-flex items-center gap-1.5 rounded bg-brand-blue px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue"
+            >
+              <Bookmark className="h-4 w-4" aria-hidden />
+              Save view
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onReset}
+            className="inline-flex items-center gap-1.5 rounded border border-brand-blue bg-white px-3 py-1.5 text-sm font-medium text-brand-blue hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue"
+          >
+            <X className="h-4 w-4" aria-hidden />
+            {isDraft ? 'Discard' : 'Full portfolio'}
+          </button>
+        </div>
+      )}
+    </div>
   )
 }

@@ -1,6 +1,7 @@
 import { ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { formatValue, getAttainment, getExpected, getStatus } from '../lib/metrics'
+import { PRODUCT_ICONS } from '../lib/productIcons'
 import type { Kpi, KpiStatus, Product } from '../types'
 import KPIProgressBar from './KPIProgressBar'
 import StatusBadge from './StatusBadge'
@@ -29,16 +30,18 @@ interface Props {
 
 export default function ProductCard({ product, quarterElapsed, detailPath }: Props) {
   const status = getProductStatus(product, quarterElapsed)
+  const Icon = PRODUCT_ICONS[product.id]
 
   return (
     <article
-      className={`relative flex flex-col rounded-xl border border-t-4 border-slate-200 bg-white shadow-sm ${CARD_ACCENTS[status]} ${
+      className={`relative flex flex-col rounded-md border border-t-4 border-slate-200 bg-white shadow-sm ${CARD_ACCENTS[status]} ${
         detailPath ? 'transition hover:-translate-y-0.5 hover:shadow-md focus-within:ring-2 focus-within:ring-brand-blue' : ''
       }`}
     >
       <div className="flex items-start justify-between gap-3 px-5 pt-5">
         <div>
-          <h2 className="text-lg font-semibold text-brand-navy">{product.name}</h2>
+          <Icon className="mb-2 h-9 w-9 text-brand-ink" strokeWidth={1.25} aria-hidden />
+          <h2 className="text-lg font-semibold text-brand-ink">{product.name}</h2>
           <p className="text-sm text-slate-500">{product.description}</p>
         </div>
         <span className="shrink-0">
@@ -57,7 +60,7 @@ export default function ProductCard({ product, quarterElapsed, detailPath }: Pro
           {/* Stretched link: the ::after overlay makes the whole card clickable with a single focusable element. */}
           <Link
             to={detailPath}
-            className="inline-flex items-center gap-1 text-sm font-medium text-brand-blue outline-none after:absolute after:inset-0 after:rounded-xl"
+            className="inline-flex items-center gap-1 text-sm font-medium text-brand-blue outline-none after:absolute after:inset-0 after:rounded-md"
           >
             View opportunity insights
             <ArrowRight className="h-4 w-4" aria-hidden />
