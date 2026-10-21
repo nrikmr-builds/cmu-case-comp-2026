@@ -45,3 +45,28 @@ export interface CustomerSegment {
   /** Fraction, 0–1. */
   estimatedConversionRate: number
 }
+
+/** Everything the opportunity page needs for one product. */
+export interface ProductOpportunity {
+  productId: ProductId
+  /** Short name for headings, e.g. "CD". */
+  shortName: string
+  /** Completes "Why they might open a …". */
+  accountNoun: string
+  /** The KPI the page investigates. */
+  focusKpiId: string
+  segments: CustomerSegment[]
+  /** Prewritten caveats for the AI summary, without a trailing period. */
+  openQuestions: string
+}
+
+/** A dashboard layout: which KPIs to show. Values always come from live data. */
+export interface DashboardView {
+  id: string
+  label: string
+  /** The Product Owner's prompt; null for the default view. */
+  prompt: string | null
+  /** ISO timestamp. */
+  createdAt: string
+  kpiIds: string[]
+}

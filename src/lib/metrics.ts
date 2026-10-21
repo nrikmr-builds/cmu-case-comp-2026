@@ -54,3 +54,8 @@ export function formatValue(value: number, unit: KpiUnit): string {
 export function formatPercent(fraction: number): string {
   return `${(fraction * 100).toLocaleString('en-US', { maximumFractionDigits: 1 })}%`
 }
+
+/** e.g. "Sep 10, 8:55 AM". */
+export function formatTimestamp(iso: string): string {
+  return new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+}

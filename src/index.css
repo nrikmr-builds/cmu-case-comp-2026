@@ -1,13 +1,42 @@
 @import "tailwindcss";
 
-/* Shared design tokens. Use as bg-brand-orange, text-brand-navy, etc. */
+/* Shared design tokens, sampled from pnc.com. Use as bg-brand-orange, text-brand-ink, etc. */
 @theme {
   --color-brand-orange: #ef6a00;
-  --color-brand-navy: #0f2a4a;
-  --color-brand-blue: #1d5fa8;
-  --color-surface: #f6f7f9;
+  --color-brand-blue: #0069aa;
+  --color-brand-blue-dark: #00548a;
+  /* Headings and dark bands. */
+  --color-brand-ink: #3a454f;
+  /* Two-tier header: top row, then the darker nav row. */
+  --color-brand-slate: #424e58;
+  --color-brand-charcoal: #2c3943;
+  --color-surface: #f2f4f6;
+  --color-surface-hero: #ededef;
 }
 
 body {
   @apply bg-surface text-slate-900 antialiased;
+}
+
+/* PNC's short orange rule under a heading. */
+@utility heading-accent {
+  &::after {
+    content: "";
+    display: block;
+    width: 2.5rem;
+    height: 3px;
+    margin-top: 0.5rem;
+    background-color: var(--color-brand-orange);
+  }
+}
+
+/* PNC's quarter-circle background pattern, for light and dark bands. */
+@utility pnc-pattern-light {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' fill='%23e2e3e6'%3E%3Cpath d='M0 0a60 60 0 0 1 60 60H0z'/%3E%3Cpath d='M120 60a60 60 0 0 0-60 60h60z'/%3E%3Cpath d='M60 60a60 60 0 0 1-60 60V60z' fill-opacity='.6'/%3E%3C/svg%3E");
+  background-size: 120px 120px;
+}
+
+@utility pnc-pattern-dark {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' fill='%23ffffff' fill-opacity='.04'%3E%3Cpath d='M0 0a60 60 0 0 1 60 60H0z'/%3E%3Cpath d='M120 60a60 60 0 0 0-60 60h60z'/%3E%3Cpath d='M60 60a60 60 0 0 1-60 60V60z'/%3E%3C/svg%3E");
+  background-size: 120px 120px;
 }

@@ -9,23 +9,25 @@ const CONVERSION_STEP = 0.005
 interface Props {
   /** Segments with the Product Owner's adjusted conversion rates applied. */
   segments: CustomerSegment[]
+  /** Completes "Why they might open a …". */
+  accountNoun: string
   /** Original rates from shared data, used to flag and reset adjustments. */
   baselineRates: Record<string, number>
   onRateChange: (segmentId: string, rate: number) => void
   onReset: () => void
 }
 
-export default function SegmentTable({ segments, baselineRates, onRateChange, onReset }: Props) {
+export default function SegmentTable({ segments, accountNoun, baselineRates, onRateChange, onReset }: Props) {
   const totalEligible = segments.reduce((sum, s) => sum + s.eligibleCustomers, 0)
   const totalPotential = segments.reduce((sum, s) => sum + getPotentialAccounts(s), 0)
   const accounts = (n: number) => formatValue(n, 'accounts')
   const isAdjusted = segments.some((s) => s.estimatedConversionRate !== baselineRates[s.id])
 
   return (
-    <section aria-labelledby="segments-heading" className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section aria-labelledby="segments-heading" className="rounded-md border border-slate-200 bg-white p-6 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 id="segments-heading" className="text-lg font-semibold text-brand-navy">
+          <h2 id="segments-heading" className="heading-accent text-lg font-semibold text-brand-ink">
             Customer Segments · Opportunity
           </h2>
           <p className="mt-1 text-sm text-slate-500">
@@ -49,7 +51,7 @@ export default function SegmentTable({ segments, baselineRates, onRateChange, on
           <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
             <tr>
               <th scope="col" className="py-2 pr-4 font-medium">Segment</th>
-              <th scope="col" className="py-2 pr-4 font-medium">Why they might open a CD</th>
+              <th scope="col" className="py-2 pr-4 font-medium">Why they might open a {accountNoun}</th>
               <th scope="col" className="py-2 pr-4 font-medium">Consideration</th>
               <th scope="col" className="py-2 pr-4 text-right font-medium">Eligible</th>
               <th scope="col" className="w-44 py-2 pr-4 font-medium">Est. Conversion</th>
@@ -62,7 +64,7 @@ export default function SegmentTable({ segments, baselineRates, onRateChange, on
               const changed = s.estimatedConversionRate !== baseline
               return (
                 <tr key={s.id} className="align-top">
-                  <th scope="row" className="py-3 pr-4 font-medium text-brand-navy">{s.name}</th>
+                  <th scope="row" className="py-3 pr-4 font-medium text-brand-ink">{s.name}</th>
                   <td className="py-3 pr-4 text-slate-700">{s.whyRelevant}</td>
                   <td className="py-3 pr-4 text-amber-800">{s.consideration}</td>
                   <td className="py-3 pr-4 text-right tabular-nums">{accounts(s.eligibleCustomers)}</td>
@@ -87,12 +89,12 @@ export default function SegmentTable({ segments, baselineRates, onRateChange, on
                       {changed ? `Baseline ${formatPercent(baseline)}` : 'Baseline'}
                     </p>
                   </td>
-                  <td className="py-3 text-right font-semibold tabular-nums text-brand-navy">{accounts(getPotentialAccounts(s))}</td>
+                  <td className="py-3 text-right font-semibold tabular-nums text-brand-ink">{accounts(getPotentialAccounts(s))}</td>
                 </tr>
               )
             })}
           </tbody>
-          <tfoot className="border-t-2 border-slate-200 font-semibold text-brand-navy">
+          <tfoot className="border-t-2 border-slate-200 font-semibold text-brand-ink">
             <tr>
               <th scope="row" className="py-3 pr-4">Total</th>
               <td colSpan={2} />

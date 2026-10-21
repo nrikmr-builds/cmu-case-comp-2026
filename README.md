@@ -3,7 +3,7 @@
 
 An AI-powered dashboard that helps a **Product Owner** spot underperforming product metrics and understand where the opportunities are to fix them. The AI surfaces insights; the Product Owner makes the decision.
 
-To show the capability, the demo walks through one example: **Certificate of Deposit (CD) account openings falling behind their quarterly target.** The same pattern could apply to any product or KPI.
+To show the capability, the demo walks through one example: **Checking account openings falling behind their quarterly target.** Every product has the same opportunity page, so the pattern applies to any product or KPI.
 
 All data in the prototype is synthetic.
 
@@ -12,33 +12,36 @@ All data in the prototype is synthetic.
 | Developer | Page | Route | Branch |
 |---|---|---|---|
 | Nripesh Kumar | Portfolio Overview | `/` | `feature/portfolio-overview` |
-| Kem Hannarong | CD Opportunity Intelligence | `/cd-opportunities` | `feature/cd-opportunity-intelligence` |
+| Kem Hannarong | Opportunity Intelligence (Checking, Savings, CD) | `/opportunities/:productId` | `feature/cd-opportunity-intelligence` |
 
 ---
 
 ## The Demo Story
 
 1. The Product Owner opens the dashboard and sees KPIs for Checking, Savings, and CDs.
-2. Most metrics are on track, but **New CD Account Openings** is flagged red: At Risk.
-3. They click it and land on the CD Opportunity Intelligence page.
-4. The page shows the size of the gap, three customer segments that could open CDs, and an AI summary of the opportunity.
+2. Savings and CD are on track, but **Checking New Account Openings** is flagged red: At Risk.
+3. They can ask the AI prompt bar for a focused dashboard ("Checking metrics that are behind pace"), save it, and come back to it from the left nav.
+4. They click through to the Checking Opportunity Intelligence page, which shows the size of the gap, three customer segments that could open checking accounts, and an AI summary.
 5. The Product Owner uses their own judgment to decide what to look into next.
 
 ---
 
 ## Page 1: Portfolio Overview (Nripesh)
 
-Three product cards with KPIs, progress bars, and status badges for Q3 2026.
+Three product cards with KPIs, progress bars, and status badges for Q3 2026, plus:
+
+- **AI prompt bar** above the cards. The Product Owner describes what they want to see ("deposit growth for Savings and CDs") and gets a dashboard with just those metrics. The AI is simulated with keyword rules in `src/lib/dashboardPrompt.ts`, so it runs offline; a real model could replace `generateView` without changing its callers.
+- **Saved views nav** on the left. Generated dashboards can be saved and are listed with a label, the prompt, and a timestamp. Three illustrative past versions are pre-loaded; your saved views stay in this browser (localStorage).
 
 | Product | KPI | Target | Current |
 |---|---|---:|---:|
-| Checking | New Account Openings | 12,000 | 9,800 |
+| Checking | **New Account Openings** | **12,000** | **7,600** |
 | | Digital Opening Completion Rate | 75% | 69% |
 | | Active Account Rate | 85% | 87% |
 | Savings | New Account Openings | 8,000 | 7,100 |
 | | Net New Deposits | $40M | $36M |
 | | Digital Enrollment Rate | 70% | 73% |
-| CD | **New CD Account Openings** | **5,000** | **3,100** |
+| CD | New CD Account Openings | 5,000 | 4,100 |
 | | CD Renewal Rate | 65% | 67% |
 | | Net New CD Deposits | $25M | $22M |
 
@@ -53,9 +56,9 @@ Three product cards with KPIs, progress bars, and status badges for Q3 2026.
 | Watch | 85–95% of expected | Amber |
 | At Risk | < 85% of expected | Red |
 
-For CDs, the target is 5,000, so 4,000 openings are expected by now. Only 3,100 have happened, which is 77.5% of pace, so the KPI is **At Risk**.
+For Checking, the target is 12,000, so 9,600 openings are expected by now. Only 7,600 have happened, which is 79.2% of pace, so the KPI is **At Risk**. Digital Opening Completion Rate is on Watch; every Savings and CD KPI is On Track.
 
-Clicking the CD card or the at-risk KPI goes to `/cd-opportunities`.
+Every card links to its product's opportunity page (`/opportunities/checking`, `/opportunities/savings`, `/opportunities/cd`). Only Checking also gets the red at-risk banner.
 
 ---
 
