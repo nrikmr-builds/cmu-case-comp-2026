@@ -25,7 +25,7 @@ export default function GapSummary({ kpi, quarter, quarterElapsed }: Props) {
       </div>
 
       <dl className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Target / Current" value={`${fmt(kpi.target)} / ${fmt(kpi.actual)}`} note={`${quarter} full-quarter target`} />
+        <Stat label="Current / Target" value={`${fmt(kpi.actual)} / ${fmt(kpi.target)}`} note={`${quarter} full-quarter target`} />
         <Stat
           label={`Expected by now (${formatPercent(quarterElapsed)} of quarter)`}
           value={fmt(expected)}

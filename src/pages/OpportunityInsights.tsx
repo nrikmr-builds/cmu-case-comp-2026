@@ -10,6 +10,7 @@ import PageHero from '../components/PageHero'
 import SegmentTable from '../components/SegmentTable'
 import { getOpportunity } from '../data/opportunities'
 import { getKpi, reportingPeriod } from '../data/productMetrics'
+import { segmentHistory } from '../data/segmentHistory'
 import { PRODUCT_ICONS } from '../lib/productIcons'
 import type { ProductOpportunity } from '../types'
 
@@ -60,6 +61,7 @@ function OpportunityDetail({ opportunity }: { opportunity: ProductOpportunity })
           segments={segments}
           accountNoun={opportunity.accountNoun}
           baselineRates={baselineRates}
+          history={segmentHistory}
           onRateChange={(id, rate) => setRates((prev) => ({ ...prev, [id]: rate }))}
           onReset={() => setRates(baselineRates)}
         />
