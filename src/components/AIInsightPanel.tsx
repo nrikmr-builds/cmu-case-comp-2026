@@ -1,4 +1,5 @@
 import { Sparkles } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { formatValue, getExpected, getPaceGap, getPotentialAccounts, getRemainingToTarget } from '../lib/metrics'
 import type { CustomerSegment, Kpi } from '../types'
 
@@ -8,10 +9,12 @@ interface Props {
   segments: CustomerSegment[]
   /** Product-specific caveats, without a trailing period. */
   openQuestions: string
+  /** Extra prewritten sentences for products with more evidence on the page (checking retention). */
+  addendum?: ReactNode
 }
 
 /** Prewritten summary (no live AI). Numbers are filled in from shared data so they stay in sync. */
-export default function AIInsightPanel({ kpi, quarterElapsed, segments, openQuestions }: Props) {
+export default function AIInsightPanel({ kpi, quarterElapsed, segments, openQuestions, addendum }: Props) {
   const fmt = (n: number) => formatValue(n, kpi.unit)
   const paceGap = getPaceGap(kpi, quarterElapsed)
   const remaining = getRemainingToTarget(kpi)
@@ -46,6 +49,7 @@ export default function AIInsightPanel({ kpi, quarterElapsed, segments, openQues
           target. Three segments show an illustrative combined opportunity of {fmt(totalPotential)} new accounts.{' '}
           {largest.name} is the largest opportunity, and {highestConversion.name} has the highest assumed conversion.
           Open questions: {openQuestions}. Validate these assumptions before estimating impact.
+          {addendum && <p className="mt-3">{addendum}</p>}
         </blockquote>
       </div>
     </section>

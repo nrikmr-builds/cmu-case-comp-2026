@@ -3,6 +3,8 @@ import { ArrowLeft } from 'lucide-react'
 import { useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import AIInsightPanel from '../components/AIInsightPanel'
+import CheckingHealthSections from '../components/CheckingHealthSections'
+import CheckingSummaryAddendum from '../components/CheckingSummaryAddendum'
 import GapSummary from '../components/GapSummary'
 import PageHero from '../components/PageHero'
 import SegmentTable from '../components/SegmentTable'
@@ -66,7 +68,9 @@ function OpportunityDetail({ opportunity }: { opportunity: ProductOpportunity })
           quarterElapsed={quarterElapsed}
           segments={segments}
           openQuestions={opportunity.openQuestions}
+          addendum={opportunity.productId === 'checking' ? <CheckingSummaryAddendum /> : undefined}
         />
+        {opportunity.productId === 'checking' && <CheckingHealthSections quarter={quarter} />}
       </section>
     </>
   )
