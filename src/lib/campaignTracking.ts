@@ -295,59 +295,74 @@ export interface PlanItem {
   from: 'saved' | 'preset default'
 }
 
-/** One counted unit in an overlap group: a campaign, or all next-best-action Drafts together. */
-interface OverlapUnit {
+/** One unit in an overlap check: a campaign, or all next-best-action Drafts on a segment together. */
+export interface OverlapUnit {
   name: string
-  /** What "larger" is judged on: saves (closure prevention) or deposits (cross-sell). */
-  size: number
-  q3: number
-  next90: number
+  segmentId: string
+  /** Undefined for the NBA unit, which spans closure prevention and cross-sell. */
+  outcome?: CampaignInputs['outcome']
+  ids: string[]
+  /** Annual value − total cost, over every campaign in the unit (cross-sell value included). */
+  net: number
+  saves: number
+  savingsAccounts: number
 }
 
-export interface OverlapResult {
-  gross: number
-  counted: number
-  /** Q3 and next-90-day effect of the counted units (closure prevention). */
-  countedQ3: number
-  countedNext90: number
-  overlaps: { segmentLabel: string; kept: OverlapUnit; dropped: OverlapUnit[] }[]
+export interface OverlapEntry {
+  segmentLabel: string
+  kept: OverlapUnit
+  dropped: OverlapUnit[]
 }
 
 /**
- * The planner's overlap rule for closure-prevention and cross-sell totals: campaigns aimed at the same segment
- * with the same outcome reach the same customers, so only the larger counts (by total saves or deposits, not by
- * the Q3 slice, which a long lead time can push to zero). The next-best-action Drafts split one segment's
- * customers into disjoint groups (one action per customer), so together they count as one unit.
+ * The planner's overlap rule for closure-prevention and cross-sell campaigns: campaigns aimed at the same segment
+ * reach the same customers, so only one counts. The one with the higher NET value (annual value − cost) is kept,
+ * so a blanket offer and a personalised one are compared on what they're worth, not on raw saves. The
+ * next-best-action Drafts split one segment's customers into disjoint groups (one action each), so together they
+ * form one unit that overlaps every other campaign on that segment; two ordinary campaigns overlap only when they
+ * also share an outcome.
  */
-export function countWithoutOverlap(items: { c: SavedCampaign; e: CampaignEconomics }[], size: (e: CampaignEconomics) => number): OverlapResult {
+export function resolveOverlaps(items: { c: SavedCampaign; e: CampaignEconomics }[]): { keptIds: Set<string>; overlaps: OverlapEntry[] } {
   const segmentOf = (c: SavedCampaign) =>
     c.nba ? 'direct-deposit-leaving' : (campaignPresets.find((p) => p.id === c.inputs.presetId)?.source.id ?? c.inputs.presetId)
-  const next90Of = (e: CampaignEconomics) => (e.impact.kind === 'net-change' ? e.impact.next90 : 0)
-  const bySegment = new Map<string, OverlapUnit[]>()
-  const nba = new Map<string, OverlapUnit>()
+  const net = (e: CampaignEconomics) => e.annualValue - e.costs.total
+  const units: OverlapUnit[] = []
+  const nbaUnits = new Map<string, OverlapUnit>()
   for (const { c, e } of items) {
     const seg = segmentOf(c)
+    const add = (u: OverlapUnit) => {
+      u.ids.push(c.id)
+      u.net += net(e)
+      if (e.outcome === 'closures-avoided') u.saves += e.results.total
+      if (e.outcome === 'savings-accounts') u.savingsAccounts += e.results.total
+    }
     if (c.nba) {
-      let unit = nba.get(seg)
-      if (!unit) {
-        unit = { name: 'Next best action drafts', size: 0, q3: 0, next90: 0 }
-        nba.set(seg, unit)
-        bySegment.set(seg, [...(bySegment.get(seg) ?? []), unit])
+      let u = nbaUnits.get(seg)
+      if (!u) {
+        u = { name: 'Next best action drafts', segmentId: seg, ids: [], net: 0, saves: 0, savingsAccounts: 0 }
+        nbaUnits.set(seg, u)
+        units.push(u)
       }
-      unit.size += size(e)
-      unit.q3 += e.timing.q3
-      unit.next90 += next90Of(e)
-    } else bySegment.set(seg, [...(bySegment.get(seg) ?? []), { name: c.inputs.name, size: size(e), q3: e.timing.q3, next90: next90Of(e) }])
+      add(u)
+    } else {
+      const u: OverlapUnit = { name: c.inputs.name, segmentId: seg, outcome: c.inputs.outcome, ids: [], net: 0, saves: 0, savingsAccounts: 0 }
+      units.push(u)
+      add(u)
+    }
   }
-  const result: OverlapResult = { gross: items.reduce((s, { e }) => s + size(e), 0), counted: 0, countedQ3: 0, countedNext90: 0, overlaps: [] }
-  for (const [seg, units] of bySegment) {
-    const sorted = [...units].sort((a, b) => b.size - a.size)
-    result.counted += sorted[0].size
-    result.countedQ3 += sorted[0].q3
-    result.countedNext90 += sorted[0].next90
-    if (sorted.length > 1) result.overlaps.push({ segmentLabel: riskSegments.find((r) => r.id === seg)?.name ?? seg, kept: sorted[0], dropped: sorted.slice(1) })
+  const overlapsWith = (a: OverlapUnit, b: OverlapUnit) =>
+    a.segmentId === b.segmentId && (a.outcome === undefined || b.outcome === undefined || a.outcome === b.outcome)
+  const kept: OverlapUnit[] = []
+  const entries = new Map<OverlapUnit, OverlapUnit[]>()
+  for (const u of [...units].sort((a, b) => b.net - a.net)) {
+    const winner = kept.find((k) => overlapsWith(k, u))
+    if (winner) entries.set(winner, [...(entries.get(winner) ?? []), u])
+    else kept.push(u)
   }
-  return result
+  return {
+    keptIds: new Set(kept.flatMap((u) => u.ids)),
+    overlaps: [...entries].map(([k, dropped]) => ({ segmentLabel: riskSegments.find((r) => r.id === k.segmentId)?.name ?? k.segmentId, kept: k, dropped })),
+  }
 }
 
 export function getTotals(saved: SavedCampaign[]) {
@@ -369,11 +384,12 @@ export function getTotals(saved: SavedCampaign[]) {
   const planQ3 = plan.reduce((s, p) => s + p.q3Incremental, 0)
   const gap = projection.incrementalNeeded
 
+  const { keptIds, overlaps } = resolveOverlaps(planned.filter(({ c }) => c.inputs.outcome === 'closures-avoided' || c.inputs.outcome === 'savings-accounts'))
   const closure = planned.filter(({ c }) => c.inputs.outcome === 'closures-avoided')
   const activation = planned.filter(({ c }) => c.inputs.outcome === 'activations')
   const crossSell = planned.filter(({ c }) => c.inputs.outcome === 'savings-accounts')
-  const closureCount = countWithoutOverlap(closure, (e) => e.results.total)
-  const crossSellCount = countWithoutOverlap(crossSell, (e) => (e.impact.kind === 'cross-sell' ? e.impact.deposits : 0))
+  const closureKept = closure.filter(({ c }) => keptIds.has(c.id))
+  const crossSellKept = crossSell.filter(({ c }) => keptIds.has(c.id))
 
   return {
     acquisition: {
@@ -388,20 +404,21 @@ export function getTotals(saved: SavedCampaign[]) {
     },
     closure: {
       count: closure.length,
-      q3: closureCount.countedQ3,
-      next90: closureCount.countedNext90,
+      counted: closureKept.length,
+      q3: closureKept.reduce((s, { e }) => s + e.timing.q3, 0),
+      next90: closureKept.reduce((s, { e }) => s + (e.impact.kind === 'net-change' ? e.impact.next90 : 0), 0),
       netNow: closure[0]?.e.impact.kind === 'net-change' ? closure[0].e.impact.netNow : undefined,
-      overlap: closureCount,
     },
     activation: {
       count: activation.length,
       activated: activation.reduce((s, { e }) => s + e.results.total, 0),
       liftPts: activation.reduce((s, { e }) => s + (e.impact.kind === 'activation' ? e.impact.primacyLiftPts : 0), 0),
     },
+    overlaps,
     crossSell: {
       count: crossSell.length,
-      deposits: crossSellCount.counted,
-      overlap: crossSellCount,
+      counted: crossSellKept.length,
+      deposits: crossSellKept.reduce((s, { e }) => s + (e.impact.kind === 'cross-sell' ? e.impact.deposits : 0), 0),
     },
   }
 }

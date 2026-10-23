@@ -15,6 +15,7 @@ import {
   channelCost,
 } from '../lib/campaignEconomics'
 import { formatSignedCount, formatUsd } from '../lib/checkingHealth'
+import { CONTACT_CAP_DAYS } from '../lib/guardrails'
 import { CAMPAIGN_STATUSES, useCampaigns, type CampaignStatus, type SavedCampaign } from '../lib/campaignStore'
 import { formatValue } from '../lib/metrics'
 import SourceBadge from './SourceBadge'
@@ -146,6 +147,18 @@ export default function PromotionBuilder({ presetId, campaign, onClose }: Props)
               <p className="text-sm text-slate-700">
                 Pre-filled from <strong>{source.label}</strong> ({accounts(source.size)} {isAcq ? 'eligible customers' : 'customers'}).
               </p>
+              {source.guardrails ? (
+                <p className="text-xs text-slate-600">
+                  After guardrails: {accounts(source.guardrails.total)} in the segment − {accounts(source.guardrails.suppressed)} hardship or open
+                  complaint (R0) − {accounts(source.guardrails.recentlyContacted)} contacted in the last {CONTACT_CAP_DAYS} days (R1) ={' '}
+                  <strong>{accounts(source.guardrails.eligible)}</strong> eligible. The same rules as next best action.
+                </p>
+              ) : (
+                <p className="text-xs text-slate-600">
+                  Guardrails apply at send time: no offers to customers in hardship or with an open complaint, and at most 1 offer per{' '}
+                  {CONTACT_CAP_DAYS} days.
+                </p>
+              )}
               <KindExplainer outcome={inputs.outcome} />
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Audience size" note={`Default ${accounts(source.size)} from the segment`}>

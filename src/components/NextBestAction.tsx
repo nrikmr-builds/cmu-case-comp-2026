@@ -10,6 +10,7 @@ import {
   CONTACT_CAP_DAYS,
   NBA_RULES,
   nbaReconciliation,
+  compareArms,
   nbaRecommendations,
   nbaRollup,
   OFFER_ACTIONS,
@@ -134,6 +135,8 @@ export default function NextBestAction() {
             </p>
           </div>
         </div>
+
+        <Comparison />
 
         {/* Rules */}
         <div>
@@ -390,6 +393,89 @@ function Panel({ title, icon, children }: { title: string; icon?: ReactNode; chi
         {title}
       </h4>
       {children}
+    </div>
+  )
+}
+
+/** Personalised vs. blanket on the same eligible customers, with the match uplift personalisation must prove. */
+function Comparison() {
+  const [upliftPct, setUpliftPct] = useState(0)
+  const c = compareArms(upliftPct / 100)
+  const base = compareArms(0)
+  const arms = [c.blanket, c.personalised, c.holdout]
+  const best = c.personalised.net > c.blanket.net ? 'personalised' : 'blanket'
+  const one = (x: number) => x.toLocaleString('en-US', { maximumFractionDigits: 1, minimumFractionDigits: 1 })
+  return (
+    <div id="nba-comparison" className="rounded-md border border-slate-200 p-4">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <h4 className="text-sm font-semibold text-brand-ink">
+          Personalised vs. blanket · same {n(c.eligible)} eligible customers (after guardrails), same economics
+        </h4>
+        <label className="flex items-center gap-2 text-sm">
+          <span>
+            Match uplift <span className="text-xs text-slate-500">(illustrative; to be measured)</span>
+          </span>
+          <input
+            type="number"
+            min={0}
+            max={200}
+            step={5}
+            value={upliftPct}
+            onChange={(e) => setUpliftPct(Math.max(0, Math.min(200, Number(e.target.value) || 0)))}
+            aria-label="Match uplift, percent"
+            className="w-20 rounded border border-slate-300 px-2 py-1 text-right tabular-nums"
+          />
+          %
+        </label>
+      </div>
+      <div className="relative mt-2 overflow-x-auto">
+        <table className="w-full min-w-[720px] text-left text-sm tabular-nums">
+          <thead className="border-b border-slate-200 text-xs text-slate-500">
+            <tr>
+              <th scope="col" className="py-1.5 pr-3 font-medium">Arm</th>
+              <th scope="col" className="py-1.5 pr-3 text-right font-medium">Contacts</th>
+              <th scope="col" className="py-1.5 pr-3 text-right font-medium">Saves (closure prevention)</th>
+              <th scope="col" className="py-1.5 pr-3 text-right font-medium">Savings accounts (cross-sell)</th>
+              <th scope="col" className="py-1.5 pr-3 text-right font-medium">Total cost</th>
+              <th scope="col" className="py-1.5 pr-3 text-right font-medium">Annual value</th>
+              <th scope="col" className="py-1.5 text-right font-medium">Net value</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {arms.map((a, i) => (
+              <tr key={a.label} className={(i === 0 && best === 'blanket') || (i === 1 && best === 'personalised') ? 'font-semibold' : ''}>
+                <th scope="row" className="py-1.5 pr-3 font-medium text-brand-ink">
+                  ({'abc'[i]}) {a.label}
+                  {i === 1 && upliftPct > 0 && <span className="ml-1 text-xs font-normal text-slate-500">at +{upliftPct}% match uplift</span>}
+                </th>
+                <td className="py-1.5 pr-3 text-right">{n(a.contacts)}</td>
+                <td className="py-1.5 pr-3 text-right">{i === 2 ? 'baseline' : one(a.saves)}</td>
+                <td className="py-1.5 pr-3 text-right">{i === 2 ? 'baseline' : one(a.savingsAccounts)}</td>
+                <td className="py-1.5 pr-3 text-right">{formatUsd(a.cost)}</td>
+                <td className="py-1.5 pr-3 text-right">{formatUsd(a.value)}</td>
+                <td className="py-1.5 text-right">{formatUsd(a.net)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-2 text-sm text-slate-800">
+        <strong>
+          Personalisation beats the blanket offer only if matched offers convert at least {Number.isFinite(base.breakEven) ? `${Math.ceil(base.breakEven * 100)}%` : 'n/a'}{' '}
+          better.
+        </strong>{' '}
+        That's what the test must prove. Today every arm uses the same flat save rates, so matching has no modelled benefit yet.
+      </p>
+      <p className="mt-1 text-xs text-slate-600">
+        Break-even = (net(a) + fixed contact costs of (b)) ÷ rate-driven margin of (b) − 1 = ({formatUsd(base.blanket.net)} + {formatUsd(base.fixed)}) ÷{' '}
+        {formatUsd(base.margin)} − 1 = {Number.isFinite(base.breakEven) ? pct(base.breakEven) : 'n/a'}. Arms use each customer's preferred channel; (b) skips the{' '}
+        {n(base.blanket.contacts - base.personalised.contacts)} R5 customers. Saves and savings accounts are expected values and aren't added together.
+      </p>
+      <p className="mt-2 text-xs text-slate-700">
+        <strong>Test plan:</strong> NBA / Blanket / Holdout at 45% / 45% / 10% of {n(c.plan.eligible)} eligible = {n(c.plan.nba)} / {n(c.plan.blanket)} /{' '}
+        {n(c.plan.holdout)}. Primary KPI: 90-day closures avoided. Guardrail KPIs: complaints and opt-outs. Decision rule: roll out NBA if its net
+        value per customer beats Blanket's and the interval excludes 0.
+      </p>
     </div>
   )
 }

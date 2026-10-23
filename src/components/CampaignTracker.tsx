@@ -1,11 +1,11 @@
-import { AlertTriangle, Pencil, Trash2 } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { AlertTriangle, ChevronDown, ChevronUp, Pencil, Trash2 } from 'lucide-react'
+import { useState, type ReactNode } from 'react'
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts'
 import { summerMath } from '../data/campaignSeeds'
 import { dayToIso } from '../data/dailyOpenings'
 import { OUTCOME_LABELS } from '../lib/campaignEconomics'
 import { CAMPAIGN_STATUSES, useCampaigns, type CampaignStatus, type SavedCampaign } from '../lib/campaignStore'
-import { getTotals, getTrackedCampaigns, MIN_DAYS, MIN_HOLDOUT, type Lift, type OverlapResult, type TrackedCampaign } from '../lib/campaignTracking'
+import { getTotals, getTrackedCampaigns, MIN_DAYS, MIN_HOLDOUT, type Lift, type OverlapEntry, type OverlapUnit, type TrackedCampaign } from '../lib/campaignTracking'
 import { CHART_COLORS } from '../lib/chartColors'
 import { formatSignedCount, formatUsd } from '../lib/checkingHealth'
 import { shortDate } from '../lib/dailyTracking'
@@ -43,13 +43,20 @@ export default function CampaignTracker({ onEdit }: { onEdit: (campaign: SavedCa
       <ul className="mt-6 space-y-4">
         {[...tracked].sort((a, b) => order[a.status] - order[b.status]).map((t) => (
           <li key={t.id}>
-            <CampaignCard
-              t={t}
-              saved={t.origin === 'builder' ? campaigns.find((c) => c.id === t.id) : undefined}
-              onStatus={(s) => setStatus(t.id, s)}
-              onDelete={() => deleteCampaign(t.id)}
-              onEdit={onEdit}
-            />
+            {t.status === 'completed' && t.actual ? (
+              // Finished campaigns collapse to one line so the Act tab stays short; Expand shows the full card.
+              <CollapsedCompleted t={t}>
+                <CampaignCard t={t} onStatus={() => {}} onDelete={() => {}} onEdit={onEdit} />
+              </CollapsedCompleted>
+            ) : (
+              <CampaignCard
+                t={t}
+                saved={t.origin === 'builder' ? campaigns.find((c) => c.id === t.id) : undefined}
+                onStatus={(s) => setStatus(t.id, s)}
+                onDelete={() => deleteCampaign(t.id)}
+                onEdit={onEdit}
+              />
+            )}
           </li>
         ))}
       </ul>
@@ -78,10 +85,10 @@ function Totals({ totals }: { totals: ReturnType<typeof getTotals> }) {
           ) : (
             <p>
               Q3: <strong>{formatSignedCount(totals.closure.netNow ?? 0)} → {formatSignedCount((totals.closure.netNow ?? 0) + totals.closure.q3)}</strong> ·
-              next 90 days: <strong>+{accounts(totals.closure.next90)}</strong> ({totals.closure.count} planned)
+              next 90 days: <strong>+{accounts(totals.closure.next90)}</strong> ({totals.closure.count} planned
+              {totals.closure.counted < totals.closure.count ? `, ${totals.closure.counted} counted after overlap` : ''})
             </p>
           )}
-          <OverlapNote o={totals.closure.overlap} format={accounts} unit="saves" />
         </TotalBox>
         <TotalBox title="Activation · primacy">
           {totals.activation.count === 0 ? (
@@ -97,12 +104,13 @@ function Totals({ totals }: { totals: ReturnType<typeof getTotals> }) {
             <p className="text-slate-500">No cross-sell campaigns saved yet.</p>
           ) : (
             <p>
-              <strong>{formatUsd(totals.crossSell.deposits)}</strong> savings deposits captured ({totals.crossSell.count} planned)
+              <strong>{formatUsd(totals.crossSell.deposits)}</strong> savings deposits captured ({totals.crossSell.count} planned
+              {totals.crossSell.counted < totals.crossSell.count ? `, ${totals.crossSell.counted} counted after overlap` : ''})
             </p>
           )}
-          <OverlapNote o={totals.crossSell.overlap} format={formatUsd} unit="deposits" />
         </TotalBox>
       </div>
+      <OverlapNote overlaps={totals.overlaps} />
 
       <div className={`mt-4 rounded-md border p-3 text-sm ${a.unlikely ? 'border-red-200 bg-red-50 text-red-900' : 'border-slate-200 bg-white text-slate-800'}`}>
         <p>
@@ -132,15 +140,47 @@ function Totals({ totals }: { totals: ReturnType<typeof getTotals> }) {
   )
 }
 
-/** "Overlap removed": same segment and outcome reach the same customers, so only the larger counts (planner rule). */
-function OverlapNote({ o, format, unit }: { o: OverlapResult; format: (n: number) => string; unit: string }) {
-  if (o.overlaps.length === 0) return null
+/** Overlapping campaigns on a segment reach the same customers: only the one with the higher net value counts. */
+function OverlapNote({ overlaps }: { overlaps: OverlapEntry[] }) {
+  if (overlaps.length === 0) return null
+  const detail = (u: OverlapUnit) =>
+    [u.saves > 0 && `${accounts(u.saves)} saves`, u.savingsAccounts > 0 && `${accounts(u.savingsAccounts)} savings accounts`].filter(Boolean).join(' + ') || 'no results'
   return (
-    <p className="mt-1 text-xs text-slate-600">
-      Overlap removed: {format(o.gross - o.counted)} {unit} = {format(o.gross)} − {format(o.counted)} counted (
-      {o.overlaps.map((x) => `${x.segmentLabel}: keep ${x.kept.name} ${format(x.kept.size)}, drop ${x.dropped.map((d) => `${d.name} ${format(d.size)}`).join(' + ')}`).join('; ')}
-      ). Same segment → only the larger counts.
-    </p>
+    <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+      {overlaps.map((o) => (
+        <p key={o.kept.name + o.segmentLabel}>
+          <strong>Overlap removed ({o.segmentLabel}):</strong> kept {o.kept.name}, net {formatUsd(o.kept.net)} ({detail(o.kept)}); dropped{' '}
+          {o.dropped.map((d) => `${d.name}, net ${formatUsd(d.net)} (${detail(d)})`).join('; ')}. Same segment = same customers, so only the
+          higher net value (annual value − cost) counts in the totals above.
+        </p>
+      ))}
+    </div>
+  )
+}
+
+function CollapsedCompleted({ t, children }: { t: TrackedCampaign; children: ReactNode }) {
+  const [open, setOpen] = useState(false)
+  const a = t.actual
+  if (open || !a) {
+    return (
+      <div>
+        {children}
+        <button type="button" onClick={() => setOpen(false)} aria-expanded="true" className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-brand-blue hover:underline">
+          <ChevronUp className="h-3.5 w-3.5" aria-hidden /> Collapse
+        </button>
+      </div>
+    )
+  }
+  return (
+    <article className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 px-4 py-2.5 text-sm">
+      <p className="text-slate-700">
+        <strong className="text-brand-ink">{t.name}</strong> · Completed · {a.lift.label} · {accounts(a.lift.incremental)} incremental ·{' '}
+        {money(a.costPerIncrementalPrimary)} per incr. primary
+      </p>
+      <button type="button" onClick={() => setOpen(true)} aria-expanded="false" className="inline-flex items-center gap-1 rounded border border-slate-300 px-2 py-1 text-xs font-medium text-brand-blue hover:bg-slate-50">
+        <ChevronDown className="h-3.5 w-3.5" aria-hidden /> Expand
+      </button>
+    </article>
   )
 }
 

@@ -6,6 +6,7 @@ import { checkingTerms, dropOffSignals } from '../data/checkingHealth'
 import { NEAR_FEE_THRESHOLD, nbaCustomers, type NbaCustomer } from '../data/nbaCustomers'
 import { reportingPeriod } from '../data/productMetrics'
 import { computeEconomics, inputsFromPreset, type CampaignEconomics, type CampaignInputs } from './campaignEconomics'
+import { CONTACT_CAP_DAYS, isRecentlyContacted, isSuppressed } from './guardrails'
 
 export type NbaAction = 'service' | 'wait' | 'bundle' | 'fee' | 'dd' | 'none'
 export type OfferAction = Extract<NbaAction, 'bundle' | 'fee' | 'dd'>
@@ -23,8 +24,7 @@ export const ACTION_META: Record<NbaAction, { label: string; short: string; pres
   none: { label: 'Do nothing', short: 'Do nothing' },
 }
 
-/** Contact frequency cap: at most one offer per this many days. */
-export const CONTACT_CAP_DAYS = 30
+export { CONTACT_CAP_DAYS }
 const AS_OF = reportingPeriod.internalAsOf
 
 const signalName = (id: string) => dropOffSignals.find((s) => s.id === id)?.name ?? id
@@ -37,9 +37,6 @@ export interface NbaRule {
   test?: (c: NbaCustomer) => boolean
 }
 
-const daysBetween = (fromIso: string, toIso: string) =>
-  Math.round((Date.parse(`${toIso}T00:00:00Z`) - Date.parse(`${fromIso}T00:00:00Z`)) / 86_400_000)
-
 /** Ordered rules: the first one that matches decides; R5 then checks the chosen offer pays for itself. */
 export const NBA_RULES: NbaRule[] = [
   {
@@ -47,14 +44,14 @@ export const NBA_RULES: NbaRule[] = [
     condition: 'Hardship flag, or an open complaint',
     action: ACTION_META.service.label,
     reason: 'Help first; never market to them.',
-    test: (c) => c.hardship || c.complaint,
+    test: isSuppressed,
   },
   {
     code: 'R1',
     condition: `Contacted within the last ${CONTACT_CAP_DAYS} days`,
     action: 'Wait until the next eligible date',
     reason: `Frequency cap: at most 1 offer per ${CONTACT_CAP_DAYS} days.`,
-    test: (c) => c.lastContacted !== null && daysBetween(c.lastContacted, AS_OF) < CONTACT_CAP_DAYS,
+    test: isRecentlyContacted,
   },
   {
     code: 'R2',
@@ -98,7 +95,18 @@ export interface OfferUnitEconomics {
   costPerResult: number
 }
 
+// Template economics don't change while the page is open; compute each offer's unit once (it's used per row).
+const unitCache = new Map<OfferAction, OfferUnitEconomics>()
+
 export function offerUnit(action: OfferAction): OfferUnitEconomics {
+  const cached = unitCache.get(action)
+  if (cached) return cached
+  const unit = computeOfferUnit(action)
+  unitCache.set(action, unit)
+  return unit
+}
+
+function computeOfferUnit(action: OfferAction): OfferUnitEconomics {
   const inputs = inputsFromPreset(ACTION_META[action].presetId ?? '')
   const valuePerResult = inputs.outcome === 'savings-accounts' ? inputs.avgBalanceUsd * inputs.depositSpread : inputs.annualValuePerAccount
   return {
@@ -204,7 +212,7 @@ export function draftInputs(action: OfferAction, recs = nbaRecommendations): Cam
     sourceLabel: NBA_SOURCE_LABEL,
     audience: group.length,
     holdoutShare: campaignAssumptions.holdoutShare,
-    offer: { ...base.offer, channels, extra: `From next best action (rule ${rule}): ${base.offer.extra}` },
+    offer: { ...base.offer, channels, extra: `From next best action (rule ${rule}): ${base.offer.extra}. ${testPlanNote(recs)}` },
     channelMix: mix,
   }
 }
@@ -281,6 +289,90 @@ export function nbaRollup(recs = nbaRecommendations) {
     cost: groups.reduce((s, g) => s + g.economics.costs.total, 0),
     value: groups.reduce((s, g) => s + g.economics.annualValue, 0),
   }
+}
+
+// --- Personalised vs. blanket, on the same eligible customers --------------------------------------------
+
+/** Three-arm test split of the eligible customers. */
+export const TEST_SPLIT = { nba: 0.45, blanket: 0.45, holdout: 0.1 }
+
+export interface ArmResult {
+  label: string
+  contacts: number
+  /** Closure prevention (expected, not rounded). */
+  saves: number
+  /** Cross-sell (expected, not rounded). */
+  savingsAccounts: number
+  cost: number
+  value: number
+  net: number
+}
+
+/** Customers who pass the guardrails (R0, R1): the population every arm is compared on. */
+export const eligibleRecs = (recs = nbaRecommendations) => recs.filter((r) => r.action !== 'service' && r.action !== 'wait')
+
+export function testPlan(recs = nbaRecommendations) {
+  const eligible = eligibleRecs(recs).length
+  const nba = Math.round(eligible * TEST_SPLIT.nba)
+  const blanket = Math.round(eligible * TEST_SPLIT.blanket)
+  return { eligible, nba, blanket, holdout: eligible - nba - blanket }
+}
+
+function testPlanNote(recs: NbaRecommendation[]) {
+  const t = testPlan(recs)
+  return `Test design: NBA / Blanket / Holdout at 45% / 45% / 10% of ${t.eligible.toLocaleString('en-US')} eligible (${t.nba.toLocaleString('en-US')} / ${t.blanket.toLocaleString('en-US')} / ${t.holdout.toLocaleString('en-US')}); primary KPI 90-day closures avoided.`
+}
+
+/**
+ * (a) Blanket DD Retention to every eligible customer, (b) next best action (R5 "do nothing" customers not
+ * contacted), (c) holdout. Same per-customer economics and channels in every arm, so only offer matching differs.
+ * matchUplift raises (b)'s save and take-up rates by that share (illustrative; the test must measure it).
+ */
+export function compareArms(matchUplift = 0, recs = nbaRecommendations) {
+  const eligible = eligibleRecs(recs)
+  const dd = offerUnit('dd')
+  const ch = (r: NbaRecommendation) => dd.inputs.costPerMessage[r.customer.channel] * dd.inputs.messagesPerPerson
+
+  const bSaves = eligible.length * dd.rate
+  const bChannel = eligible.reduce((s, r) => s + ch(r), 0)
+  const bCost = bChannel + eligible.length * dd.waiverPerPerson + bSaves * dd.costPerResult
+  const bValue = bSaves * dd.valuePerResult
+  const blanket: ArmResult = { label: 'Blanket DD Retention', contacts: eligible.length, saves: bSaves, savingsAccounts: 0, cost: bCost, value: bValue, net: bValue - bCost }
+
+  // Personalised: each contacted customer gets their own offer. Net = A × (1 + uplift) − F, where A is the
+  // rate-driven margin Σ N × rate × (value − cost per result) and F the fixed contact costs (channel + waivers).
+  let a = 0
+  let f = 0
+  let saves = 0
+  let accountsOpened = 0
+  let costAtRates = 0
+  let valueAtRates = 0
+  const contacted = eligible.filter((r) => r.action !== 'none')
+  for (const action of OFFER_ACTIONS) {
+    const group = contacted.filter((r) => r.action === action)
+    const u = offerUnit(action)
+    const results = group.length * u.rate
+    a += results * (u.valuePerResult - u.costPerResult)
+    f += group.reduce((s, r) => s + (r.offer?.channelCost ?? 0), 0) + group.length * u.waiverPerPerson
+    if (u.inputs.outcome === 'savings-accounts') accountsOpened += results
+    else saves += results
+    costAtRates += results * u.costPerResult
+    valueAtRates += results * u.valuePerResult
+  }
+  const k = 1 + matchUplift
+  const personalised: ArmResult = {
+    label: 'Next best action',
+    contacts: contacted.length,
+    saves: saves * k,
+    savingsAccounts: accountsOpened * k,
+    cost: f + costAtRates * k,
+    value: valueAtRates * k,
+    net: a * k - f,
+  }
+  const holdout: ArmResult = { label: 'Holdout', contacts: 0, saves: 0, savingsAccounts: 0, cost: 0, value: 0, net: 0 }
+  // (b) equals (a) when A × (1 + m) − F = net(a)  →  m = (net(a) + F) ÷ A − 1.
+  const breakEven = a > 0 ? (blanket.net + f) / a - 1 : Infinity
+  return { eligible: eligible.length, blanket, personalised, holdout, margin: a, fixed: f, breakEven, plan: testPlan(recs) }
 }
 
 // --- Reconciliation with the page's tables ----------------------------------------------------------------

@@ -13,7 +13,7 @@ import { buildWeeklyReport } from './weeklyReport'
 import { END_LABEL, getReforecast } from './reforecastStore'
 import { defaultPlanner } from './scenarioPlanner'
 import { tabPath } from './checkingTabs'
-import { nbaRollup } from './nextBestAction'
+import { compareArms, nbaRollup } from './nextBestAction'
 import { DEFAULT_ALERT_RULES } from './dailyTracking'
 
 const n = (x: number) => formatValue(x, 'accounts')
@@ -118,7 +118,8 @@ export const TOUR_STEPS: TourStep[] = [
     caption: () => {
       const r = nbaRollup()
       const c = r.counts
-      return `Each of the ${n(r.total)} direct-deposit-leaving customers gets one explained action: ${n(c.dd)} DD Retention, ${n(c.bundle)} Savings Bundle, ${n(c.fee)} Fee Forgiveness, ${n(c.service)} service outreach (hardship or complaint, no offer), ${n(c.wait)} wait for the 30-day contact cap, ${n(c.none)} do nothing (value below cost).`
+      const be = compareArms(0).breakEven
+      return `Each of the ${n(r.total)} direct-deposit-leaving customers gets one explained action: ${n(c.dd)} DD Retention, ${n(c.bundle)} Savings Bundle, ${n(c.fee)} Fee Forgiveness, ${n(c.service)} service outreach (hardship or complaint, no offer), ${n(c.wait)} wait for the 30-day contact cap, ${n(c.none)} do nothing (value below cost). Personalisation beats the blanket offer only if matched offers convert at least ${Math.ceil(be * 100)}% better; that's what the test must prove.`
     },
   },
 ]

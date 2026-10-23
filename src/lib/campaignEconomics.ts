@@ -31,6 +31,7 @@ import { segmentHistory } from '../data/segmentHistory'
 import { formatLeadTime, getFeeCohortClosureRate, getHealthTotal, getNetAccountChange } from './checkingHealth'
 import { getHeadlineProjection } from './dailyTracking'
 import { getPaceProjection } from './projection'
+import { guardrailAudience, type GuardrailAudience } from './guardrails'
 import { getRateReference, type RateReference } from './segmentHistory'
 
 /** Round to 0.1% so every rate shown can be used to redo the math by hand. */
@@ -72,6 +73,8 @@ export function feeClosureGap() {
 export interface AudienceSource {
   label: string
   size: number
+  /** Risk segments with customer rows: the audience is counted after the contact guardrails. */
+  guardrails?: GuardrailAudience
   /** Last-quarter history, for acquisition segments that have it. */
   history?: RateReference
 }
@@ -86,6 +89,10 @@ export function getAudienceSource(preset: CampaignPreset): AudienceSource {
     }
   }
   const risk = riskSegments.find((s) => s.id === preset.source.id)
+  // Blanket campaigns follow the same guardrails as next best action: no hardship, complaint or recently contacted
+  // customers. Where customer rows exist, the default audience is counted after them.
+  const g = guardrailAudience(preset.source.id)
+  if (g) return { label: `${risk?.name ?? preset.source.id} · after guardrails`, size: g.eligible, guardrails: g }
   return { label: risk?.name ?? preset.source.id, size: risk?.eligibleCustomers ?? 0 }
 }
 
