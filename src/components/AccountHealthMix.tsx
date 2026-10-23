@@ -3,8 +3,11 @@ import { PRIMACY_DEFINITION, type HealthMix } from '../data/checkingHealth'
 import { CHART_COLORS } from '../lib/chartColors'
 import {
   formatPercent1,
+  formatSignedCount,
   getClosureRate,
+  getDirectDepositNotPrimary,
   getDirectDepositRate,
+  getNetAccountChange,
   getDormancyRate,
   getHealthTotal,
   getNewDormancyRate,
@@ -17,18 +20,26 @@ interface Props {
   /** Oldest first; the last entry is the current quarter. */
   history: HealthMix[]
   accountsWithDirectDeposit: number
+  /** New accounts opened this quarter (the openings KPI). */
+  openedThisQuarter: number
   closedThisQuarter: number
   newlyDormantThisQuarter: number
 }
 
 const TIERS = [
   { key: 'primary', label: 'Primary', note: `${PRIMACY_DEFINITION[0].toUpperCase()}${PRIMACY_DEFINITION.slice(1)}` },
-  { key: 'active', label: 'Active', note: 'Regular use, no direct deposit' },
+  { key: 'active', label: 'Active', note: 'Regular use, not Primary (may have a direct deposit but fewer than 2 bill payments)' },
   { key: 'slipping', label: 'Slipping', note: 'Activity falling' },
   { key: 'dormant', label: 'Dormant', note: 'No customer activity 90+ days' },
 ] as const
 
-export default function AccountHealthMix({ history, accountsWithDirectDeposit, closedThisQuarter, newlyDormantThisQuarter }: Props) {
+export default function AccountHealthMix({
+  history,
+  accountsWithDirectDeposit,
+  openedThisQuarter,
+  closedThisQuarter,
+  newlyDormantThisQuarter,
+}: Props) {
   const current = history[history.length - 1]
   const previous = history[history.length - 2]
   const first = history[0]
@@ -40,8 +51,10 @@ export default function AccountHealthMix({ history, accountsWithDirectDeposit, c
   const accounts = (n: number) => formatValue(n, 'accounts')
   const currentTotal = getHealthTotal(current)
   const startTotal = getHealthTotal(previous)
+  const netChange = getNetAccountChange(openedThisQuarter, closedThisQuarter)
+  const ddNotPrimary = getDirectDepositNotPrimary(accountsWithDirectDeposit, current)
 
-  const tiles = [
+  const tiles: { label: string; value: string; note: string; negative?: boolean }[] = [
     {
       label: 'Primacy rate',
       value: formatPercent1(getPrimacyRate(current)),
@@ -50,7 +63,13 @@ export default function AccountHealthMix({ history, accountsWithDirectDeposit, c
     {
       label: 'Direct-deposit rate',
       value: formatPercent1(getDirectDepositRate(accountsWithDirectDeposit, current)),
-      note: `Any direct deposit, bill payments or not: ${accounts(accountsWithDirectDeposit)} ÷ ${accounts(currentTotal)}`,
+      note: `Any direct deposit: ${accounts(accountsWithDirectDeposit)} ÷ ${accounts(currentTotal)}. That's ${accounts(current.primary)} Primary + ${accounts(ddNotPrimary)} Active with direct deposit but fewer than 2 bill payments`,
+    },
+    {
+      label: 'Net account change (this quarter)',
+      value: formatSignedCount(netChange),
+      note: `Openings − closures = ${accounts(openedThisQuarter)} − ${accounts(closedThisQuarter)}. Check: ${accounts(startTotal)} at quarter start ${formatSignedCount(netChange)} = ${accounts(startTotal + netChange)} open now`,
+      negative: netChange < 0,
     },
     {
       label: '90-day dormancy rate',
@@ -74,13 +93,13 @@ export default function AccountHealthMix({ history, accountsWithDirectDeposit, c
       id="health-heading"
       title="Account Health Mix · All Open Accounts"
       source="internal"
-      description={`Every open checking account sorted into four health tiers at quarter end, for the last ${history.length} quarters.`}
+      description={`Every open checking account sorted into four health tiers at the end of each of the last ${history.length} quarters (${current.quarter}: latest snapshot, ${accounts(currentTotal)} open accounts).`}
     >
-      <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {tiles.map((t) => (
-          <div key={t.label} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <div key={t.label} className={`rounded-lg border p-4 ${t.negative ? 'border-red-200 bg-red-50' : 'border-slate-200 bg-slate-50'}`}>
             <dt className="text-sm text-slate-600">{t.label}</dt>
-            <dd className="mt-1 text-2xl font-semibold tabular-nums text-brand-ink">{t.value}</dd>
+            <dd className={`mt-1 text-2xl font-semibold tabular-nums ${t.negative ? 'text-red-700' : 'text-brand-ink'}`}>{t.value}</dd>
             <dd className="mt-1 text-xs text-slate-500">{t.note}</dd>
           </div>
         ))}
@@ -92,7 +111,12 @@ export default function AccountHealthMix({ history, accountsWithDirectDeposit, c
             <CartesianGrid vertical={false} stroke={CHART_COLORS.grid} />
             <XAxis dataKey="quarter" tick={{ fontSize: 12 }} />
             <YAxis tickFormatter={(v: number) => `${Math.round(v * 100)}%`} tick={{ fontSize: 12 }} width={48} domain={[0, 1]} />
-            <Tooltip formatter={(value) => formatPercent1(Number(value))} />
+            <Tooltip
+              formatter={(value, name) => [
+                formatPercent1(Number(value)),
+                `${name}: ${TIERS.find((t) => t.label === name)?.note ?? ''}`,
+              ]}
+            />
             <Legend itemSorter={null} />
             {TIERS.map(({ key, label }) => (
               <Bar key={key} dataKey={label} stackId="mix" fill={CHART_COLORS[key]} />
@@ -114,7 +138,8 @@ export default function AccountHealthMix({ history, accountsWithDirectDeposit, c
         {history.length} quarters, and dormancy from {formatPercent1(getDormancyRate(first))} to{' '}
         {formatPercent1(getDormancyRate(current))}. The headline Active Account Rate counts Primary and Active together
         ({formatPercent1((current.primary + current.active) / currentTotal)}), so it can hold steady while accounts lose
-        their paycheck.
+        their paycheck. The account base also shrank: {accounts(openedThisQuarter)} opened − {accounts(closedThisQuarter)}{' '}
+        closed = <span className="font-semibold text-red-700">{formatSignedCount(netChange)}</span> accounts this quarter.
       </p>
     </SectionCard>
   )

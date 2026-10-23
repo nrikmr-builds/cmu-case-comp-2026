@@ -33,6 +33,7 @@ export const products: Product[] = [
       },
       {
         id: 'checking-primacy-rate', productId: 'checking', label: 'Primacy Rate', kind: 'rate', unit: 'percent', target: 0.5,
+        introducedOn: '2026-09-12',
         actual: latestHealth.primary / latestHealthTotal,
         definition: `Open accounts with ${PRIMACY_DEFINITION}`,
         related: { label: 'See account health mix', to: '/opportunities/checking#health-heading' },

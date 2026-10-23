@@ -48,9 +48,12 @@ export function generateView(
   const statusRule = STATUS_RULES.find((r) => r.pattern.test(text))
   if (productRules.length === 0 && topicRules.length === 0 && !statusRule) return null
 
+  // A view is a snapshot: it only includes KPIs that existed when it was saved.
+  const savedOn = createdAt.slice(0, 10)
   const kpiIds = products
     .filter((p) => productRules.length === 0 || productRules.some((r) => r.id === p.id))
     .flatMap((p) => p.kpis)
+    .filter((k) => !k.introducedOn || k.introducedOn <= savedOn)
     .filter((k) => topicRules.length === 0 || topicRules.some((r) => r.matches(k)))
     .filter((k) => !statusRule || statusRule.statuses.includes(getStatus(k, reportingPeriod.quarterElapsed)))
     .map((k) => k.id)

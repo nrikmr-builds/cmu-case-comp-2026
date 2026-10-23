@@ -1,6 +1,14 @@
-import { activationFunnel, dropOffSignals } from '../data/checkingHealth'
+import { activationFunnel, currentQuarterHealth, dropOffSignals } from '../data/checkingHealth'
+import { getKpi } from '../data/productMetrics'
 import { marketSignals, summaryCitations } from '../data/marketSignals'
-import { formatMultiple, getNeverActivated, getStrongestSignal, getTotalFunnel } from '../lib/checkingHealth'
+import {
+  formatMultiple,
+  formatSignedCount,
+  getNetAccountChange,
+  getNeverActivated,
+  getStrongestSignal,
+  getTotalFunnel,
+} from '../lib/checkingHealth'
 import { formatPercent, formatValue } from '../lib/metrics'
 import { SourceLink } from './MarketSignals'
 
@@ -8,6 +16,9 @@ import { SourceLink } from './MarketSignals'
 export default function CheckingSummaryAddendum() {
   const neverActivated = getNeverActivated(getTotalFunnel(activationFunnel))
   const strongest = getStrongestSignal(dropOffSignals)
+  const opened = getKpi('checking-new-accounts').actual
+  const closed = currentQuarterHealth.closedThisQuarter
+  const netChange = getNetAccountChange(opened, closed)
   const citations = summaryCitations.flatMap(({ signalId, text }) => {
     const signal = marketSignals.find((s) => s.id === signalId)
     return signal ? [{ signal, text }] : []
@@ -17,7 +28,9 @@ export default function CheckingSummaryAddendum() {
     <>
       Beyond openings, {formatPercent(neverActivated.share)} of this quarter's new accounts have not activated yet, and
       the strongest early-warning signal is <em>{strongest.name.toLowerCase()}</em> ({formatMultiple(strongest.lift)} lift,{' '}
-      {formatValue(strongest.flaggedAccounts, 'accounts')} accounts flagged).{' '}
+      {formatValue(strongest.flaggedAccounts, 'accounts')} accounts flagged). Closures also outpaced openings, so open
+      accounts changed by {formatSignedCount(netChange)} this quarter ({formatValue(opened, 'accounts')} opened −{' '}
+      {formatValue(closed, 'accounts')} closed).{' '}
       {citations.length > 0 && (
         <>
           Outside PNC,{' '}

@@ -65,9 +65,9 @@ export default function SegmentTable({ segments, accountNoun, baselineRates, his
             Customer Segments · Opportunity
           </h2>
           <p className="mt-1 text-sm text-slate-500">
-            Illustrative figures. Potential accounts = eligible customers × estimated conversion rate. Drag a slider to
-            test your own conversion assumption; the band under each slider shows what the segment actually converted at
-            over the last four quarters.
+            Illustrative figures. Potential accounts = eligible customers × estimated conversion rate. Each slider starts
+            at the segment's last-quarter rate (the baseline); drag it to test your own assumption. The band under each
+            slider shows what the segment actually converted at over the last four quarters.
           </p>
         </div>
         <button

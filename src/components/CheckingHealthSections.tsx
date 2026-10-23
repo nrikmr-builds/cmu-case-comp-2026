@@ -10,6 +10,8 @@ import {
   savingsLink,
 } from '../data/checkingHealth'
 import { marketSignals } from '../data/marketSignals'
+import { getKpi } from '../data/productMetrics'
+import { getHealthTotal } from '../lib/checkingHealth'
 import AccountHealthMix from './AccountHealthMix'
 import ActivationFunnel from './ActivationFunnel'
 import CrossProductSignal from './CrossProductSignal'
@@ -36,6 +38,7 @@ export default function CheckingHealthSections({ quarter }: { quarter: string })
       <AccountHealthMix
         history={healthMixHistory}
         accountsWithDirectDeposit={currentQuarterHealth.accountsWithDirectDeposit}
+        openedThisQuarter={getKpi('checking-new-accounts').actual}
         closedThisQuarter={currentQuarterHealth.closedThisQuarter}
         newlyDormantThisQuarter={currentQuarterHealth.newlyDormantThisQuarter}
       />
@@ -44,7 +47,7 @@ export default function CheckingHealthSections({ quarter }: { quarter: string })
       {feeGroup && baseline && (
         <FeeTriggerView feeGroup={feeGroup} baseline={baseline} monthlyFee={checkingTerms.monthlyMaintenanceFee} />
       )}
-      <CrossProductSignal groups={savingsLink} />
+      <CrossProductSignal groups={savingsLink} openAccounts={getHealthTotal(healthMixHistory[healthMixHistory.length - 1])} />
       <MarketSignals signals={marketSignals} pncRow={pncComparisonRow} />
     </div>
   )

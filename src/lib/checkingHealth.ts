@@ -46,6 +46,22 @@ export function getDirectDepositRate(accountsWithDirectDeposit: number, mix: Hea
   return accountsWithDirectDeposit / getHealthTotal(mix)
 }
 
+/** Openings − closures this quarter. Negative means the account base shrank. */
+export function getNetAccountChange(openings: number, closed: number): number {
+  return openings - closed
+}
+
+/** Direct-deposit accounts that aren't Primary (fewer than 2 bill payments); they sit in the Active tier. */
+export function getDirectDepositNotPrimary(accountsWithDirectDeposit: number, mix: HealthMix): number {
+  return accountsWithDirectDeposit - mix.primary
+}
+
+/** "-2,200" with a true minus sign, "+1,500" when positive. */
+export function formatSignedCount(n: number): string {
+  const abs = Math.abs(Math.round(n)).toLocaleString('en-US')
+  return n < 0 ? `−${abs}` : `+${abs}`
+}
+
 /** Accounts closed this quarter ÷ accounts open at the start of the quarter. */
 export function getClosureRate(closed: number, startOfQuarter: HealthMix): number {
   return closed / getHealthTotal(startOfQuarter)

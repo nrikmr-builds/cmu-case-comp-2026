@@ -88,11 +88,14 @@ export const activationFunnel: ActivationFunnel[] = [
   { channel: 'digital', label: 'Digital', opened: 3200, funded: 2690, activated: 2360, primary: 1150 },
 ]
 
-/** Oldest first. */
+/**
+ * Open accounts at the end of each quarter, oldest first (Q3 2026 = latest snapshot).
+ * Q3 reconciles: Q2 end 427,200 + 7,600 opened − 9,800 closed = 425,000.
+ */
 export const healthMixHistory: HealthMix[] = [
   { quarter: 'Q4 2025', primary: 196000, active: 170000, slipping: 31000, dormant: 21000 },
   { quarter: 'Q1 2026', primary: 193000, active: 175000, slipping: 30500, dormant: 22500 },
-  { quarter: 'Q2 2026', primary: 189000, active: 181000, slipping: 29000, dormant: 25000 },
+  { quarter: 'Q2 2026', primary: 190500, active: 182700, slipping: 29000, dormant: 25000 },
   { quarter: 'Q3 2026', primary: 182750, active: 187000, slipping: 28050, dormant: 27200 },
 ]
 
@@ -217,7 +220,7 @@ export const savingsLink: SavingsLinkGroup[] = [
   {
     id: 'no-pnc-savings',
     label: 'No PNC savings',
-    customers: 257300,
+    customers: 247000,
     avgCheckingBalance: 3200,
     avgPncSavingsBalance: 0,
     recurringExternalSavingsTransfers: 21000,

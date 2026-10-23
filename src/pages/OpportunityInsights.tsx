@@ -12,6 +12,7 @@ import { getOpportunity } from '../data/opportunities'
 import { getKpi, reportingPeriod } from '../data/productMetrics'
 import { segmentHistory } from '../data/segmentHistory'
 import { PRODUCT_ICONS } from '../lib/productIcons'
+import { getRateReference } from '../lib/segmentHistory'
 import type { ProductOpportunity } from '../types'
 
 export default function OpportunityInsights() {
@@ -32,8 +33,10 @@ function OpportunityDetail({ opportunity }: { opportunity: ProductOpportunity })
   const kpi = getKpi(opportunity.focusKpiId)
   // "New CD Account Openings" already names its product; "New Account Openings" doesn't.
   const kpiName = kpi.label.includes(opportunity.shortName) ? kpi.label : `${opportunity.shortName} ${kpi.label}`
+  // Sliders start (and reset) at each segment's last-quarter rate, so the default scenario is history,
+  // not an assumption. Segments without history fall back to the planning rate in opportunities.ts.
   const baselineRates: Record<string, number> = Object.fromEntries(
-    opportunity.segments.map((s) => [s.id, s.estimatedConversionRate]),
+    opportunity.segments.map((s) => [s.id, getRateReference(segmentHistory[s.id])?.last.rate ?? s.estimatedConversionRate]),
   )
   // The Product Owner's what-if conversion rates. Starts at the shared data; never written back to it.
   const [rates, setRates] = useState(baselineRates)

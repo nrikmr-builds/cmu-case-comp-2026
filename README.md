@@ -62,38 +62,51 @@ Every card links to its product's opportunity page (`/opportunities/checking`, `
 
 ---
 
-## Page 2: CD Opportunity Intelligence (Kem)
+## Page 2: Opportunity Intelligence (Kem)
+
+One page per product at `/opportunities/:productId`. The demo walks through **Checking**. Numbers below are the current synthetic values; the page computes every one of them from `src/data/` with the helpers in `src/lib/`.
 
 ### Insights, not recommendations
 This page shows evidence, trade-offs, and open questions. **It does not tell the Product Owner what to do.** Avoid words like "Recommended" or "You should." Use labels like "Insight," "Opportunity," and "Considerations."
 
 ### Gap summary
 
-| Metric | Value |
-|---|---:|
-| Target / Current | 5,000 / 3,100 |
-| Expected by now (80% of quarter) | 4,000 |
-| **Pace gap** | **900** |
-| **Still needed to hit target** | **1,900** |
+Two rows. Every tile shows its formula underneath.
 
-Keep the 900 and the 1,900 clearly separate. They are different numbers.
+**Where we are today**
+
+| Metric | Formula | Checking |
+|---|---|---:|
+| Current / Target | actual / target | 7,600 / 12,000 |
+| Expected by now (80% of quarter) | target × 0.80 | 9,600 |
+| **Pace gap** | expected − actual | **2,000** |
+| **Still needed to hit target** | target − actual | **4,400** |
+
+**If today's pace continues to quarter end** (`src/lib/projection.ts`)
+
+| Metric | Formula | Checking |
+|---|---|---:|
+| Projected at current pace | actual ÷ 0.80 | 9,500 (79.2% of target) |
+| Expected from current pace, rest of quarter | projected − actual | 1,900 |
+| **Incremental needed beyond current pace** | target − projected | **2,500** |
+| Required vs. current daily pace | (still needed ÷ days left) ÷ (actual ÷ days elapsed) | 2.3× (239/day vs. 103/day) |
+
+Days come from a 92-day quarter: 73.6 elapsed, 18.4 left. Keep "pace gap" (2,000), "still needed" (4,400), and "incremental beyond pace" (2,500) clearly separate; they answer different questions. When a product is ahead of pace (Savings, CD), the third tile shows "Projected above target" instead.
 
 ### Customer segments
 
-| Segment | Why they might open a CD | Consideration | Eligible | Est. Conversion | Potential Accounts |
-|---|---|---|---:|---:|---:|
-| High-Balance Savings | Large, stable savings they don't touch | May shift money out of savings instead of adding new deposits | 12,000 | 8% | 960 |
-| Maturing CDs | Already know and use CDs | Auto-renewals don't count as new openings | 6,000 | 10% | 600 |
-| Surplus Checking | Balances well above everyday needs | Extra cash isn't automatically right for a CD | 15,000 | 5% | 750 |
-| **Total** | | | **33,000** | | **2,310** |
+| Segment | Eligible | Last-qtr rate | Potential at last-qtr rate |
+|---|---:|---:|---:|
+| Savings-Only Customers | 20,000 | 8.0% | 1,600 |
+| Abandoned Digital Applications | 6,000 | 18.0% | 1,080 |
+| Young Adults | 25,000 | 5.5% | 1,375 |
+| **Total** | **51,000** | | **4,055** |
 
-`potential accounts = eligible × conversion rate`. Calculate it in code; don't hardcode it.
+`potential accounts = eligible × conversion rate`. Rates come from `src/data/segmentHistory.ts` (last 4 quarters) and are rounded to 0.1% before any math, so each figure can be checked by hand. Sliders start and reset at the last-quarter rate; a slider outside its 4-quarter range is flagged.
 
-**Key insight:** 2,310 potential accounts is more than the 1,900 still needed. That's a hypothetical opportunity, not a forecast.
+### Key insight and AI summary (prewritten, no live AI)
 
-### AI summary (prewritten, no live AI)
-
-> "CD openings are 900 behind the expected pace, with 1,900 still needed to reach target. Three segments show an illustrative combined opportunity of 2,310 new accounts. High-balance savings is the largest opportunity, and maturing CDs have the highest assumed conversion. Open questions: how much savings would shift rather than grow, and how many maturing CDs would auto-renew. Validate these assumptions before estimating impact."
+Both lead with **last-quarter rates**, not slider settings: 4,055 potential accounts is less than the 4,400 still needed, but more than the 2,500 needed beyond current pace, with a caveat that some of these conversions may already be part of the current pace (overlap). The slider total appears only as a secondary "Your scenario" line. On Checking, the AI summary also covers activation, the strongest early-warning signal, the net account change, and two sourced market facts.
 
 A "Back to Portfolio" link returns to `/`.
 

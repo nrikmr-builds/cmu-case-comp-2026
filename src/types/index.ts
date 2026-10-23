@@ -25,6 +25,8 @@ export interface Kpi {
   definition?: string
   /** A related place to dig in, e.g. the segment that explains this KPI. */
   related?: { label: string; to: string }
+  /** ISO date the KPI was added to the hub. Views saved earlier don't include it. */
+  introducedOn?: string
 }
 
 export interface Product {
