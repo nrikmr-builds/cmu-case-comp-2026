@@ -1,12 +1,12 @@
-import { ChevronDown, Copy, Home, LayoutGrid, Pencil, Pin, PinOff, Plus, Trash2 } from 'lucide-react'
+import { ChevronDown, Copy, Home, LayoutGrid, Pencil, Pin, PinOff, Trash2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { createDialog, dashboardStore, useDashboards, type Dashboard } from '../lib/dashboards'
+import { dashboardStore, useDashboards, type Dashboard } from '../lib/dashboards'
 import { EditCardsDialog, Modal } from './DashboardEditor'
 
-const item = 'flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40'
+const item = 'flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-surface-subtle disabled:cursor-not-allowed disabled:opacity-40'
 
-/** "+ New dashboard" and the per-dashboard actions: rename, duplicate, pin, set as landing, edit cards, delete. */
+/** Per-dashboard actions: rename, duplicate, pin, set as landing, edit cards, delete. ("+ New dashboard" lives in the header.) */
 export default function DashboardActions({ dashboard }: { dashboard: Dashboard }) {
   const navigate = useNavigate()
   const { state } = useDashboards()
@@ -36,26 +36,18 @@ export default function DashboardActions({ dashboard }: { dashboard: Dashboard }
 
   return (
     <div className="flex flex-wrap gap-2">
-      <button
-        type="button"
-        onClick={() => createDialog.open()}
-        className="inline-flex items-center gap-1.5 rounded bg-brand-blue px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue"
-      >
-        <Plus className="h-4 w-4" aria-hidden />
-        New dashboard
-      </button>
       <div ref={ref} className="relative">
         <button
           type="button"
           onClick={() => setMenu((m) => !m)}
           aria-haspopup="menu"
           aria-expanded={menu}
-          className="inline-flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-brand-ink hover:bg-slate-50"
+          className="btn btn-secondary"
         >
           Dashboard actions <ChevronDown className="h-4 w-4" aria-hidden />
         </button>
         {menu && (
-          <div role="menu" className="absolute right-0 z-30 mt-1 w-64 overflow-hidden rounded-md border border-slate-200 bg-white py-1 shadow-lg">
+          <div role="menu" className="absolute right-0 z-30 mt-1 w-64 animate-enter overflow-hidden rounded-sm bg-white py-1 shadow-pop">
             <button type="button" role="menuitem" disabled={builtIn} onClick={() => run(() => setDialog('rename'))} className={item}>
               <Pencil className="h-4 w-4" aria-hidden /> Rename
             </button>
@@ -82,10 +74,10 @@ export default function DashboardActions({ dashboard }: { dashboard: Dashboard }
             <button type="button" role="menuitem" disabled={isLanding} onClick={() => run(() => dashboardStore.setLanding(dashboard.id))} className={item}>
               <Home className="h-4 w-4" aria-hidden /> {isLanding ? 'Default landing (current)' : 'Set as default landing'}
             </button>
-            <button type="button" role="menuitem" disabled={builtIn} onClick={() => run(() => setDialog('delete'))} className={`${item} text-red-700`}>
+            <button type="button" role="menuitem" disabled={builtIn} onClick={() => run(() => setDialog('delete'))} className={`${item} text-critical`}>
               <Trash2 className="h-4 w-4" aria-hidden /> Delete
             </button>
-            {builtIn && <p className="px-3 py-1.5 text-[11px] text-slate-500">The built-in dashboard can’t be renamed, edited or deleted. Duplicate it to make your own.</p>}
+            {builtIn && <p className="px-3 py-1.5 text-xs text-muted">The built-in dashboard can’t be renamed, edited or deleted. Duplicate it to make your own.</p>}
           </div>
         )}
       </div>
@@ -102,8 +94,8 @@ export default function DashboardActions({ dashboard }: { dashboard: Dashboard }
               if (renamed && !isLanding) navigate(`/d/${renamed.slug}`, { replace: true })
             }}
           >
-            <input value={name} onChange={(e) => setName(e.target.value)} aria-label="New name" className="block w-full rounded border border-slate-300 px-3 py-2 text-sm" />
-            <button type="submit" className="mt-3 rounded bg-brand-blue px-4 py-2 text-sm font-medium text-white">
+            <input value={name} onChange={(e) => setName(e.target.value)} aria-label="New name" className="field block w-full" />
+            <button type="submit" className="btn btn-primary mt-3">
               Rename
             </button>
           </form>
@@ -112,7 +104,7 @@ export default function DashboardActions({ dashboard }: { dashboard: Dashboard }
       {dialog === 'edit' && <EditCardsDialog dashboard={dashboard} onClose={() => setDialog(null)} />}
       {dialog === 'delete' && (
         <Modal title="Delete dashboard?" onClose={() => setDialog(null)}>
-          <p className="text-sm text-slate-700">
+          <p className="text-sm text-body">
             “{dashboard.name}” and its saved views will be removed from this browser. The opportunity pages and data aren’t affected.
           </p>
           <div className="mt-3 flex gap-2">
@@ -123,11 +115,11 @@ export default function DashboardActions({ dashboard }: { dashboard: Dashboard }
                 setDialog(null)
                 navigate('/')
               }}
-              className="rounded bg-red-700 px-4 py-2 text-sm font-medium text-white"
+              className="btn btn-destructive"
             >
               Delete
             </button>
-            <button type="button" onClick={() => setDialog(null)} className="rounded border border-slate-300 px-4 py-2 text-sm">
+            <button type="button" onClick={() => setDialog(null)} className="btn btn-secondary">
               Cancel
             </button>
           </div>

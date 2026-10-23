@@ -29,7 +29,7 @@ export default function GenerateReportButton({ onOpen, className = '', dashboard
             : report,
         )
       }}
-      className={`inline-flex items-center gap-1.5 rounded bg-brand-ink px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-charcoal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue ${className}`}
+      className={`btn btn-primary ${className}`}
     >
       <FileText className="h-4 w-4" aria-hidden />
       Generate weekly report

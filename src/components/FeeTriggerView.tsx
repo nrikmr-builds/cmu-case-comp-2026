@@ -46,14 +46,14 @@ export default function FeeTriggerView({ feeGroup, baseline, monthlyFee }: Props
         </div>
 
         <div className="space-y-3 text-sm">
-          <p className="text-slate-700">
+          <p className="text-body">
             {formatValue(feeGroup.accounts, 'accounts')} accounts paid a first fee this quarter, and{' '}
             {formatPercent(getClosureRate(feeGroup))} of them closed within 60 days, against{' '}
             {formatPercent(getClosureRate(baseline))} of accounts with no fee.
           </p>
-          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+          <div className="rounded-sm border border-caution-line bg-caution-soft p-4">
             <p className="font-semibold text-brand-ink">Trade-off</p>
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-slate-700">
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-body">
               <li>
                 First fees this quarter brought in about <strong>{formatUsd(firstFeeRevenue)}</strong>.
               </li>
@@ -64,14 +64,14 @@ export default function FeeTriggerView({ feeGroup, baseline, monthlyFee }: Props
               <li>Whether the fee pays off depends on each closed account's longer-term value, which this view does not include.</li>
             </ul>
           </div>
-          <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+          <div className="rounded-sm border border-critical-line bg-critical-soft p-4">
             <p className="font-semibold text-brand-ink">Break-even</p>
-            <p className="mt-1 text-slate-700">
+            <p className="mt-1 text-body">
               Fee revenue ≈ <strong>{formatUsd(revenuePerLostAccount)}</strong> per extra closed account (
               {formatUsd(firstFeeRevenue)} ÷ {formatValue(excessClosures, 'accounts')}). If a checking account is worth more
               than this, the fee loses money.
             </p>
-            <p className="mt-1 text-slate-700">
+            <p className="mt-1 text-body">
               At the {formatUsd(valuePerAccount)} illustrative annual value per primary account,{' '}
               {valuePerAccount > revenuePerLostAccount
                 ? 'each lost account costs more than the fee earns.'

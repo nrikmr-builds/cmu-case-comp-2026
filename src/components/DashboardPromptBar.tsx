@@ -1,4 +1,4 @@
-import { Loader2, Sparkles } from 'lucide-react'
+import { Loader2, MessageSquareText, Search } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { generateView } from '../lib/dashboardPrompt'
 import type { DashboardView } from '../types'
@@ -43,18 +43,19 @@ export default function DashboardPromptBar({ onGenerate }: { onGenerate: (view: 
   }
 
   return (
-    <section aria-labelledby="prompt-heading" className="pnc-pattern-dark rounded-md bg-brand-ink p-5 text-white shadow-sm">
+    <section aria-labelledby="prompt-heading" className="card p-6">
       <div className="flex flex-wrap items-center gap-2">
-        <Sparkles className="h-5 w-5 text-brand-orange" aria-hidden />
+        <MessageSquareText className="h-5 w-5 text-brand-blue" aria-hidden />
         <h2 id="prompt-heading" className="text-lg font-semibold">
-          Ask AI to build a dashboard
+          Ask a question about this dashboard
         </h2>
-        <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-slate-200">Simulated · runs locally</span>
+        <span className="chip bg-surface text-muted">Simulated · runs locally</span>
       </div>
+      <p className="mt-1 text-sm text-muted">Filters this dashboard’s cards. To build a new dashboard, use “+” in the header.</p>
 
-      <form onSubmit={handleSubmit} className="mt-3 flex flex-col gap-2 sm:flex-row">
+      <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-2 sm:flex-row">
         <label htmlFor="dashboard-prompt" className="sr-only">
-          Describe the metrics you want to see
+          Ask a question about this dashboard
         </label>
         <input
           id="dashboard-prompt"
@@ -64,34 +65,24 @@ export default function DashboardPromptBar({ onGenerate }: { onGenerate: (view: 
           placeholder="e.g. Show checking metrics that are behind pace"
           disabled={isGenerating}
           aria-describedby={error ? 'prompt-error' : undefined}
-          className="min-w-0 flex-1 rounded border border-white bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-brand-orange focus:outline-none disabled:bg-slate-100"
+          className="field min-w-0 flex-1 placeholder:text-muted disabled:bg-surface"
         />
-        <button
-          type="submit"
-          disabled={isGenerating || !prompt.trim()}
-          className="inline-flex items-center justify-center gap-1.5 rounded bg-brand-orange px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Sparkles className="h-4 w-4" aria-hidden />}
-          {isGenerating ? 'Generating…' : 'Generate'}
+        <button type="submit" disabled={isGenerating || !prompt.trim()} className="btn btn-primary">
+          {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Search className="h-4 w-4" aria-hidden />}
+          {isGenerating ? 'Filtering…' : 'Ask'}
         </button>
       </form>
 
       {error && (
-        <p id="prompt-error" role="alert" className="mt-2 text-sm text-orange-200">
+        <p id="prompt-error" role="alert" className="mt-2 text-sm text-critical">
           {error}
         </p>
       )}
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <span className="text-xs text-slate-300">Try:</span>
+        <span className="text-xs text-muted">Try:</span>
         {SUGGESTIONS.map((suggestion) => (
-          <button
-            key={suggestion}
-            type="button"
-            onClick={() => generate(suggestion)}
-            disabled={isGenerating}
-            className="rounded-full border border-white/30 px-3 py-1 text-xs text-white hover:border-white hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:opacity-50"
-          >
+          <button key={suggestion} type="button" onClick={() => generate(suggestion)} disabled={isGenerating} className="chip disabled:opacity-50">
             {suggestion}
           </button>
         ))}

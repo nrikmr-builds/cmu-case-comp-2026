@@ -8,7 +8,7 @@ import { DASHBOARD_COLORS, DASHBOARD_ICONS } from './dashboardIcons'
 export function DashboardIconBadge({ d, size = 'sm' }: { d: Pick<Dashboard, 'icon' | 'color'>; size?: 'sm' | 'lg' }) {
   const Icon = DASHBOARD_ICONS[d.icon]
   return (
-    <span className={`inline-flex shrink-0 items-center justify-center rounded ${DASHBOARD_COLORS[d.color]} ${size === 'lg' ? 'h-8 w-8' : 'h-6 w-6'}`}>
+    <span className={`inline-flex shrink-0 items-center justify-center rounded-sm ${DASHBOARD_COLORS[d.color]} ${size === 'lg' ? 'h-8 w-8' : 'h-6 w-6'}`}>
       <Icon className={size === 'lg' ? 'h-4.5 w-4.5' : 'h-3.5 w-3.5'} aria-hidden />
     </span>
   )
@@ -37,8 +37,8 @@ export function SwitcherPanel({ all, recentIds, currentId, landingId, query, onQ
   const offsets = sections.map((_, k) => sections.slice(0, k).reduce((n, x) => n + x.items.length, 0))
   return (
     <div className="flex h-full flex-col" onKeyDown={onKeyDown}>
-      <div className="flex items-center gap-2 border-b border-slate-200 p-3">
-        <Search className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+      <div className="flex items-center gap-2 border-b border-line p-3">
+        <Search className="h-4 w-4 shrink-0 text-muted" aria-hidden />
         <input
           autoFocus={!staticCopy}
           value={query}
@@ -49,29 +49,29 @@ export function SwitcherPanel({ all, recentIds, currentId, landingId, query, onQ
           aria-expanded="true"
           aria-controls="dashboard-switcher-list"
           aria-activedescendant={activeIndex >= 0 ? `dash-opt-${activeIndex}` : undefined}
-          className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400"
+          className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted"
         />
-        <kbd className="hidden rounded border border-slate-200 px-1.5 text-[10px] text-slate-500 sm:inline">Esc</kbd>
+        <kbd className="hidden rounded-sm border border-line px-1.5 text-xs text-muted sm:inline">Esc</kbd>
         {onClose && (
-          <button type="button" onClick={onClose} aria-label="Close dashboard switcher" className="rounded p-1 text-slate-500 hover:bg-slate-100 sm:hidden">
+          <button type="button" onClick={onClose} aria-label="Close dashboard switcher" className="btn btn-tertiary btn-sm btn-icon sm:hidden">
             <X className="h-4 w-4" aria-hidden />
           </button>
         )}
       </div>
-      <div className="border-b border-slate-200 p-2">
+      <div className="border-b border-line p-2">
         <button
           type="button"
           onClick={onNew}
-          className="flex w-full items-center gap-2 rounded bg-brand-blue px-3 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark"
+          className="btn btn-primary w-full"
         >
           <Plus className="h-4 w-4" aria-hidden /> New dashboard
         </button>
       </div>
       <ul id="dashboard-switcher-list" role="listbox" aria-label="Dashboards" className="flex-1 overflow-y-auto p-2 text-sm">
-        {sections.length === 0 && <li className="p-3 text-slate-500">No dashboards match “{query}”.</li>}
+        {sections.length === 0 && <li className="p-3 text-muted">No dashboards match “{query}”.</li>}
         {sections.map((s, k) => (
           <li key={s.title} role="presentation" className="mb-2">
-            <p className="px-2 py-1 text-[11px] font-semibold tracking-wide text-slate-500 uppercase">{s.title}</p>
+            <p className="px-2 py-1 text-xs font-semibold text-muted">{s.title}</p>
             <ul role="presentation">
               {s.items.map((d, j) => {
                 const idx = offsets[k] + j
@@ -83,18 +83,18 @@ export function SwitcherPanel({ all, recentIds, currentId, landingId, query, onQ
                     aria-selected={idx === activeIndex}
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => onPick(d)}
-                    className={`flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 ${idx === activeIndex ? 'bg-blue-50 ring-1 ring-brand-blue/30' : 'hover:bg-slate-50'}`}
+                    className={`flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 ${idx === activeIndex ? 'bg-info-soft ring-1 ring-brand-blue/30' : 'hover:bg-surface-subtle'}`}
                   >
                     <DashboardIconBadge d={d} />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-medium text-brand-ink">{d.name}</span>
-                      <span className="block truncate text-xs text-slate-500">
+                      <span className="block truncate text-xs text-muted">
                         {scopeLabel(d.scope)} · {d.cards.length} cards
                         {d.example ? ' · Example · illustrative' : ''}
                         {d.id === landingId ? ' · Default landing' : ''}
                       </span>
                     </span>
-                    {d.pinned && <Pin className="h-3.5 w-3.5 text-slate-400" aria-label="Pinned" />}
+                    {d.pinned && <Pin className="h-3.5 w-3.5 text-muted" aria-label="Pinned" />}
                     {d.id === currentId && <Check className="h-4 w-4 text-brand-blue" aria-label="Current" />}
                   </li>
                 )
@@ -103,7 +103,7 @@ export function SwitcherPanel({ all, recentIds, currentId, landingId, query, onQ
           </li>
         ))}
       </ul>
-      <p className="border-t border-slate-200 px-3 py-1.5 text-[11px] text-slate-500">↑ ↓ to move · Enter to open · Esc to close · ⌘K / Ctrl+K anywhere</p>
+      <p className="border-t border-line px-3 py-1.5 text-xs text-muted">↑ ↓ to move · Enter to open · Esc to close · ⌘K / Ctrl+K anywhere</p>
     </div>
   )
 }
@@ -166,7 +166,7 @@ export default function DashboardSwitcher() {
         aria-haspopup="dialog"
         aria-expanded={open}
         title="Switch dashboard (⌘K / Ctrl+K)"
-        className="inline-flex max-w-[10rem] items-center gap-1.5 rounded border border-white/30 bg-white/10 px-2 py-1 text-xs font-medium text-white hover:bg-white/20 sm:max-w-[16rem]"
+        className="btn btn-secondary btn-sm max-w-[10rem] sm:max-w-[16rem]"
       >
         <LayoutDashboard className="h-3.5 w-3.5 shrink-0" aria-hidden />
         <span className="truncate">{current.name}</span>
@@ -175,12 +175,12 @@ export default function DashboardSwitcher() {
       </button>
       {open && (
         <>
-          <div className="fixed inset-0 z-40 bg-slate-900/30 sm:bg-transparent" onClick={close} aria-hidden />
+          <div className="fixed inset-0 z-40 bg-ink/30 sm:bg-transparent" onClick={close} aria-hidden />
           <div
             role="dialog"
             aria-modal="true"
             aria-label="Switch dashboard"
-            className="fixed inset-0 z-50 flex flex-col bg-white text-slate-800 shadow-xl sm:absolute sm:inset-auto sm:top-full sm:left-0 sm:mt-2 sm:h-[min(34rem,75vh)] sm:w-[26rem] sm:rounded-md sm:border sm:border-slate-200"
+            className="fixed inset-0 z-50 flex flex-col bg-white text-ink shadow-pop sm:absolute sm:inset-auto sm:top-full sm:left-0 sm:mt-2 sm:h-[min(34rem,75vh)] sm:w-[26rem] sm:rounded-sm animate-sheet sm:animate-enter"
           >
             <SwitcherPanel
               all={all}

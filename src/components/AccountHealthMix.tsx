@@ -97,10 +97,10 @@ export default function AccountHealthMix({
     >
       <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {tiles.map((t) => (
-          <div key={t.label} className={`rounded-lg border p-4 ${t.negative ? 'border-red-200 bg-red-50' : 'border-slate-200 bg-slate-50'}`}>
-            <dt className="text-sm text-slate-600">{t.label}</dt>
-            <dd className={`mt-1 text-2xl font-semibold tabular-nums ${t.negative ? 'text-red-700' : 'text-brand-ink'}`}>{t.value}</dd>
-            <dd className="mt-1 text-xs text-slate-500">{t.note}</dd>
+          <div key={t.label} className={`rounded-sm border p-4 ${t.negative ? 'border-critical-line bg-critical-soft' : 'border-line bg-surface-subtle'}`}>
+            <dt className="text-sm text-muted">{t.label}</dt>
+            <dd className={`mt-1 text-xl font-semibold tabular-nums ${t.negative ? 'text-critical' : 'text-brand-ink'}`}>{t.value}</dd>
+            <dd className="mt-1 text-xs text-muted">{t.note}</dd>
           </div>
         ))}
       </dl>
@@ -124,22 +124,22 @@ export default function AccountHealthMix({
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <ul className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-slate-500">
+      <ul className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted">
         {TIERS.map((t) => (
           <li key={t.key}>
-            <span className="font-medium text-slate-700">{t.label}:</span> {t.note}
+            <span className="font-medium text-body">{t.label}:</span> {t.note}
           </li>
         ))}
       </ul>
 
-      <p className="mt-4 rounded-md bg-orange-50 p-4 text-sm text-slate-800">
+      <p className="mt-4 rounded-sm bg-accent-soft p-4 text-sm text-ink">
         <span className="font-semibold">Insight:</span> The primacy rate (Primary tier: {PRIMACY_DEFINITION}) went from{' '}
         {formatPercent1(getPrimacyRate(first))} to {formatPercent1(getPrimacyRate(current))} of open accounts over{' '}
         {history.length} quarters, and dormancy from {formatPercent1(getDormancyRate(first))} to{' '}
         {formatPercent1(getDormancyRate(current))}. The headline Active Account Rate counts Primary and Active together
         ({formatPercent1((current.primary + current.active) / currentTotal)}), so it can hold steady while accounts lose
         their paycheck. The account base also shrank: {accounts(openedThisQuarter)} opened − {accounts(closedThisQuarter)}{' '}
-        closed = <span className="font-semibold text-red-700">{formatSignedCount(netChange)}</span> accounts this quarter.
+        closed = <span className="font-semibold text-critical">{formatSignedCount(netChange)}</span> accounts this quarter.
       </p>
     </SectionCard>
   )

@@ -12,10 +12,10 @@ export const DASHBOARD_ICONS: Record<DashboardIcon, LucideIcon> = {
 }
 
 export const DASHBOARD_COLORS: Record<DashboardColor, string> = {
-  blue: 'bg-blue-100 text-blue-800',
-  orange: 'bg-orange-100 text-orange-800',
-  green: 'bg-green-100 text-green-800',
-  slate: 'bg-slate-200 text-slate-800',
-  purple: 'bg-purple-100 text-purple-800',
+  blue: 'bg-info-soft text-info',
+  orange: 'bg-accent-soft text-accent',
+  green: 'bg-positive-soft text-positive',
+  slate: 'bg-line text-ink',
+  purple: 'bg-plum-soft text-plum',
 }
 

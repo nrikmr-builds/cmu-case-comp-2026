@@ -23,7 +23,7 @@ export default function CrossProductSignal({ groups, openAccounts }: Props) {
     >
       <div className="relative overflow-x-auto">
         <table className="w-full min-w-[640px] text-left text-sm">
-          <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+          <thead className="border-b border-line text-xs text-muted">
             <tr>
               <th scope="col" className="py-2 pr-4 font-medium">Group</th>
               <th scope="col" className="py-2 pr-4 text-right font-medium">Checking customers</th>
@@ -33,7 +33,7 @@ export default function CrossProductSignal({ groups, openAccounts }: Props) {
               <th scope="col" className="py-2 text-right font-medium">Sending to outside savings</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-line">
             {groups.map((g) => (
               <tr key={g.id}>
                 <th scope="row" className="py-3 pr-4 font-medium text-brand-ink">{g.label}</th>
@@ -43,16 +43,16 @@ export default function CrossProductSignal({ groups, openAccounts }: Props) {
                 <td className="py-3 pr-4 text-right font-semibold tabular-nums">{formatMultiple(getSavingsToCheckingRatio(g))}</td>
                 <td className="py-3 text-right tabular-nums">
                   {formatValue(g.recurringExternalSavingsTransfers, 'accounts')}
-                  <span className="ml-2 text-xs text-slate-500">{formatPercent(getExternalSavingsShare(g))}</span>
+                  <span className="ml-2 text-xs text-muted">{formatPercent(getExternalSavingsShare(g))}</span>
                 </td>
               </tr>
             ))}
           </tbody>
-          <tfoot className="border-t-2 border-slate-200 text-brand-ink">
+          <tfoot className="border-t-2 border-line text-brand-ink">
             <tr>
               <th scope="row" className="py-3 pr-4 font-semibold">All checking customers</th>
               <td className="py-3 pr-4 text-right font-semibold tabular-nums">{accounts(totalCustomers)}</td>
-              <td colSpan={4} className="py-3 text-xs text-slate-500">
+              <td colSpan={4} className="py-3 text-xs text-muted">
                 They hold the {accounts(openAccounts)} open checking accounts in the health mix above. Some customers hold
                 more than one account, so {accounts(openAccounts)} accounts − {accounts(totalCustomers)} customers ={' '}
                 {accounts(openAccounts - totalCustomers)} extra accounts held by multi-account customers.
@@ -63,7 +63,7 @@ export default function CrossProductSignal({ groups, openAccounts }: Props) {
       </div>
 
       {noSavings && (
-        <p className="mt-4 rounded-md bg-orange-50 p-4 text-sm text-slate-800">
+        <p className="mt-4 rounded-sm bg-accent-soft p-4 text-sm text-ink">
           <span className="font-semibold">Insight:</span> {formatValue(noSavings.recurringExternalSavingsTransfers, 'accounts')}{' '}
           checking customers with no PNC savings send money to savings elsewhere every month. This mirrors the open question
           above about savings-only customers, in reverse: here PNC holds the paycheck, and another institution holds the

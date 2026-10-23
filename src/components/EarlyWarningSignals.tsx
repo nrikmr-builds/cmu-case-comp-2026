@@ -16,7 +16,7 @@ export default function EarlyWarningSignals({ signals }: { signals: DropOffSigna
     >
       <div className="relative overflow-x-auto">
         <table className="w-full min-w-[760px] text-left text-sm">
-          <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+          <thead className="border-b border-line text-xs text-muted">
             <tr>
               <th scope="col" className="py-2 pr-4 font-medium">Signal</th>
               <th scope="col" className="py-2 pr-4 font-medium">How it's measured</th>
@@ -25,21 +25,21 @@ export default function EarlyWarningSignals({ signals }: { signals: DropOffSigna
               <th scope="col" className="w-40 py-2 font-medium">Lift</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-line">
             {signals.map((s) => (
-              <tr key={s.id} id={`signal-${s.id}`} className="scroll-mt-24 align-top target:bg-orange-50">
+              <tr key={s.id} id={`signal-${s.id}`} className="scroll-mt-24 align-top target:bg-accent-soft">
                 <th scope="row" className="py-3 pr-4 font-medium text-brand-ink">
                   {s.name}
                   {s.id === strongest.id && (
-                    <span className="ml-2 rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-800">Strongest</span>
+                    <span className="ml-2 rounded-full bg-accent-soft px-2 py-0.5 text-xs font-medium text-accent">Strongest</span>
                   )}
                 </th>
-                <td className="py-3 pr-4 text-slate-700">{s.measure}</td>
+                <td className="py-3 pr-4 text-body">{s.measure}</td>
                 <td className="py-3 pr-4 text-right tabular-nums">{formatValue(s.flaggedAccounts, 'accounts')}</td>
-                <td className="py-3 pr-4 whitespace-nowrap text-slate-700">{formatLeadTime(s.leadDays)}</td>
+                <td className="py-3 pr-4 whitespace-nowrap text-body">{formatLeadTime(s.leadDays)}</td>
                 <td className="py-3">
                   <div className="flex items-center gap-2">
-                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100" aria-hidden>
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface" aria-hidden>
                       <div className="h-full rounded-full bg-brand-blue" style={{ width: `${(s.lift / maxLift) * 100}%` }} />
                     </div>
                     <span className="w-10 text-right font-semibold tabular-nums text-brand-ink">{formatMultiple(s.lift)}</span>
@@ -50,7 +50,7 @@ export default function EarlyWarningSignals({ signals }: { signals: DropOffSigna
           </tbody>
         </table>
       </div>
-      <p className="mt-3 text-xs text-slate-500">
+      <p className="mt-3 text-xs text-muted">
         Lift = drop-off rate of flagged accounts ÷ drop-off rate of unflagged accounts. Illustrative: these multiples are
         placeholders until a model is fit on real account history, and a high lift shows association, not cause.
       </p>

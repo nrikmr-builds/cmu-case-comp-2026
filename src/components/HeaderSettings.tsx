@@ -46,18 +46,18 @@ export default function HeaderSettings() {
           setOpen((v) => !v)
           setConfirming(false)
         }}
-        className="inline-flex items-center rounded-sm p-1.5 text-slate-200 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-white"
+        className="btn btn-secondary btn-sm btn-icon"
       >
         <Settings className="h-4 w-4" aria-hidden />
       </button>
       {open && (
-        <div role="menu" className="absolute right-0 z-40 mt-2 w-72 rounded-md border border-slate-200 bg-white p-3 text-sm text-slate-700 shadow-lg">
+        <div role="menu" className="absolute right-0 z-40 mt-2 w-72 animate-enter rounded-sm bg-white p-3 text-sm text-body shadow-pop">
           {!confirming ? (
             <button
               type="button"
               role="menuitem"
               onClick={() => setConfirming(true)}
-              className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-brand-blue"
+              className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left hover:bg-surface focus-visible:outline-2 focus-visible:outline-brand-blue"
             >
               <RotateCcw className="h-4 w-4" aria-hidden />
               Reset demo
@@ -65,12 +65,12 @@ export default function HeaderSettings() {
           ) : (
             <div role="alertdialog" aria-label="Confirm reset">
               <p className="font-medium text-brand-ink">Reset the demo?</p>
-              <p className="mt-1 text-xs text-slate-600">
+              <p className="mt-1 text-xs text-muted">
                 This deletes everything saved in this browser: your campaigns, reports, saved views, alert rules, and last-visit
                 time. The hub reopens in its first-visit state with the two seeded campaigns.
               </p>
               <div className="mt-3 flex justify-end gap-2">
-                <button type="button" onClick={() => setConfirming(false)} className="rounded border border-slate-300 px-3 py-1 text-sm hover:bg-slate-50">
+                <button type="button" onClick={() => setConfirming(false)} className="btn btn-secondary btn-sm">
                   Cancel
                 </button>
                 <button
@@ -79,7 +79,7 @@ export default function HeaderSettings() {
                     resetDemoStorage()
                     window.location.assign('/')
                   }}
-                  className="rounded bg-red-700 px-3 py-1 text-sm font-medium text-white hover:bg-red-800"
+                  className="btn btn-destructive btn-sm"
                 >
                   Reset demo
                 </button>

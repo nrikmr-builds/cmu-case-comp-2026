@@ -1,12 +1,22 @@
-// Chart colors that match the brand tokens in index.css (Recharts needs literal values, not Tailwind classes).
+// Chart colours, taken from the design tokens (Recharts needs literal values, not Tailwind classes).
+import { TOKENS } from './tokens'
+
 export const CHART_COLORS = {
-  branch: '#0069aa',
-  digital: '#ef6a00',
-  primary: '#0069aa',
-  active: '#7fb4d5',
-  slipping: '#f0a35c',
-  dormant: '#b91c1c',
-  feeGroup: '#ef6a00',
-  baseline: '#94a3b8',
-  grid: '#e2e8f0',
+  branch: TOKENS.brandBlue,
+  digital: TOKENS.brandOrange,
+  primary: TOKENS.brandBlue,
+  active: TOKENS.blueTint,
+  slipping: TOKENS.orangeTint,
+  dormant: TOKENS.critical,
+  feeGroup: TOKENS.brandOrange,
+  baseline: TOKENS.lineStrong,
+  grid: TOKENS.line,
+  ink: TOKENS.ink,
+  muted: TOKENS.muted,
+  target: TOKENS.positive,
+  required: TOKENS.critical,
+  caution: TOKENS.caution,
 }
+
+/** Axis and label text in charts: 12px, the smallest size in the type scale. */
+export const CHART_FONT = 12

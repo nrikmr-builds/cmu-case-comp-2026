@@ -31,22 +31,22 @@ export default function ActivationFunnel({ channels, quarter }: Props) {
       description={`Checking accounts opened in ${quarter}, followed through first deposit, first debit card use (30 days), and primacy (${PRIMACY_DEFINITION}, 90 days). Accounts opened late in the quarter are still inside those windows.`}
     >
       <div className="grid gap-4 lg:grid-cols-3">
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-          <p className="text-sm text-slate-600">Opened but never activated</p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums text-brand-ink">{formatPercent1(neverActivated.share)}</p>
-          <p className="mt-1 text-xs text-slate-600">
+        <div className="rounded-sm border border-critical-line bg-critical-soft p-4">
+          <p className="text-sm text-muted">Opened but never activated</p>
+          <p className="mt-1 text-xl font-semibold tabular-nums text-brand-ink">{formatPercent1(neverActivated.share)}</p>
+          <p className="mt-1 text-xs text-muted">
             {accounts(neverActivated.accounts)} of {accounts(total.opened)} new accounts have no debit card use yet.
           </p>
         </div>
         {byChannel.map((c) => (
-          <div key={c.channel} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <p className="text-sm font-medium text-slate-700">{c.label} · {accounts(c.opened)} opened</p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums text-brand-ink">
-              {formatPercent1(c.never.share)} <span className="text-sm font-normal text-slate-600">never activated</span>
+          <div key={c.channel} className="rounded-sm border border-line bg-surface-subtle p-4">
+            <p className="text-sm font-medium text-body">{c.label} · {accounts(c.opened)} opened</p>
+            <p className="mt-1 text-xl font-semibold tabular-nums text-brand-ink">
+              {formatPercent1(c.never.share)} <span className="text-sm font-normal text-muted">never activated</span>
             </p>
-            <p className="mt-1 text-xs text-slate-600">
+            <p className="mt-1 text-xs text-muted">
               {accounts(c.opened - c.activated)} ÷ {accounts(c.opened)} never activated ·{' '}
-              <span className="font-medium text-slate-700">{formatPercent1(c.primary / c.opened)} reached primary</span>{' '}
+              <span className="font-medium text-body">{formatPercent1(c.primary / c.opened)} reached primary</span>{' '}
               ({accounts(c.primary)} ÷ {accounts(c.opened)})
             </p>
           </div>
@@ -72,7 +72,7 @@ export default function ActivationFunnel({ channels, quarter }: Props) {
         <FunnelTable channels={channels} />
       </div>
 
-      <p className="mt-4 rounded-md bg-orange-50 p-4 text-sm text-slate-800">
+      <p className="mt-4 rounded-sm bg-accent-soft p-4 text-sm text-ink">
         <span className="font-semibold">Insight:</span> {worst.label} opens more accounts, but{' '}
         {formatPercent1(worst.never.share)} of them never activate, against {formatPercent1(best.never.share)} for{' '}
         {best.label.toLowerCase()}.
@@ -99,7 +99,7 @@ export function FunnelTable({ channels, maturing, bonusRow }: TableProps) {
     <div className="relative overflow-x-auto">
       <table className="w-full min-w-[560px] text-left text-sm">
         <caption className="sr-only">Accounts and stage-to-stage conversion by channel</caption>
-        <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+        <thead className="border-b border-line text-xs text-muted">
           <tr>
             <th scope="col" className="py-2 pr-4 font-medium">Stage</th>
             {[...channels.map((c) => c.label), 'Total'].map((label) => (
@@ -108,23 +108,23 @@ export function FunnelTable({ channels, maturing, bonusRow }: TableProps) {
             {maturing && <th scope="col" className="py-2 text-right font-medium">Still maturing</th>}
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">
+        <tbody className="divide-y divide-line">
           {FUNNEL_STAGES.map(({ key, label }, i) => (
             <Fragment key={key}>
               {key === 'primary' && bonusRow && (
-                <tr className="bg-slate-50">
+                <tr className="bg-surface-subtle">
                   <th scope="row" className="py-2 pr-4 font-medium text-brand-ink">{bonusRow.label}</th>
                   {[...bonusRow.byChannel, bonusRow.total].map((n, j) => {
                     const opened = j < channels.length ? channels[j].opened : total.opened
                     return (
                       <td key={j} className="py-2 pr-4 text-right tabular-nums">
                         {accounts(n)}
-                        <span className="ml-2 text-xs text-slate-500">{formatPercent1(opened ? n / opened : 0)} of opened</span>
+                        <span className="ml-2 text-xs text-muted">{formatPercent1(opened ? n / opened : 0)} of opened</span>
                       </td>
                     )
                   })}
                   {maturing && (
-                    <td className="py-2 text-right text-xs text-slate-600 tabular-nums">
+                    <td className="py-2 text-right text-xs text-muted tabular-nums">
                       {maturing.metBonus !== undefined ? `${accounts(maturing.metBonus)} (not failures)` : '—'}
                     </td>
                   )}
@@ -135,11 +135,11 @@ export function FunnelTable({ channels, maturing, bonusRow }: TableProps) {
                 {[...channels, total].map((funnel, j) => (
                   <td key={j} className="py-2 pr-4 text-right tabular-nums">
                     {accounts(funnel[key])}
-                    {i > 0 && <span className="ml-2 text-xs text-slate-500">{formatPercent1(getStageConversion(funnel, i))}</span>}
+                    {i > 0 && <span className="ml-2 text-xs text-muted">{formatPercent1(getStageConversion(funnel, i))}</span>}
                   </td>
                 ))}
                 {maturing && (
-                  <td className="py-2 text-right text-xs text-slate-600 tabular-nums">
+                  <td className="py-2 text-right text-xs text-muted tabular-nums">
                     {maturingFor(key) !== undefined ? `${accounts(maturingFor(key) ?? 0)} (not failures)` : '—'}
                   </td>
                 )}
@@ -148,7 +148,7 @@ export function FunnelTable({ channels, maturing, bonusRow }: TableProps) {
           ))}
         </tbody>
       </table>
-      <p className="mt-2 text-xs text-slate-500">
+      <p className="mt-2 text-xs text-muted">
         Small figures show the share of the previous stage that moved on.
         {maturing &&
           ' Still maturing = expected at maturity − reached so far, for accounts still inside the stage window (activation 30 days, bonus requirement 60, primacy 90). Accounts that will never reach a stage are not counted.'}

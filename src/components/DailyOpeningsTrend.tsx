@@ -25,12 +25,12 @@ export default function DailyOpeningsTrend() {
       source="internal"
       description={`New checking accounts opened each day of ${reportingPeriod.quarter} so far (days 1–${DAYS_WITH_DATA}), against the pace needed from here to hit the ${accounts(kpi.target)} target.`}
     >
-      <h4 className="text-sm font-medium text-slate-700">Openings per day</h4>
+      <h4 className="text-sm font-medium text-body">Openings per day</h4>
       <div className="mt-2 h-64" role="img" aria-label="Daily openings by channel with required and current daily pace lines">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={dailyOpenings} margin={{ left: 0, right: 12, top: 8 }}>
             <CartesianGrid vertical={false} stroke={CHART_COLORS.grid} />
-            <XAxis dataKey="day" type="number" domain={[0.5, quarterDays + 0.5]} ticks={ticks} tickFormatter={dayTick} tick={{ fontSize: 11 }} />
+            <XAxis dataKey="day" type="number" domain={[0.5, quarterDays + 0.5]} ticks={ticks} tickFormatter={dayTick} tick={{ fontSize: 12 }} />
             <YAxis tick={{ fontSize: 12 }} width={40} domain={[0, Math.ceil((p.requiredDailyRate * 1.1) / 50) * 50]} />
             <Tooltip
               labelFormatter={(day) => `Day ${day} · ${shortDate(dayToIso(Number(day)))}`}
@@ -42,55 +42,55 @@ export default function DailyOpeningsTrend() {
             <ReferenceLine
               y={p.currentDailyRate}
               segment={[{ x: 0.5, y: p.currentDailyRate }, { x: p.daysElapsed, y: p.currentDailyRate }]}
-              stroke="#334155"
+              stroke={CHART_COLORS.ink}
               strokeDasharray="4 3"
             />
-            <ReferenceLine y={planDailyPace()} stroke="#15803d" strokeDasharray="2 3" />
+            <ReferenceLine y={planDailyPace()} stroke={CHART_COLORS.target} strokeDasharray="2 3" />
             <ReferenceLine
               segment={[{ x: p.daysElapsed, y: p.requiredDailyRate }, { x: quarterDays + 0.5, y: p.requiredDailyRate }]}
-              stroke="#b91c1c"
+              stroke={CHART_COLORS.required}
               strokeWidth={2}
-              label={{ value: `Required ${Math.round(p.requiredDailyRate)}/day`, position: 'insideTopRight', fontSize: 11, fill: '#b91c1c' }}
+              label={{ value: `Required ${Math.round(p.requiredDailyRate)}/day`, position: 'insideTopRight', fontSize: 12, fill: CHART_COLORS.required }}
             />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
-      <p className="mt-1 text-xs text-slate-500">
+      <p className="mt-1 text-xs text-muted">
         Green dotted line: plan pace, {Math.round(planDailyPace())}/day ({accounts(kpi.target)} ÷ {quarterDays} days). Gray
         dashed: average so far, {Math.round(p.currentDailyRate)}/day. Red: {Math.round(p.requiredDailyRate)}/day needed every
         remaining day from {shortDate(dayToIso(DAYS_WITH_DATA))} to reach {accounts(kpi.target)}. Openings stepped down after
         an illustrative summer promotion ended on Jul 31, so the last 7 days averaged only {Math.round(getWeeklyPace().weekPerDay)}/day. Branch dips are Sundays and branch holidays (Jul 4, Sep 7).
       </p>
 
-      <h4 className="mt-6 text-sm font-medium text-slate-700">Cumulative openings and where the quarter lands</h4>
+      <h4 className="mt-6 text-sm font-medium text-body">Cumulative openings and where the quarter lands</h4>
       <div className="mt-2 h-64" role="img" aria-label="Cumulative openings with projected and required lines to quarter end">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={cumulativeChartData()} margin={{ left: 8, right: 12, top: 8 }}>
             <CartesianGrid vertical={false} stroke={CHART_COLORS.grid} />
-            <XAxis dataKey="x" type="number" domain={[0, quarterDays]} ticks={ticks} tickFormatter={dayTick} tick={{ fontSize: 11 }} />
+            <XAxis dataKey="x" type="number" domain={[0, quarterDays]} ticks={ticks} tickFormatter={dayTick} tick={{ fontSize: 12 }} />
             <YAxis tickFormatter={accounts} tick={{ fontSize: 12 }} width={52} domain={[0, Math.ceil((kpi.target * 1.05) / 1000) * 1000]} />
             <Tooltip formatter={(value, name) => [accounts(Number(value)), name]} labelFormatter={(x) => `Day ${Number(x).toLocaleString('en-US', { maximumFractionDigits: 1 })}`} />
             <Legend itemSorter={null} />
-            <ReferenceLine y={kpi.target} stroke="#94a3b8" strokeDasharray="2 4" label={{ value: `Target ${accounts(kpi.target)}`, position: 'insideTopLeft', fontSize: 11, fill: '#475569' }} />
+            <ReferenceLine y={kpi.target} stroke={CHART_COLORS.baseline} strokeDasharray="2 4" label={{ value: `Target ${accounts(kpi.target)}`, position: 'insideTopLeft', fontSize: 12, fill: CHART_COLORS.muted }} />
             <Line dataKey="actual" name="Actual" stroke={CHART_COLORS.branch} strokeWidth={2} dot={false} connectNulls={false} isAnimationActive={false} />
             <Line
               dataKey="projectedRecent"
               name={`At last-7-day pace (${accounts(getPaceProjection(kpi, reportingPeriod, getWeeklyPace().weekPerDay).projected)})`}
-              stroke="#b45309"
+              stroke={CHART_COLORS.caution}
               strokeDasharray="5 4"
               strokeWidth={2}
               dot={{ r: 3 }}
               connectNulls
               isAnimationActive={false}
             />
-            <Line dataKey="projected" name={`At quarter-average pace (${accounts(p.projected)})`} stroke="#334155" strokeDasharray="5 4" strokeWidth={2} dot={{ r: 3 }} connectNulls isAnimationActive={false} />
-            <Line dataKey="required" name={`Required to hit target (${accounts(kpi.target)})`} stroke="#b91c1c" strokeWidth={2} dot={{ r: 3 }} connectNulls isAnimationActive={false} />
+            <Line dataKey="projected" name={`At quarter-average pace (${accounts(p.projected)})`} stroke={CHART_COLORS.ink} strokeDasharray="5 4" strokeWidth={2} dot={{ r: 3 }} connectNulls isAnimationActive={false} />
+            <Line dataKey="required" name={`Required to hit target (${accounts(kpi.target)})`} stroke={CHART_COLORS.required} strokeWidth={2} dot={{ r: 3 }} connectNulls isAnimationActive={false} />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
 
-      <p className="mt-4 rounded-md bg-slate-50 p-3 text-xs text-slate-600">
-        <span className="font-semibold text-slate-700">Reconciliation:</span> branch days 1–{DAYS_WITH_DATA} sum to{' '}
+      <p className="mt-4 rounded-sm bg-surface-subtle p-3 text-xs text-muted">
+        <span className="font-semibold text-body">Reconciliation:</span> branch days 1–{DAYS_WITH_DATA} sum to{' '}
         {accounts(branchTotal)} and digital to {accounts(digitalTotal)}, so {accounts(branchTotal)} +{' '}
         {accounts(digitalTotal)} = {accounts(branchTotal + digitalTotal)}, matching New Account Openings ({accounts(kpi.actual)})
         and the funnel. Pace lines use the Gap Summary's {p.daysElapsed.toLocaleString('en-US', { maximumFractionDigits: 1 })}{' '}

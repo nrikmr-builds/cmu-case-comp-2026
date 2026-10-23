@@ -4,10 +4,8 @@ import { dropOffSignals } from '../data/checkingHealth'
 import type { AlertRule } from '../lib/dailyTracking'
 import { useAlertRules } from '../lib/trackingStore'
 
-const input =
-  'rounded border border-slate-300 px-2 py-1 text-sm focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-blue'
-const iconButton =
-  'inline-flex items-center gap-1 rounded border border-slate-300 px-2 py-1 text-xs font-medium text-brand-blue hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-blue'
+const input = 'field h-8'
+const iconButton = 'btn btn-secondary btn-sm'
 
 /** Add, edit, turn off, and delete alert rules. Rules are evaluated against the current data right away. */
 export default function AlertRulesEditor() {
@@ -27,7 +25,7 @@ export default function AlertRulesEditor() {
     <div className="space-y-3">
       <ul className="space-y-2">
         {results.map(({ rule, triggered, title, evidence }) => (
-          <li key={rule.id} className="rounded-md border border-slate-200 bg-white p-3">
+          <li key={rule.id} className="rounded-sm border border-line bg-white p-3">
             <div className="flex flex-wrap items-center gap-2 text-sm">
               <label className="inline-flex items-center gap-1.5">
                 <input
@@ -40,11 +38,11 @@ export default function AlertRulesEditor() {
                 <span className="font-medium text-brand-ink">{title}</span>
               </label>
               {!rule.enabled ? (
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">Off</span>
+                <span className="rounded-full bg-surface px-2 py-0.5 text-xs text-muted">Off</span>
               ) : triggered ? (
-                <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">Triggered</span>
+                <span className="rounded-full bg-critical-soft px-2 py-0.5 text-xs font-medium text-critical">Triggered</span>
               ) : (
-                <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">Not triggered</span>
+                <span className="rounded-full bg-positive-soft px-2 py-0.5 text-xs font-medium text-positive">Not triggered</span>
               )}
               <button type="button" onClick={() => deleteRule(rule.id)} className={`${iconButton} ml-auto`} aria-label={`Delete rule: ${title}`}>
                 <Trash2 className="h-3.5 w-3.5" aria-hidden />
@@ -52,7 +50,7 @@ export default function AlertRulesEditor() {
               </button>
             </div>
 
-            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-600">
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted">
               {rule.kind === 'avg7-below-plan' ? (
                 <label className="inline-flex items-center gap-1">
                   Days in a row
@@ -96,14 +94,14 @@ export default function AlertRulesEditor() {
                 </>
               )}
             </div>
-            <p className="mt-1.5 text-xs text-slate-500">{evidence}</p>
+            <p className="mt-1.5 text-xs text-muted">{evidence}</p>
           </li>
         ))}
-        {results.length === 0 && <li className="text-sm text-slate-500">No alert rules. Add one below.</li>}
+        {results.length === 0 && <li className="text-sm text-muted">No alert rules. Add one below.</li>}
       </ul>
 
       <div className="flex flex-wrap items-center gap-2">
-        <label className="inline-flex items-center gap-1.5 text-sm text-slate-700">
+        <label className="inline-flex items-center gap-1.5 text-sm text-body">
           New rule
           <select value={newKind} onChange={(e) => setNewKind(e.target.value as AlertRule['kind'])} className={input}>
             <option value="flags-week-over-week">Early-warning flags up week over week</option>

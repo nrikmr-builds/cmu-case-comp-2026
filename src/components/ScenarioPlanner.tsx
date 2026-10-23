@@ -56,7 +56,7 @@ export default function ScenarioPlanner() {
     >
       <div className="relative overflow-x-auto">
         <table className="w-full min-w-[560px] text-left text-sm">
-          <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+          <thead className="border-b border-line text-xs text-muted">
             <tr>
               <th scope="col" className="py-2 pr-3 font-medium">Include</th>
               <th scope="col" className="py-2 pr-3 font-medium">Campaign</th>
@@ -64,7 +64,7 @@ export default function ScenarioPlanner() {
               <th scope="col" className="py-2 text-right font-medium">Incremental Q3 openings</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-line">
             {candidates.map((c) => (
               <tr key={c.id}>
                 <td className="py-2 pr-3">
@@ -78,9 +78,9 @@ export default function ScenarioPlanner() {
                 </td>
                 <th scope="row" className="py-2 pr-3 font-medium text-brand-ink">
                   {c.name}
-                  <span className="block text-xs font-normal text-slate-500">{c.origin}</span>
+                  <span className="block text-xs font-normal text-muted">{c.origin}</span>
                 </th>
-                <td className="py-2 pr-3 text-slate-700">{c.segmentLabel}</td>
+                <td className="py-2 pr-3 text-body">{c.segmentLabel}</td>
                 <td className="py-2 text-right tabular-nums">{n(c.q3Incremental)}</td>
               </tr>
             ))}
@@ -93,14 +93,14 @@ export default function ScenarioPlanner() {
         <Box label="Range (uplift is an assumption)" value={`${n(p.low)} – ${n(p.high)}`} note={`Low: ${n(p.headlineProjected)} + 50% × ${n(p.countedIncremental)}; high: + 100%`} />
         <Box label="At the reference pace" value={n(p.referenceLanding)} note={`${n(p.referenceProjected)} (quarter-average pace) + ${n(p.countedIncremental)}`} />
       </div>
-      <p className="mt-2 text-xs text-slate-600">
+      <p className="mt-2 text-xs text-muted">
         Overlap removed: <strong>{n(p.overlapRemoved)}</strong> = {n(p.grossIncremental)} included − {n(p.countedIncremental)} counted
         {p.overlaps.length > 0 &&
           ` (${p.overlaps.map((o) => `${o.segmentLabel}: keep ${n(o.kept)}, drop ${o.dropped.map(n).join(' + ')}`).join('; ')})`}
         . Same segment → only the larger campaign counts. Campaign effects aren't additive across segments either; treat the landing as an upper bound.
       </p>
 
-      <div className="mt-4 rounded-md border border-slate-200 bg-slate-50 p-4">
+      <div className="mt-4 rounded-sm border border-line bg-surface-subtle p-4">
         {reforecast && reforecast.kpiId === kpi.id ? (
           <AcceptedReforecast onClear={clear} />
         ) : !proposing ? (
@@ -112,14 +112,14 @@ export default function ScenarioPlanner() {
               setReason(reasonFor('low'))
               setProposing(true)
             }}
-            className="rounded bg-brand-blue px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-blue-dark"
+            className="btn btn-primary"
           >
             Propose re-forecast
           </button>
         ) : (
           <div className="space-y-2">
             <fieldset>
-              <legend className="text-sm font-medium text-slate-700">
+              <legend className="text-sm font-medium text-body">
                 Which end of the range {n(p.low)}–{n(p.high)}?
               </legend>
               <div className="mt-1 flex flex-wrap gap-3 text-sm">
@@ -136,17 +136,17 @@ export default function ScenarioPlanner() {
                     value={custom}
                     onChange={(ev) => setCustom(Math.max(0, Math.round(Number(ev.target.value) || 0)))}
                     aria-label="Custom re-forecast target"
-                    className="w-28 rounded border border-slate-300 px-2 py-1 text-sm tabular-nums"
+                    className="field h-8 w-28"
                   />
                 )}
               </div>
             </fieldset>
-            <p className="text-sm text-slate-700">
+            <p className="text-sm text-body">
               Proposed Q3 target: <strong>{n(proposedTarget)}</strong> ({END_LABEL[end]}; original {n(kpi.target)} stays on record). Illustrative.
             </p>
             <label className="block text-sm">
-              <span className="font-medium text-slate-700">Reason</span>
-              <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3} className="mt-1 block w-full rounded border border-slate-300 px-2 py-1 text-sm" />
+              <span className="font-medium text-body">Reason</span>
+              <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3} className="field mt-1 block w-full" />
             </label>
             <div className="flex gap-2">
               <button
@@ -155,11 +155,11 @@ export default function ScenarioPlanner() {
                   accept({ kpiId: kpi.id, target: proposedTarget, reason, acceptedAt: new Date().toISOString(), basis, end, range: { low: p.low, high: p.high } })
                   setProposing(false)
                 }}
-                className="inline-flex items-center gap-1 rounded bg-brand-blue px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-blue-dark"
+                className="btn btn-primary"
               >
                 <Check className="h-4 w-4" aria-hidden /> Accept re-forecast
               </button>
-              <button type="button" onClick={() => setProposing(false)} className="rounded border border-slate-300 bg-white px-3 py-1.5 text-sm">
+              <button type="button" onClick={() => setProposing(false)} className="btn btn-secondary">
                 Cancel
               </button>
             </div>
@@ -176,7 +176,7 @@ function AcceptedReforecast({ onClear }: { onClear: () => void }) {
   if (!reforecast) return null
   const r = againstReforecast(kpi, reforecast)
   return (
-    <div className="space-y-1 text-sm text-slate-700">
+    <div className="space-y-1 text-sm text-body">
       <p className="font-semibold text-brand-ink">
         Original target {n(kpi.target)} · {reforecastLabel(reforecast)}: {n(reforecast.target)} ({END_LABEL[reforecast.end]} of {n(reforecast.range.low)}–
         {n(reforecast.range.high)})
@@ -185,10 +185,10 @@ function AcceptedReforecast({ onClear }: { onClear: () => void }) {
         Re-forecast still needs {r.multiple.toFixed(2)}× the recent pace: ({n(reforecast.target)} − {n(kpi.actual)}) ÷{' '}
         {r.daysLeft.toFixed(1)} = {r.requiredPerDay.toFixed(1)}/day vs. {r.recentPerDay.toFixed(1)}/day recent <StatusBadge status={r.status} />
       </p>
-      <p className="text-xs font-medium text-slate-700">{proposalCaveat(r.originalStatus)}</p>
-      <p className="text-xs text-slate-500">Reason: {reforecast.reason}</p>
-      <p className="text-xs text-slate-500">Basis: {reforecast.basis}</p>
-      <button type="button" onClick={onClear} className="mt-1 inline-flex items-center gap-1 rounded border border-slate-300 bg-white px-2 py-1 text-xs">
+      <p className="text-xs font-medium text-body">{proposalCaveat(r.originalStatus)}</p>
+      <p className="text-xs text-muted">Reason: {reforecast.reason}</p>
+      <p className="text-xs text-muted">Basis: {reforecast.basis}</p>
+      <button type="button" onClick={onClear} className="btn btn-secondary btn-sm mt-1">
         <X className="h-3.5 w-3.5" aria-hidden /> Withdraw re-forecast
       </button>
     </div>
@@ -197,10 +197,10 @@ function AcceptedReforecast({ onClear }: { onClear: () => void }) {
 
 function Box({ label, value, note, strong = false }: { label: string; value: string; note: string; strong?: boolean }) {
   return (
-    <div className={`rounded-lg border p-3 ${strong ? 'border-brand-blue/30 bg-blue-50' : 'border-slate-200 bg-white'}`}>
-      <p className="text-xs text-slate-600">{label}</p>
-      <p className="mt-1 text-xl font-semibold tabular-nums text-brand-ink">{value}</p>
-      <p className="mt-1 text-xs text-slate-500">{note}</p>
+    <div className={`rounded-sm border p-3 ${strong ? 'border-brand-blue/30 bg-info-soft' : 'border-line bg-white'}`}>
+      <p className="text-xs text-muted">{label}</p>
+      <p className="mt-1 text-lg font-semibold tabular-nums text-brand-ink">{value}</p>
+      <p className="mt-1 text-xs text-muted">{note}</p>
     </div>
   )
 }

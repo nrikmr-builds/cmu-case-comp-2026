@@ -54,8 +54,8 @@ export default function CheckingHealthSections({ tab, quarter, onDesign, onEditC
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="heading-accent text-xl font-semibold text-brand-ink">Retention &amp; Account Health</h2>
-        <p className="mt-1 text-sm text-slate-600">
+        <h2 className="heading-accent text-lg font-semibold text-brand-ink">Retention &amp; Account Health</h2>
+        <p className="mt-1 text-sm text-muted">
           Opening an account is only the start: do accounts become primary, and which early signals come before a drop-off?
         </p>
       </div>

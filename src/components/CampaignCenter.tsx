@@ -71,22 +71,22 @@ export default function CampaignCenter({ onDesign }: Props) {
         {templates.map((t) => {
           const source = getAudienceSource(t)
           return (
-            <article key={t.id} className="flex flex-col rounded-lg border border-slate-200 p-4">
+            <article key={t.id} className="flex flex-col rounded-sm border border-line p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <h4 className="font-semibold text-brand-ink">{t.name}</h4>
                 <KindBadge kind={t.kind} outcome={t.outcome} />
               </div>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-muted">
                 Audience: {source.label} ({accounts(source.size)})
               </p>
-              <p className="mt-1 text-sm text-slate-700">{t.offer.extra}</p>
-              <p className="mt-2 flex-1 text-xs text-slate-600">
+              <p className="mt-1 text-sm text-body">{t.offer.extra}</p>
+              <p className="mt-2 flex-1 text-xs text-muted">
                 <span className="font-medium">Why:</span> {templateRationale(t.id)}
               </p>
               <button
                 type="button"
                 onClick={() => onDesign(t.id)}
-                className="mt-3 inline-flex items-center gap-1 self-start rounded bg-brand-blue px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue"
+                className="btn btn-primary mt-3 self-start"
               >
                 <Megaphone className="h-4 w-4" aria-hidden />
                 Use template
@@ -96,11 +96,11 @@ export default function CampaignCenter({ onDesign }: Props) {
         })}
       </div>
 
-      <p className="mt-3 text-xs text-slate-500">
+      <p className="mt-3 text-xs text-muted">
         Campaign effects aren't additive. Audiences and baselines can overlap, so don't sum campaigns to close a gap.
       </p>
 
-      <p className="mt-2 text-sm text-slate-600">
+      <p className="mt-2 text-sm text-muted">
         Saved campaigns ({campaigns.length}) appear in the{' '}
         <Link to={checkingHref('tracker-heading')} className="font-medium text-brand-blue hover:underline">
           Campaign Tracker

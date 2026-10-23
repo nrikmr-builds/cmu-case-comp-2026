@@ -81,7 +81,7 @@ export default function GuidedTour() {
       {rect ? (
         <div
           aria-hidden
-          className="pointer-events-none fixed rounded-md ring-4 ring-brand-orange transition-all"
+          className="pointer-events-none fixed rounded-sm ring-4 ring-brand-orange transition-all"
           style={{
             top: rect.top - pad,
             left: Math.max(4, rect.left - pad),
@@ -91,7 +91,7 @@ export default function GuidedTour() {
           }}
         />
       ) : (
-        <div aria-hidden className="fixed inset-0 bg-slate-900/55" />
+        <div aria-hidden className="fixed inset-0 bg-ink/55" />
       )}
 
       <div
@@ -100,23 +100,23 @@ export default function GuidedTour() {
         role="dialog"
         aria-modal="true"
         aria-labelledby="tour-title"
-        className="fixed inset-x-4 bottom-4 mx-auto max-w-lg rounded-lg bg-white p-4 shadow-2xl outline-none sm:bottom-6"
+        className="fixed inset-x-4 bottom-4 mx-auto max-w-lg animate-sheet rounded-sm bg-white p-4 shadow-pop outline-none sm:bottom-6"
       >
         <div className="flex items-start justify-between gap-3">
-          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+          <p className="text-xs font-semibold text-muted">
             Tour · step {step + 1} of {TOUR_STEPS.length}
           </p>
-          <button type="button" onClick={() => tourStore.stop()} aria-label="Skip tour" className="rounded p-1 text-slate-500 hover:bg-slate-100">
+          <button type="button" onClick={() => tourStore.stop()} aria-label="Skip tour" className="btn btn-tertiary btn-sm btn-icon">
             <X className="h-4 w-4" aria-hidden />
           </button>
         </div>
         <h2 id="tour-title" className="mt-1 text-lg font-semibold text-brand-ink">
           {current.title}
         </h2>
-        <p className="mt-1 text-sm text-slate-700">{current.caption()}</p>
-        <p className="mt-1 text-[11px] text-slate-500">Illustrative data · use ← → or Esc</p>
+        <p className="mt-1 text-sm text-body">{current.caption()}</p>
+        <p className="mt-1 text-xs text-muted">Illustrative data · use ← → or Esc</p>
         <div className="mt-3 flex items-center justify-between gap-2">
-          <button type="button" onClick={() => tourStore.stop()} className="text-sm text-slate-600 hover:underline">
+          <button type="button" onClick={() => tourStore.stop()} className="btn btn-tertiary btn-inline">
             Skip tour
           </button>
           <div className="flex gap-2">
@@ -124,14 +124,14 @@ export default function GuidedTour() {
               type="button"
               onClick={() => tourStore.go(step - 1)}
               disabled={step === 0}
-              className="inline-flex items-center gap-1 rounded border border-slate-300 px-3 py-1.5 text-sm disabled:opacity-40"
+              className="btn btn-secondary"
             >
               <ArrowLeft className="h-4 w-4" aria-hidden /> Back
             </button>
             <button
               type="button"
               onClick={() => tourStore.go(step + 1)}
-              className="inline-flex items-center gap-1 rounded bg-brand-blue px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-blue-dark"
+              className="btn btn-primary"
             >
               {last ? 'Finish' : 'Next'} {!last && <ArrowRight className="h-4 w-4" aria-hidden />}
             </button>

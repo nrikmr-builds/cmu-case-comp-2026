@@ -2,15 +2,15 @@ import { AlertTriangle, CheckCircle2, Eye } from 'lucide-react'
 import type { KpiStatus } from '../types'
 
 const STATUS_STYLES = {
-  'on-track': { label: 'On Track', Icon: CheckCircle2, className: 'bg-green-50 text-green-700' },
-  watch: { label: 'Watch', Icon: Eye, className: 'bg-amber-50 text-amber-700' },
-  'at-risk': { label: 'At Risk', Icon: AlertTriangle, className: 'bg-red-50 text-red-700' },
+  'on-track': { label: 'On Track', Icon: CheckCircle2, className: 'bg-positive-soft text-positive' },
+  watch: { label: 'Watch', Icon: Eye, className: 'bg-caution-soft text-caution' },
+  'at-risk': { label: 'At Risk', Icon: AlertTriangle, className: 'bg-critical-soft text-critical' },
 } as const
 
 export default function StatusBadge({ status }: { status: KpiStatus }) {
   const { label, Icon, className } = STATUS_STYLES[status]
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${className}`}>
+    <span className={`chip ${className}`}>
       <Icon className="h-3.5 w-3.5" aria-hidden />
       {label}
     </span>

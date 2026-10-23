@@ -80,15 +80,15 @@ export default function SinceLastVisit({ compact = false }: Props) {
 
   if (compact) {
     return (
-      <section aria-labelledby="since-compact-heading" className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
+      <section aria-labelledby="since-compact-heading" className="card p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 id="since-compact-heading" className="flex items-center gap-1.5 text-sm font-semibold text-brand-ink">
             <History className="h-4 w-4" aria-hidden />
             What changed · Checking
           </h2>
-          <span className="text-xs text-slate-500">{heading}</span>
+          <span className="text-xs text-muted">{heading}</span>
         </div>
-        <ul className="mt-2 grid gap-x-6 gap-y-1 text-sm text-slate-700 sm:grid-cols-2">
+        <ul className="mt-2 grid gap-x-6 gap-y-1 text-sm text-body sm:grid-cols-2">
           <li>
             +{accounts(opened)} openings; pace {formatPercent(paceBefore)} → {formatPercent(paceNow)}
           </li>
@@ -102,7 +102,7 @@ export default function SinceLastVisit({ compact = false }: Props) {
           <li>
             {expiring.length} competitor offer{expiring.length === 1 ? '' : 's'} ending within {EXPIRING_WITHIN_DAYS} days
           </li>
-          <li className={alerts.length ? 'font-medium text-red-700' : ''}>
+          <li className={alerts.length ? 'font-medium text-critical' : ''}>
             {alerts.length} alert{alerts.length === 1 ? '' : 's'} triggered
           </li>
         </ul>
@@ -118,21 +118,21 @@ export default function SinceLastVisit({ compact = false }: Props) {
   }
 
   return (
-    <section aria-labelledby="since-heading" className="scroll-mt-24 rounded-md border border-brand-blue/30 bg-blue-50/40 p-5 shadow-sm">
+    <section aria-labelledby="since-heading" className="scroll-mt-24 rounded-sm border border-brand-blue/30 bg-info-soft/40 p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 id="since-heading" className="flex items-center gap-1.5 text-lg font-semibold text-brand-ink">
             <History className="h-5 w-5" aria-hidden />
             Since your last visit
           </h2>
-          <p className="text-xs text-slate-600">
+          <p className="text-xs text-muted">
             {heading}. Internal data runs through Sep 12, so a real day away maps to a day of data.
           </p>
         </div>
         <button
           type="button"
           onClick={() => markVisitSeen()}
-          className="inline-flex items-center gap-1 rounded border border-brand-blue bg-white px-3 py-1.5 text-sm font-medium text-brand-blue hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue"
+          className="btn btn-secondary"
         >
           <CheckCheck className="h-4 w-4" aria-hidden />
           Mark as seen
@@ -149,16 +149,16 @@ export default function SinceLastVisit({ compact = false }: Props) {
           </p>
           <p className="mt-1 flex flex-wrap items-center gap-1">
             Status <StatusBadge status={statusBefore} /> → <StatusBadge status={statusNow} />
-            {statusBefore === statusNow && <span className="text-xs text-slate-500">(no change)</span>}
+            {statusBefore === statusNow && <span className="text-xs text-muted">(no change)</span>}
           </p>
-          <p className="mt-2 border-t border-slate-100 pt-2">
+          <p className="mt-2 border-t border-line pt-2">
             This week <strong>{Math.round(weekly.weekPerDay)}/day</strong> ({accounts(weekly.weekTotal)} ÷ 7) vs.{' '}
             {Math.round(weekly.quarterPerDay)}/day quarter average:{' '}
-            <span className={weekly.slowing ? 'font-medium text-red-700' : 'font-medium text-green-700'}>
+            <span className={weekly.slowing ? 'font-medium text-critical' : 'font-medium text-positive'}>
               {weekly.slowing ? 'slowing' : 'speeding up'}
             </span>
           </p>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-muted">
             For reference: plan pace {Math.round(planDailyPace())}/day; required from here {Math.round(required)}/day to hit
             target.
           </p>
@@ -170,11 +170,11 @@ export default function SinceLastVisit({ compact = false }: Props) {
               <li key={f.id}>
                 {f.name}
                 {f.id === strongestId && (
-                  <span className="ml-1 rounded-full bg-orange-100 px-1.5 py-0.5 text-[10px] font-medium text-orange-800">Strongest</span>
+                  <span className="ml-1 rounded-full bg-accent-soft px-1.5 py-0.5 text-xs font-medium text-accent">Strongest</span>
                 )}
                 : <strong>{accounts(f.current)}</strong> new{' '}
-                <span className={f.change > 0 ? 'text-red-700' : 'text-green-700'}>({signedPct(f.change)})</span>
-                <span className="block text-xs text-slate-500">
+                <span className={f.change > 0 ? 'text-critical' : 'text-positive'}>({signedPct(f.change)})</span>
+                <span className="block text-xs text-muted">
                   vs. {accounts(f.previous)} in the {w.days} day{w.days === 1 ? '' : 's'} before
                 </span>
               </li>
@@ -194,7 +194,7 @@ export default function SinceLastVisit({ compact = false }: Props) {
               ))}
             </ul>
           )}
-          <p className="mt-1 text-xs text-slate-500">Counted from each offer's retrieval date (external), not Sep 12.</p>
+          <p className="mt-1 text-xs text-muted">Counted from each offer's retrieval date (external), not Sep 12.</p>
         </Item>
 
         <Item title="Alerts & campaigns">
@@ -203,17 +203,17 @@ export default function SinceLastVisit({ compact = false }: Props) {
           ) : (
             <ul className="space-y-1">
               {alerts.map((a) => (
-                <li key={a.rule.id} className="text-red-800">
+                <li key={a.rule.id} className="text-critical">
                   <Bell className="mr-1 inline h-3.5 w-3.5" aria-hidden />
                   <strong>{a.title}</strong>
-                  <span className="block text-xs text-slate-600">{a.evidence}</span>
+                  <span className="block text-xs text-muted">{a.evidence}</span>
                 </li>
               ))}
             </ul>
           )}
-          <h4 className="mt-2 text-xs font-semibold text-slate-500">Live campaigns</h4>
+          <h4 className="mt-2 text-xs font-semibold text-muted">Live campaigns</h4>
           {liveSeeds.length + liveSaved.length === 0 ? (
-            <p className="text-xs text-slate-500">No live campaigns.</p>
+            <p className="text-xs text-muted">No live campaigns.</p>
           ) : (
             <ul className="mt-1 space-y-1">
               {liveSeeds.map(({ c, newTreatedOpenings, lift }) => (
@@ -225,7 +225,7 @@ export default function SinceLastVisit({ compact = false }: Props) {
                 </li>
               ))}
               {liveSaved.map((c) => (
-                <li key={c.id} className="text-xs text-slate-500">
+                <li key={c.id} className="text-xs text-muted">
                   {c.inputs.name}: Live, no results feed yet
                 </li>
               ))}
@@ -241,7 +241,7 @@ export default function SinceLastVisit({ compact = false }: Props) {
         type="button"
         onClick={() => setShowRules((v) => !v)}
         aria-expanded={showRules}
-        className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-brand-blue hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue"
+        className="btn btn-tertiary btn-inline mt-4"
       >
         {showRules ? <ChevronDown className="h-4 w-4" aria-hidden /> : <ChevronRight className="h-4 w-4" aria-hidden />}
         Manage alert rules
@@ -257,8 +257,8 @@ export default function SinceLastVisit({ compact = false }: Props) {
 
 function Item({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-md border border-slate-200 bg-white p-3 text-sm text-slate-700">
-      <h3 className="mb-1.5 text-xs font-semibold tracking-wide text-slate-500 uppercase">{title}</h3>
+    <div className="rounded-sm border border-line bg-white p-3 text-sm text-body">
+      <h3 className="mb-1.5 text-xs font-semibold text-muted">{title}</h3>
       {children}
     </div>
   )

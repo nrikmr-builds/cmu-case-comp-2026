@@ -3,6 +3,8 @@ import { ArrowLeft, ImageDown } from 'lucide-react'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { Link, Navigate, NavLink, useLocation, useParams } from 'react-router-dom'
 import ActNow from '../components/ActNow'
+import StatusBadge from '../components/StatusBadge'
+import { formatPercent, formatValue, getPaceRatio, getStatus } from '../lib/metrics'
 import { dashboardPath, useDashboards } from '../lib/dashboards'
 import { useCurrentDashboard } from '../lib/useCurrentDashboard'
 import ReportsHistory from '../components/ReportsHistory'
@@ -32,8 +34,16 @@ const PromotionBuilder = lazy(() => import('../components/PromotionBuilder'))
 const WeeklyReport = lazy(() => import('../components/WeeklyReport'))
 const ExportFigures = lazy(() => import('../components/ExportFigures'))
 
+/** Skeleton for a lazy section: holds roughly the section's space so the page doesn't jump when it arrives. */
 function SectionLoading({ label }: { label: string }) {
-  return <p className="rounded-md border border-slate-200 bg-white p-6 text-sm text-slate-500">Loading {label}…</p>
+  return (
+    <div role="status" aria-busy="true" className="card space-y-3 p-6">
+      <span className="sr-only">Loading {label}…</span>
+      <div className="skeleton h-6 w-1/3" />
+      <div className="skeleton h-4 w-2/3" />
+      <div className="skeleton h-48 w-full" />
+    </div>
+  )
 }
 
 /** Height of the sticky Checking tab bar, so a section scrolled into view isn't hidden under it. */
@@ -91,18 +101,16 @@ export default function OpportunityInsights() {
 
 function CheckingTabs({ active }: { active: CheckingTab }) {
   return (
-    <nav id="checking-tabs" aria-label="Checking Insights sections" className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
+    <nav id="checking-tabs" aria-label="Checking Insights sections" className="sticky top-0 z-20 border-b border-line bg-white/95 backdrop-blur">
       <ul className="relative mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 sm:px-6">
         {CHECKING_TABS.map((t, i) => (
           <li key={t.id} className="shrink-0">
             <NavLink
               to={tabPath(t.id)}
               title={t.blurb}
-              className={`flex items-center gap-1.5 border-b-[3px] px-3 py-3 text-sm font-semibold whitespace-nowrap focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-blue ${
-                t.id === active ? 'border-brand-orange text-brand-ink' : 'border-transparent text-slate-600 hover:border-slate-300 hover:text-brand-ink'
-              }`}
+              className={`tab ${t.id === active ? 'text-brand-ink' : 'text-muted hover:text-brand-ink'}`}
             >
-              <span className="text-xs font-normal text-slate-400 tabular-nums">{i + 1}</span>
+              <span className="text-xs font-normal text-muted tabular-nums">{i + 1}</span>
               {t.label}
             </NavLink>
           </li>
@@ -181,7 +189,7 @@ function OpportunityDetail({ opportunity, tab }: { opportunity: ProductOpportuni
         eyebrow={
           <Link
             to={dashboardPath(backTo, state)}
-            className="inline-flex items-center gap-1 rounded text-brand-blue hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue"
+            className="inline-flex items-center gap-1 rounded-sm text-brand-blue hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden />
             Back to {backTo.name}
@@ -189,9 +197,17 @@ function OpportunityDetail({ opportunity, tab }: { opportunity: ProductOpportuni
         }
         icon={PRODUCT_ICONS[opportunity.productId]}
       >
-        <p className="mt-4 max-w-2xl text-slate-700">
+        <p className="mt-4 max-w-[80ch] text-body">
           Evidence, trade-offs, and open questions for {kpiName} in {quarter}. All figures
           are illustrative.
+        </p>
+        {/* Title, then the key number, then the detail below. */}
+        <p className="mt-4 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <span className="font-display text-xl font-semibold text-brand-ink">{formatValue(kpi.actual, kpi.unit)}</span>
+          <span className="text-sm text-muted">
+            of {formatValue(kpi.target, kpi.unit)} {kpi.label.toLowerCase()} target · {formatPercent(getPaceRatio(kpi, reportingPeriod.quarterElapsed))} of pace
+          </span>
+          <StatusBadge status={getStatus(kpi, reportingPeriod.quarterElapsed)} />
         </p>
         {isChecking && (
           <div className="mt-4 flex flex-wrap gap-2">
@@ -199,7 +215,7 @@ function OpportunityDetail({ opportunity, tab }: { opportunity: ProductOpportuni
             <button
               type="button"
               onClick={() => setExporting(true)}
-              className="inline-flex items-center gap-1.5 rounded border border-brand-ink bg-white px-3 py-1.5 text-sm font-medium text-brand-ink hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue"
+              className="btn btn-secondary"
             >
               <ImageDown className="h-4 w-4" aria-hidden />
               Export figures
@@ -260,11 +276,11 @@ function OpportunityDetail({ opportunity, tab }: { opportunity: ProductOpportuni
 function ReportTab({ onOpen }: { onOpen: (r: ReportSnapshot) => void }) {
   return (
     <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-      <section aria-labelledby="report-tab-heading" className="rounded-md border border-slate-200 bg-white p-6 shadow-sm">
+      <section aria-labelledby="report-tab-heading" className="card p-6">
         <h2 id="report-tab-heading" className="heading-accent text-lg font-semibold text-brand-ink">
           Weekly leadership report
         </h2>
-        <p className="mt-3 max-w-2xl text-sm text-slate-700">
+        <p className="mt-3 max-w-2xl text-sm text-body">
           Builds a one-page snapshot from today's data: KPI status (original target first, plus any accepted re-forecast),
           the top 3 changes, campaign results, risks and early-warning signals, and the decisions needed from leadership.
           Every number comes from the same calculations as the other tabs. Save it to keep a frozen copy.
@@ -272,7 +288,7 @@ function ReportTab({ onOpen }: { onOpen: (r: ReportSnapshot) => void }) {
         <div className="mt-4">
           <GenerateReportButton onOpen={onOpen} />
         </div>
-        <p className="mt-3 text-xs text-slate-500">Illustrative · synthetic internal data.</p>
+        <p className="mt-3 text-xs text-muted">Illustrative · synthetic internal data.</p>
       </section>
       <ReportsHistory onOpen={onOpen} />
     </div>

@@ -39,12 +39,12 @@ const shortSignal: Record<string, string> = {
 }
 
 const ACTION_STYLE: Record<NbaAction, string> = {
-  service: 'bg-slate-100 text-slate-800',
-  wait: 'bg-slate-100 text-slate-600',
-  bundle: 'bg-blue-50 text-blue-800',
-  fee: 'bg-amber-50 text-amber-800',
-  dd: 'bg-green-50 text-green-800',
-  none: 'bg-white text-slate-500 ring-1 ring-slate-200',
+  service: 'bg-surface text-ink',
+  wait: 'bg-surface text-muted',
+  bundle: 'bg-info-soft text-info',
+  fee: 'bg-caution-soft text-caution',
+  dd: 'bg-positive-soft text-positive',
+  none: 'bg-white text-muted ring-1 ring-line',
 }
 
 /** Act tab: one recommended action per Direct deposit leaving customer, with reason codes and guardrails. */
@@ -77,18 +77,18 @@ export default function NextBestAction() {
           <h4 className="text-sm font-semibold text-brand-ink">Roll-up: {n(rollup.total)} customers</h4>
           <ul className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
             {ACTION_ORDER.map((a) => (
-              <li key={a} className={`rounded-md px-3 py-1.5 text-sm ${ACTION_STYLE[a]}`}>
+              <li key={a} className={`rounded-sm px-3 py-1.5 text-sm ${ACTION_STYLE[a]}`}>
                 <span className="block text-xs">{ACTION_META[a].label}</span>
                 <strong className="tabular-nums">{n(rollup.counts[a])}</strong>
               </li>
             ))}
           </ul>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-muted">
             {ACTION_ORDER.map((a) => n(rollup.counts[a])).join(' + ')} = {n(ACTION_ORDER.reduce((s, a) => s + rollup.counts[a], 0))} rows.
           </p>
           <div className="relative mt-3 overflow-x-auto">
             <table className="w-full min-w-[640px] text-left text-sm">
-              <thead className="border-b border-slate-200 text-xs text-slate-500">
+              <thead className="border-b border-line text-xs text-muted">
                 <tr>
                   <th scope="col" className="py-1.5 pr-3 font-medium">Offer group (as a Draft, 10% holdout)</th>
                   <th scope="col" className="py-1.5 pr-3 text-right font-medium">Rows</th>
@@ -98,14 +98,14 @@ export default function NextBestAction() {
                   <th scope="col" className="py-1.5 text-right font-medium">Annual value</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 tabular-nums">
+              <tbody className="divide-y divide-line tabular-nums">
                 {rollup.groups.map((g) => (
                   <tr key={g.action}>
                     <th scope="row" className="py-1.5 pr-3 font-medium text-brand-ink">{ACTION_META[g.action].label}</th>
                     <td className="py-1.5 pr-3 text-right">{n(g.rows)}</td>
                     <td className="py-1.5 pr-3 text-right">{n(g.treated)}</td>
                     <td className="py-1.5 pr-3 text-right">
-                      {n(g.economics.results.total)} <span className="text-xs text-slate-500">{g.economics.outcome === 'savings-accounts' ? 'savings accts' : 'saves'}</span>
+                      {n(g.economics.results.total)} <span className="text-xs text-muted">{g.economics.outcome === 'savings-accounts' ? 'savings accts' : 'saves'}</span>
                     </td>
                     <td className="py-1.5 pr-3 text-right">{formatUsd(g.economics.costs.total)}</td>
                     <td className="py-1.5 text-right">{formatUsd(g.economics.annualValue)}</td>
@@ -115,7 +115,7 @@ export default function NextBestAction() {
                   <th scope="row" className="py-1.5 pr-3">Total</th>
                   <td className="py-1.5 pr-3 text-right">{n(rollup.groups.reduce((s, g) => s + g.rows, 0))}</td>
                   <td className="py-1.5 pr-3 text-right">{n(rollup.groups.reduce((s, g) => s + g.treated, 0))}</td>
-                  <td className="py-1.5 pr-3 text-right text-xs font-normal text-slate-500">not summed across types</td>
+                  <td className="py-1.5 pr-3 text-right text-xs font-normal text-muted">not summed across types</td>
                   <td className="py-1.5 pr-3 text-right">{formatUsd(rollup.cost)}</td>
                   <td className="py-1.5 text-right">{formatUsd(rollup.value)}</td>
                 </tr>
@@ -126,11 +126,11 @@ export default function NextBestAction() {
             <button
               type="button"
               onClick={() => setSent(upsertNbaDrafts(rollup.groups.map((g) => ({ action: g.action, inputs: g.inputs }))))}
-              className="inline-flex items-center gap-1.5 rounded bg-brand-blue px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue"
+              className="btn btn-primary"
             >
               <Send className="h-4 w-4" aria-hidden /> Send to campaign
             </button>
-            <p role="status" className="text-sm text-slate-700">
+            <p role="status" className="text-sm text-body">
               {sent
                 ? `${sent.created} Draft${sent.created === 1 ? '' : 's'} created, ${sent.updated} updated in the Campaign Tracker (labelled "From next best action").`
                 : `Creates ${OFFER_ACTIONS.length} Drafts, one per offer group; clicking again updates them.`}
@@ -145,7 +145,7 @@ export default function NextBestAction() {
           <h4 className="text-sm font-semibold text-brand-ink">Rules, in order (first match wins)</h4>
           <div className="relative mt-2 overflow-x-auto">
             <table className="w-full min-w-[720px] text-left text-sm">
-              <thead className="border-b border-slate-200 text-xs text-slate-500">
+              <thead className="border-b border-line text-xs text-muted">
                 <tr>
                   <th scope="col" className="py-1.5 pr-3 font-medium">Code</th>
                   <th scope="col" className="py-1.5 pr-3 font-medium">Condition</th>
@@ -153,19 +153,19 @@ export default function NextBestAction() {
                   <th scope="col" className="py-1.5 font-medium">Reason</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 align-top">
+              <tbody className="divide-y divide-line align-top">
                 {NBA_RULES.map((r) => (
                   <tr key={r.code}>
                     <th scope="row" className="py-1.5 pr-3 font-semibold text-brand-ink">{r.code}</th>
                     <td className="py-1.5 pr-3">{r.condition}</td>
                     <td className="py-1.5 pr-3 font-medium">{r.action}</td>
-                    <td className="py-1.5 text-slate-600">{r.reason}</td>
+                    <td className="py-1.5 text-muted">{r.reason}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-muted">
             R5 runs after R2–R4: it checks the chosen offer. Channel = the customer’s preferred channel. Per-customer value and cost use the
             builder templates’ save or take-up rate, $250 account value (or balance × spread) and channel cost.
           </p>
@@ -188,7 +188,7 @@ export default function NextBestAction() {
             <li>Every recommendation is explained by its reason codes.</li>
           </ul>
           {test && (
-            <p className={`mt-2 flex items-start gap-1.5 rounded border p-2 text-xs ${test.action === 'service' ? 'border-green-200 bg-green-50 text-green-900' : 'border-red-200 bg-red-50 text-red-900'}`}>
+            <p className={`mt-2 flex items-start gap-1.5 rounded-sm border p-2 text-xs ${test.action === 'service' ? 'border-positive-line bg-positive-soft text-positive' : 'border-critical-line bg-critical-soft text-critical'}`}>
               {test.action === 'service' ? <Check className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden /> : <X className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />}
               <span>
                 <strong>Suppression test · {test.customer.id}:</strong> hardship = {String(test.customer.hardship)}; without R0 it would match{' '}
@@ -238,14 +238,14 @@ export default function NextBestAction() {
       {/* Table */}
       <div className="mt-4 flex flex-wrap items-end gap-3 text-sm">
         <label className="flex flex-col">
-          <span className="text-xs text-slate-600">Recommended action</span>
+          <span className="text-xs text-muted">Recommended action</span>
           <select
             value={action}
             onChange={(e) => {
               setAction(e.target.value as NbaAction | 'all')
               setPage(0)
             }}
-            className="rounded border border-slate-300 px-2 py-1"
+            className="field h-8"
           >
             <option value="all">All actions</option>
             {ACTION_ORDER.map((a) => (
@@ -256,14 +256,14 @@ export default function NextBestAction() {
           </select>
         </label>
         <label className="flex flex-col">
-          <span className="text-xs text-slate-600">Reason code</span>
+          <span className="text-xs text-muted">Reason code</span>
           <select
             value={code}
             onChange={(e) => {
               setCode(e.target.value as RuleCode | 'all')
               setPage(0)
             }}
-            className="rounded border border-slate-300 px-2 py-1"
+            className="field h-8"
           >
             <option value="all">All codes</option>
             {RULE_CODES.map((c) => (
@@ -273,11 +273,11 @@ export default function NextBestAction() {
             ))}
           </select>
         </label>
-        <span className="text-xs text-slate-600">{n(filtered.length)} customers</span>
+        <span className="text-xs text-muted">{n(filtered.length)} customers</span>
       </div>
-      <div className="relative mt-2 max-h-[20rem] overflow-auto rounded border border-slate-200">
+      <div className="relative mt-2 max-h-[20rem] overflow-auto rounded-sm border border-line">
         <table className="w-full min-w-[1100px] text-left text-xs whitespace-nowrap">
-          <thead className="sticky top-0 z-[1] border-b border-slate-200 bg-slate-50 text-slate-500">
+          <thead className="sticky top-0 z-[1] border-b border-line bg-surface-subtle text-muted">
             <tr>
               <th scope="col" className="py-1.5 pr-2 pl-2 font-medium">Customer</th>
               <th scope="col" className="py-1.5 pr-2 font-medium">Signals</th>
@@ -289,22 +289,22 @@ export default function NextBestAction() {
               <th scope="col" className="py-1.5 pr-2 text-right font-medium">Expected value vs. cost</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 align-top">
+          <tbody className="divide-y divide-line align-top">
             {visible.map((r) => (
               <Row key={r.customer.id} r={r} />
             ))}
           </tbody>
         </table>
       </div>
-      <div className="mt-2 flex items-center justify-between text-xs text-slate-600">
+      <div className="mt-2 flex items-center justify-between text-xs text-muted">
         <span>
           Page {current + 1} of {pages} · Illustrative · synthetic
         </span>
         <span className="flex gap-1">
-          <button type="button" disabled={current === 0} onClick={() => setPage(current - 1)} className="inline-flex items-center rounded border border-slate-300 px-2 py-1 disabled:opacity-40" aria-label="Previous page">
+          <button type="button" disabled={current === 0} onClick={() => setPage(current - 1)} className="btn btn-secondary btn-sm" aria-label="Previous page">
             <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
           </button>
-          <button type="button" disabled={current >= pages - 1} onClick={() => setPage(current + 1)} className="inline-flex items-center rounded border border-slate-300 px-2 py-1 disabled:opacity-40" aria-label="Next page">
+          <button type="button" disabled={current >= pages - 1} onClick={() => setPage(current + 1)} className="btn btn-secondary btn-sm" aria-label="Next page">
             <ChevronRight className="h-3.5 w-3.5" aria-hidden />
           </button>
         </span>
@@ -320,17 +320,17 @@ function Row({ r }: { r: NbaRecommendation }) {
     <tr>
       <th scope="row" className="py-1 pr-2 pl-2 font-mono font-medium text-brand-ink">
         {c.id}
-        {r.holdout && <span className="ml-1 font-sans text-[10px] font-normal text-slate-500">holdout</span>}
+        {r.holdout && <span className="ml-1 font-sans text-xs font-normal text-muted">holdout</span>}
       </th>
       <td className="py-1 pr-2">
         DD {DD_CHANGE_LABEL[c.ddChange].toLowerCase()}
         {c.coSignals.length > 0 && (
-          <span className="text-slate-500">
+          <span className="text-muted">
             {' · '}
             {c.coSignals.map((s) => (s === 'outbound-competitor-transfers' && c.outboundTo ? `Outbound → ${c.outboundTo}` : shortSignal[s] ?? s)).join(' · ')}
           </span>
         )}
-        {flags.length > 0 && <span className="font-medium text-red-700"> · {flags.join(' · ')}</span>}
+        {flags.length > 0 && <span className="font-medium text-critical"> · {flags.join(' · ')}</span>}
       </td>
       <td className="py-1 pr-2">
         {c.tenure} · {c.balance}
@@ -338,12 +338,12 @@ function Row({ r }: { r: NbaRecommendation }) {
       <td className="py-1 pr-2 capitalize">{c.channel === 'sms' ? 'SMS' : c.channel}</td>
       <td className="py-1 pr-2">{c.hasPncSavings ? 'Yes' : c.sendsToOutsideSavings ? 'No · saves elsewhere' : 'No'}</td>
       <td className="py-1 pr-2">
-        <span className={`inline-block rounded px-1.5 py-0.5 font-medium ${ACTION_STYLE[r.action]}`}>{ACTION_META[r.action].label}</span>
-        {r.nextEligible && <span className="ml-1 text-slate-500">until {r.nextEligible}</span>}
+        <span className={`inline-block rounded-sm px-1.5 py-0.5 font-medium ${ACTION_STYLE[r.action]}`}>{ACTION_META[r.action].label}</span>
+        {r.nextEligible && <span className="ml-1 text-muted">until {r.nextEligible}</span>}
       </td>
       <td className="py-1 pr-2">
         {r.codes.map((code) => (
-          <span key={code} className={`mr-1 ${code === r.matched ? 'font-bold text-brand-ink' : 'text-slate-500'}`} title={code === r.matched ? 'Deciding rule' : 'Also applies'}>
+          <span key={code} className={`mr-1 ${code === r.matched ? 'font-semibold text-brand-ink' : 'text-muted'}`} title={code === r.matched ? 'Deciding rule' : 'Also applies'}>
             {code}
           </span>
         ))}
@@ -352,7 +352,7 @@ function Row({ r }: { r: NbaRecommendation }) {
         {r.offer ? (
           <>
             {usd2(r.offer.expectedValue)} vs. {usd2(r.offer.expectedCost)}
-            {r.action === 'none' && <span className="ml-1 text-slate-500">({ACTION_META[r.offer.action].short})</span>}
+            {r.action === 'none' && <span className="ml-1 text-muted">({ACTION_META[r.offer.action].short})</span>}
           </>
         ) : (
           '—'
@@ -378,7 +378,7 @@ function GroupCheck({ g }: { g: ActionGroup }) {
               <td className="pr-2 text-right">{fmt(l.rows, l.format)}</td>
               <td className="pr-2">{Math.abs(l.rows - l.draft) < 0.005 ? '=' : '≠'}</td>
               <td className="pr-2 text-right">{fmt(l.draft, l.format)}</td>
-              <td className="text-slate-500">{l.basis}</td>
+              <td className="text-muted">{l.basis}</td>
             </tr>
           ))}
         </tbody>
@@ -389,7 +389,7 @@ function GroupCheck({ g }: { g: ActionGroup }) {
 
 function Panel({ title, icon, children }: { title: string; icon?: ReactNode; children: ReactNode }) {
   return (
-    <div className="rounded-md border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+    <div className="rounded-sm border border-line bg-surface-subtle p-4 text-sm text-body">
       <h4 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-brand-ink">
         {icon}
         {title}
@@ -409,14 +409,14 @@ function Comparison() {
   const best = c.personalised.net > c.blanket.net ? 'personalised' : 'blanket'
   const one = (x: number) => x.toLocaleString('en-US', { maximumFractionDigits: 1, minimumFractionDigits: 1 })
   return (
-    <div id="nba-comparison" className="rounded-md border border-slate-200 p-4">
+    <div id="nba-comparison" className="rounded-sm border border-line p-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <h4 className="text-sm font-semibold text-brand-ink">
           Personalised vs. blanket · same {n(c.eligible)} eligible customers (after guardrails), same economics
         </h4>
         <label className="flex items-center gap-2 text-sm">
           <span>
-            Match uplift <span className="text-xs text-slate-500">(illustrative; to be measured)</span>
+            Match uplift <span className="text-xs text-muted">(illustrative; to be measured)</span>
           </span>
           <input
             type="number"
@@ -426,14 +426,14 @@ function Comparison() {
             value={upliftPct}
             onChange={(e) => setUpliftPct(Math.max(0, Math.min(200, Number(e.target.value) || 0)))}
             aria-label="Match uplift, percent"
-            className="w-20 rounded border border-slate-300 px-2 py-1 text-right tabular-nums"
+            className="field h-8 w-20 text-right"
           />
           %
         </label>
       </div>
       <div className="relative mt-2 overflow-x-auto">
         <table className="w-full min-w-[720px] text-left text-sm tabular-nums">
-          <thead className="border-b border-slate-200 text-xs text-slate-500">
+          <thead className="border-b border-line text-xs text-muted">
             <tr>
               <th scope="col" className="py-1.5 pr-3 font-medium">Arm</th>
               <th scope="col" className="py-1.5 pr-3 text-right font-medium">Contacts</th>
@@ -444,12 +444,12 @@ function Comparison() {
               <th scope="col" className="py-1.5 text-right font-medium">Net value</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-line">
             {arms.map((a, i) => (
               <tr key={a.label} className={(i === 0 && best === 'blanket') || (i === 1 && best === 'personalised') ? 'font-semibold' : ''}>
                 <th scope="row" className="py-1.5 pr-3 font-medium text-brand-ink">
                   ({'abc'[i]}) {a.label}
-                  {i === 1 && upliftPct > 0 && <span className="ml-1 text-xs font-normal text-slate-500">at +{upliftPct}% match uplift</span>}
+                  {i === 1 && upliftPct > 0 && <span className="ml-1 text-xs font-normal text-muted">at +{upliftPct}% match uplift</span>}
                 </th>
                 <td className="py-1.5 pr-3 text-right">{n(a.contacts)}</td>
                 <td className="py-1.5 pr-3 text-right">{i === 2 ? 'baseline' : one(a.saves)}</td>
@@ -462,7 +462,7 @@ function Comparison() {
           </tbody>
         </table>
       </div>
-      <p className="mt-2 text-sm text-slate-800">
+      <p className="mt-2 text-sm text-ink">
         <strong>
           Personalisation beats the blanket offer only if matched offers convert at least {Number.isFinite(base.breakEven) ? `${Math.ceil(base.breakEven * 100)}%` : 'n/a'}{' '}
           better.
@@ -471,17 +471,17 @@ function Comparison() {
         {pct(offerUnit('dd').rate)} for everyone; First-Fee Forgiveness uses the observed {pct(offerUnit('fee').rate)} fee-closure gap. Match
         uplift applies on top.
       </p>
-      <p className="mt-1 text-xs text-slate-600">
+      <p className="mt-1 text-xs text-muted">
         Break-even = (net(a) + fixed contact costs of (b)) ÷ rate-driven margin of (b) − 1 = ({formatUsd(base.blanket.net)} + {formatUsd(base.fixed)}) ÷{' '}
         {formatUsd(base.margin)} − 1 = {Number.isFinite(base.breakEven) ? pct(base.breakEven) : 'n/a'}. Arms use each customer's preferred channel; (b) skips the{' '}
         {n(base.blanket.contacts - base.personalised.contacts)} R5 customers. Saves and savings accounts are expected values and aren't added together.
       </p>
-      <p className="mt-1 text-xs text-slate-700">
+      <p className="mt-1 text-xs text-body">
         <strong>Sensitivity:</strong> if First-Fee Forgiveness converted at the same {pct(sens.rate)} as the blanket offer, break-even would be{' '}
         <strong>{pct(sens.breakEven)}</strong>: margin = {formatUsd(sens.margin)} (the {n(sens.feeRows)} fee-forgiveness customers at {pct(sens.rate)} ×
         $250), so ({formatUsd(sens.blanketNet)} + {formatUsd(sens.fixed)}) ÷ {formatUsd(sens.margin)} − 1 = {pct(sens.breakEven)}.
       </p>
-      <p className="mt-2 text-xs text-slate-700">
+      <p className="mt-2 text-xs text-body">
         <strong>Test plan:</strong> NBA / Blanket / Holdout at 45% / 45% / 10% of {n(c.plan.eligible)} eligible = {n(c.plan.nba)} / {n(c.plan.blanket)} /{' '}
         {n(c.plan.holdout)}. Primary KPI: 90-day closures avoided. Guardrail KPIs: complaints and opt-outs. Decision rule: roll out NBA if its net
         value per customer beats Blanket's and the interval excludes 0.

@@ -1,21 +1,324 @@
 @import "tailwindcss";
+@import "@fontsource-variable/figtree";
 
-/* Shared design tokens, sampled from pnc.com. Use as bg-brand-orange, text-brand-ink, etc. */
+/*
+ * DESIGN TOKENS: the only place colours, type, radii, shadows and motion are defined.
+ * Brand values were read from live pnc.com pages (see docs/design-tokens.md for each source URL and date).
+ * Tailwind's default palette, radii, shadows and type scale are reset, so components can only use these.
+ * Chart colours mirror these values in src/lib/tokens.ts (SVG attributes need literal colours).
+ */
 @theme {
-  --color-brand-orange: #ef6a00;
-  --color-brand-blue: #0069aa;
-  --color-brand-blue-dark: #00548a;
-  /* Headings and dark bands. */
-  --color-brand-ink: #3a454f;
-  /* Two-tier header: top row, then the darker nav row. */
-  --color-brand-slate: #424e58;
-  --color-brand-charcoal: #2c3943;
-  --color-surface: #f2f4f6;
-  --color-surface-hero: #ededef;
+  --color-*: initial;
+  --color-white: #ffffff;
+  --color-black: #000000;
+
+  /* Brand (sampled from pnc.com) */
+  --color-brand-blue: #0069aa; /* primary buttons */
+  --color-brand-blue-dark: #004c97; /* links; primary hover */
+  --color-brand-orange: #f7841f; /* accent rules and active underlines only, never text */
+  --color-brand-slate: #424c55; /* header band */
+  --color-brand-charcoal: #2d3943; /* dark band, header controls */
+  --color-brand-ink: #2d3943; /* headings */
+
+  /* Neutrals (sampled from pnc.com unless noted) */
+  --color-body: #484848; /* body text */
+  --color-ink: #2d3943; /* strong text */
+  --color-muted: #5b6670; /* derived: secondary text, AA 4.64:1 on every surface */
+  --color-line: #e1e5ea; /* dividers and inset panels */
+  --color-line-strong: #8a96a1; /* derived: control borders, 3:1 non-text contrast */
+  --color-surface: #f1f4f6; /* page */
+  --color-surface-hero: #ededee; /* hero band */
+  --color-surface-subtle: #f7f9fa; /* derived: table header rows, inset panels */
+
+  /* Status and tints (derived; each text/soft pair is AA, see docs/design-tokens.md) */
+  --color-positive: #1e7a46;
+  --color-positive-soft: #e7f4ec;
+  --color-positive-line: #b9dcc6;
+  --color-caution: #8a5a00;
+  --color-caution-soft: #fdf3dd;
+  --color-caution-line: #f0d59a;
+  --color-critical: #b3261e;
+  --color-critical-soft: #fcebea;
+  --color-critical-line: #f2c4c0;
+  --color-info: #0069aa;
+  --color-info-soft: #e6f0f7;
+  --color-info-line: #b3cfe3;
+  --color-accent: #9a4a00; /* orange-family text on accent-soft */
+  --color-accent-soft: #fef1e6;
+  --color-accent-line: #fbd2ad;
+  --color-plum: #6b3fa0;
+  --color-plum-soft: #f1ebf8;
+  --color-plum-line: #d3c3ea;
+
+  /* Type: Figtree (free, close to PNC's licensed Neulis Sans) for headings and numbers; Arial body, as pnc.com */
+  --font-sans: Arial, "Helvetica Neue", Helvetica, sans-serif;
+  --font-display: "Figtree Variable", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --text-*: initial;
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1rem;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base: 1rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg: 1.25rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl: 1.75rem;
+  --text-xl--line-height: 2.125rem;
+  --text-2xl: 2.5rem;
+  --text-2xl--line-height: 2.875rem;
+
+  /* One radius scale: 4px for every control and card (as pnc.com), full for pills and dots */
+  --radius-*: initial;
+  --radius-sm: 4px;
+
+  /* Shadows: cards use a soft shadow, never a border as well (pnc.com cards are shadow-only) */
+  --shadow-*: initial;
+  --shadow-card: 0 1px 2px rgb(45 57 67 / 0.06), 0 2px 8px rgb(45 57 67 / 0.1);
+  --shadow-pop: 0 8px 24px rgb(45 57 67 / 0.18), 0 2px 6px rgb(45 57 67 / 0.08);
+
+  /* Motion: 150-200 ms ease-out everywhere */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+
+  --animate-enter: enter var(--duration-base) var(--ease-out);
+  --animate-sheet: sheet var(--duration-base) var(--ease-out);
+  --animate-shimmer: shimmer 1.2s ease-in-out infinite;
+
+  @keyframes enter {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+  }
+  @keyframes sheet {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+  }
+  @keyframes shimmer {
+    50% {
+      opacity: 0.55;
+    }
+  }
 }
 
 body {
-  @apply bg-surface text-slate-900 antialiased;
+  @apply bg-surface font-sans text-body antialiased;
+  /* Every number lines up in columns. */
+  font-variant-numeric: tabular-nums;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  color: var(--color-ink);
+  letter-spacing: -0.005em;
+}
+
+/* Three weights only: 400 body, 500 labels, 600 emphasis (browsers default strong/th to 700). */
+strong,
+b,
+th {
+  font-weight: 600;
+}
+
+/* One icon set (lucide) at one stroke weight. */
+svg.lucide {
+  stroke-width: 1.75;
+}
+
+/* Focus is always visible, in the brand blue. */
+/* (Headings that receive focus programmatically, tabindex="-1", are skipped.) */
+:where(a, button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: 2px solid var(--color-brand-blue);
+  outline-offset: 2px;
+}
+
+[tabindex="-1"]:focus {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}
+
+/* ---- Component library -------------------------------------------------------------------------------- */
+@layer components {
+  /* Buttons: 4 variants (primary, secondary, tertiary, destructive), one radius, two heights. */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    height: 2.5rem;
+    padding: 0 1rem;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      background-color var(--duration-fast) var(--ease-out),
+      border-color var(--duration-fast) var(--ease-out),
+      color var(--duration-fast) var(--ease-out),
+      transform var(--duration-fast) var(--ease-out);
+  }
+  .btn:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .btn-sm {
+    height: 2rem;
+    padding: 0 0.75rem;
+    font-size: var(--text-xs);
+  }
+  .btn-icon {
+    width: 2.5rem;
+    padding: 0;
+  }
+  .btn-sm.btn-icon {
+    width: 2rem;
+  }
+  /* Inline text button inside a sentence or card footer: no box. */
+  .btn-inline {
+    height: auto;
+    padding: 0;
+  }
+  .btn-primary {
+    background-color: var(--color-brand-blue);
+    color: var(--color-white);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background-color: var(--color-brand-blue-dark);
+  }
+  .btn-secondary {
+    background-color: var(--color-white);
+    border-color: var(--color-brand-blue);
+    color: var(--color-brand-blue);
+  }
+  .btn-secondary:hover:not(:disabled) {
+    background-color: var(--color-info-soft);
+  }
+  .btn-tertiary {
+    background-color: transparent;
+    color: var(--color-brand-blue);
+  }
+  .btn-tertiary:hover:not(:disabled) {
+    background-color: var(--color-info-soft);
+    color: var(--color-brand-blue-dark);
+  }
+  .btn-inline.btn-tertiary:hover:not(:disabled) {
+    background-color: transparent;
+    text-decoration: underline;
+  }
+  .btn-destructive {
+    background-color: var(--color-critical);
+    color: var(--color-white);
+  }
+  .btn-destructive:hover:not(:disabled) {
+    background-color: #8f1e18;
+  }
+
+  /* Card: white, soft shadow, no border. */
+  .card {
+    background-color: var(--color-white);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-card);
+  }
+
+  /* Badge / chip: one pill style for status and labels. */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    border-radius: calc(infinity * 1px); /* same as rounded-full */
+    padding: 0.125rem 0.625rem;
+    font-size: var(--text-xs);
+    font-weight: 600;
+    line-height: 1.25rem;
+    white-space: nowrap;
+  }
+  button.chip {
+    cursor: pointer;
+    border: 1px solid var(--color-line-strong);
+    background-color: var(--color-white);
+    color: var(--color-body);
+    transition: background-color var(--duration-fast) var(--ease-out);
+  }
+  button.chip:hover {
+    background-color: var(--color-surface);
+  }
+  button.chip[aria-pressed="true"],
+  button.chip[aria-selected="true"] {
+    background-color: var(--color-ink);
+    border-color: var(--color-ink);
+    color: var(--color-white);
+  }
+
+  /* Tabs: the main nav and every sub-tab share this shape; colour follows the surface. */
+  .tab {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.75rem 0.75rem;
+    border-bottom: 3px solid transparent;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    white-space: nowrap;
+    transition:
+      border-color var(--duration-fast) var(--ease-out),
+      color var(--duration-fast) var(--ease-out);
+  }
+  .tab:hover {
+    border-bottom-color: color-mix(in srgb, currentColor 35%, transparent);
+  }
+  .tab[aria-current="page"],
+  .tab[aria-current="step"],
+  .tab[aria-selected="true"] {
+    border-bottom-color: var(--color-brand-orange);
+  }
+
+  /* Inputs: text, number, select. */
+  .field {
+    height: 2.5rem;
+    border: 1px solid var(--color-line-strong);
+    border-radius: var(--radius-sm);
+    background-color: var(--color-white);
+    padding: 0 0.75rem;
+    font-size: var(--text-sm);
+    color: var(--color-ink);
+    transition: border-color var(--duration-fast) var(--ease-out);
+  }
+  textarea.field {
+    height: auto;
+    padding: 0.5rem 0.75rem;
+  }
+  .field:hover {
+    border-color: var(--color-muted);
+  }
+
+  /* Skeleton loading block: holds the space so nothing jumps. */
+  .skeleton {
+    border-radius: var(--radius-sm);
+    background-color: var(--color-line);
+    animation: var(--animate-shimmer);
+  }
 }
 
 /* PNC's short orange rule under a heading. */

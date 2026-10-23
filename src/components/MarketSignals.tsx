@@ -29,9 +29,9 @@ function relatedAnchor(relevance: string): string | undefined {
 function ExpiryChip({ signal }: { signal: MarketSignal }) {
   const left = daysUntil(signal.offer?.expires, signal.retrievedOn)
   if (left === undefined) return null
-  const tone = left < 0 ? 'bg-slate-200 text-slate-700' : left <= 30 ? 'bg-red-50 text-red-800 ring-1 ring-red-200' : 'bg-slate-100 text-slate-700'
+  const tone = left < 0 ? 'bg-line text-body' : left <= 30 ? 'bg-critical-soft text-critical ring-1 ring-critical-line' : 'bg-surface text-body'
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${tone}`}>
+    <span className={`chip ${tone}`}>
       <CalendarClock className="h-3.5 w-3.5" aria-hidden />
       {expiryLabel(left, signal.retrievedOn)}
     </span>
@@ -67,19 +67,19 @@ export default function MarketSignals({ signals, pncRow }: Props) {
     <section aria-labelledby="market-heading" className="space-y-6">
       <div className="pt-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 id="market-heading" className="heading-accent text-2xl font-semibold text-brand-ink">
+          <h2 id="market-heading" className="heading-accent text-xl font-semibold text-brand-ink">
             Market Signals
           </h2>
           <SourceBadge kind="external" />
         </div>
-        <p className="mt-2 max-w-3xl text-slate-600">
+        <p className="mt-2 max-w-3xl text-muted">
           What our own data can't show: competitor offers, product trends, and market conditions that may explain why
           customers leave. Every item links to the page it came from, so you can check it.
         </p>
       </div>
 
-      <div className="rounded-md border border-slate-200 bg-white p-6 shadow-sm">
-        <div role="tablist" aria-label="Market signal categories" className="flex flex-wrap gap-2 border-b border-slate-200 pb-3">
+      <div className="card p-6">
+        <div role="tablist" aria-label="Market signal categories" className="flex flex-wrap gap-2 border-b border-line pb-3">
           {TABS.map((t) => {
             const count = signals.filter((s) => s.category === t.id).length
             const selected = t.id === tab
@@ -92,9 +92,7 @@ export default function MarketSignals({ signals, pncRow }: Props) {
                 aria-selected={selected}
                 aria-controls="market-panel"
                 onClick={() => setTab(t.id)}
-                className={`rounded-full px-3 py-1.5 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue ${
-                  selected ? 'bg-brand-ink text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                }`}
+                className="chip"
               >
                 {t.label} <span className="tabular-nums opacity-70">({count})</span>
               </button>
@@ -106,13 +104,13 @@ export default function MarketSignals({ signals, pncRow }: Props) {
           {visible.map((s) => {
             const anchor = relatedAnchor(s.relevance)
             return (
-              <article key={s.id} className="flex flex-col rounded-lg border border-slate-200 p-4">
+              <article key={s.id} className="flex flex-col rounded-sm border border-line p-4">
                 <div className="flex items-start justify-between gap-3">
                   <h3 className="font-semibold text-brand-ink">{s.headline}</h3>
                   <SourceBadge kind="external" />
                 </div>
-                <p className="mt-2 flex-1 text-sm text-slate-700">{s.detail}</p>
-                <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-slate-500">
+                <p className="mt-2 flex-1 text-sm text-body">{s.detail}</p>
+                <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted">
                   <SourceLink signal={s} />
                   <span>Retrieved {formatRetrieved(s.retrievedOn)}</span>
                   <ExpiryChip signal={s} />
@@ -121,13 +119,13 @@ export default function MarketSignals({ signals, pncRow }: Props) {
                   {anchor ? (
                     <Link
                       to={anchor}
-                      className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-800 ring-1 ring-orange-200 ring-inset hover:bg-orange-100"
+                      className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-2.5 py-1 text-xs font-medium text-accent ring-1 ring-accent-line ring-inset hover:bg-accent-soft"
                     >
                       <Link2 className="h-3.5 w-3.5" aria-hidden />
                       Relates to: {s.relevance}
                     </Link>
                   ) : (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-800">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-2.5 py-1 text-xs font-medium text-accent">
                       Relates to: {s.relevance}
                     </span>
                   )}
@@ -139,14 +137,14 @@ export default function MarketSignals({ signals, pncRow }: Props) {
       </div>
 
       {promos.length > 0 && (
-        <div className="rounded-md border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="card p-6">
           <h3 id="offers-heading" className="heading-accent scroll-mt-24 text-lg font-semibold text-brand-ink">Checking Offer Comparison</h3>
-          <p className="mt-2 text-sm text-slate-600">
+          <p className="mt-2 text-sm text-muted">
             Competitor rows are sourced from each linked page. The PNC row is our synthetic placeholder.
           </p>
           <div className="relative mt-4 overflow-x-auto">
             <table className="w-full min-w-[820px] text-left text-sm">
-              <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+              <thead className="border-b border-line text-xs text-muted">
                 <tr>
                   <th scope="col" className="py-2 pr-4 font-medium">Competitor</th>
                   <th scope="col" className="py-2 pr-4 text-right font-medium">Bonus</th>
@@ -156,22 +154,22 @@ export default function MarketSignals({ signals, pncRow }: Props) {
                   <th scope="col" className="py-2 font-medium">Source</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
-                <tr className="bg-slate-50 align-top">
+              <tbody className="divide-y divide-line">
+                <tr className="bg-surface-subtle align-top">
                   <th scope="row" className="py-3 pr-4 font-semibold text-brand-ink">{pncRow.name}</th>
                   <td className="py-3 pr-4 text-right tabular-nums">{pncRow.bonusUsd ? formatUsd(pncRow.bonusUsd) : '—'}</td>
-                  <td className="py-3 pr-4 text-slate-700">{pncRow.requirement}</td>
-                  <td className="py-3 pr-4 text-slate-700">{pncRow.monthlyFee}</td>
-                  <td className="py-3 pr-4 text-slate-700">—</td>
+                  <td className="py-3 pr-4 text-body">{pncRow.requirement}</td>
+                  <td className="py-3 pr-4 text-body">{pncRow.monthlyFee}</td>
+                  <td className="py-3 pr-4 text-body">—</td>
                   <td className="py-3"><SourceBadge kind="internal" /></td>
                 </tr>
                 {promos.map((s) => (
                   <tr key={s.id} className="align-top">
                     <th scope="row" className="py-3 pr-4 font-medium text-brand-ink">{s.competitor ?? s.source}</th>
                     <td className="py-3 pr-4 text-right tabular-nums">{s.offer?.bonusUsd ? formatUsd(s.offer.bonusUsd) : '—'}</td>
-                    <td className="py-3 pr-4 text-slate-700">{s.offer?.requirement ?? '—'}</td>
-                    <td className="py-3 pr-4 text-slate-700">{s.offer?.monthlyFee ?? '—'}</td>
-                    <td className="py-3 pr-4 text-slate-700">
+                    <td className="py-3 pr-4 text-body">{s.offer?.requirement ?? '—'}</td>
+                    <td className="py-3 pr-4 text-body">{s.offer?.monthlyFee ?? '—'}</td>
+                    <td className="py-3 pr-4 text-body">
                       <span>{formatExpiry(s.offer?.expires)}</span>
                       <span className="mt-1 block">
                         <ExpiryChip signal={s} />
@@ -179,7 +177,7 @@ export default function MarketSignals({ signals, pncRow }: Props) {
                     </td>
                     <td className="py-3 text-xs">
                       <SourceLink signal={s} />
-                      <span className="mt-1 block text-slate-500">Retrieved {formatRetrieved(s.retrievedOn)}</span>
+                      <span className="mt-1 block text-muted">Retrieved {formatRetrieved(s.retrievedOn)}</span>
                     </td>
                   </tr>
                 ))}

@@ -1,6 +1,7 @@
-import { Check, ClipboardCopy, Printer, X } from 'lucide-react'
+import { AlertTriangle, Check, CheckCircle2, ClipboardCopy, Eye, Printer, X } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
+import { TOKENS } from '../lib/tokens'
 import { formatTimestamp } from '../lib/metrics'
 import { formatDate } from '../lib/projection'
 import { useReports } from '../lib/reportStore'
@@ -11,8 +12,8 @@ const PRINT_CSS = `
 @media print {
   @page { size: letter; margin: 12mm 12mm 16mm; }
   body.report-open > #root { display: none !important; }
-  body.report-open { background: #fff !important; }
-  .report-overlay { position: static !important; overflow: visible !important; background: #fff !important; }
+  body.report-open { background: ${TOKENS.white} !important; }
+  .report-overlay { position: static !important; overflow: visible !important; background: ${TOKENS.white} !important; }
   .report-overlay .no-print { display: none !important; }
   .report-page { max-width: none !important; padding: 0 !important; box-shadow: none !important; border: 0 !important; font-size: 9.5px !important; line-height: 1.35 !important; }
   .report-page h1 { font-size: 15px !important; }
@@ -20,7 +21,7 @@ const PRINT_CSS = `
   .report-page table, .report-page li, .report-page .avoid-break { break-inside: avoid; page-break-inside: avoid; }
   .report-page td, .report-page th { padding-top: 1px !important; padding-bottom: 1px !important; }
   .report-page textarea { border: 0 !important; resize: none !important; padding: 0 !important; height: auto !important; overflow: visible !important; }
-  .report-footer { display: block !important; position: fixed; bottom: 4mm; left: 12mm; right: 12mm; font-size: 8px; color: #475569; border-top: 1px solid #cbd5e1; padding-top: 2px; }
+  .report-footer { display: block !important; position: fixed; bottom: 4mm; left: 12mm; right: 12mm; font-size: 8px; color: ${TOKENS.muted}; border-top: 1px solid ${TOKENS.line}; padding-top: 2px; }
 }
 `
 
@@ -68,15 +69,14 @@ export default function WeeklyReport({ report, onClose }: Props) {
     }
   }
 
-  const button =
-    'inline-flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue'
+  const button = 'btn btn-secondary btn-sm'
 
   return createPortal(
-    <div role="dialog" aria-modal="true" aria-labelledby="report-heading" className="report-overlay fixed inset-0 z-50 overflow-y-auto bg-surface">
+    <div role="dialog" aria-modal="true" aria-labelledby="report-heading" className="report-overlay fixed inset-0 z-50 animate-sheet overflow-y-auto bg-surface">
       <style>{PRINT_CSS}</style>
-      <div className="no-print sticky top-0 z-10 border-b border-slate-200 bg-white">
+      <div className="no-print sticky top-0 z-10 border-b border-line bg-white">
         <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-2 px-4 py-3">
-          <span className="text-sm text-slate-600">
+          <span className="text-sm text-muted">
             {saved ? 'Saved report (frozen snapshot)' : 'New report (not saved yet)'} · generated {formatTimestamp(report.generatedAt)}
           </span>
           <div className="flex flex-wrap items-center gap-2">
@@ -95,45 +95,45 @@ export default function WeeklyReport({ report, onClose }: Props) {
           </div>
         </div>
         {status && (
-          <p role="status" className="mx-auto max-w-4xl px-4 pb-2 text-sm font-medium text-green-700">
+          <p role="status" className="mx-auto max-w-4xl px-4 pb-2 text-sm font-medium text-positive">
             {status}
           </p>
         )}
       </div>
 
-      <article className="report-page mx-auto my-6 max-w-4xl space-y-4 rounded-md border border-slate-200 bg-white p-6 text-sm text-slate-800 shadow-sm">
-        <header className="border-b border-slate-200 pb-3">
-          <p className="text-xs font-semibold tracking-wider text-slate-500 uppercase">
+      <article className="report-page mx-auto my-6 max-w-4xl space-y-4 card p-6 text-sm text-ink">
+        <header className="border-b border-line pb-3">
+          <p className="text-xs font-semibold text-muted">
             PNC Product Intelligence Hub · {report.dashboard ? `Dashboard: ${report.dashboard.name}` : 'Checking'}
           </p>
-          <h1 id="report-heading" ref={headingRef} tabIndex={-1} className="text-xl font-semibold text-brand-ink outline-none">
+          <h1 id="report-heading" ref={headingRef} tabIndex={-1} className="text-lg font-semibold text-brand-ink outline-none">
             Weekly report{report.dashboard ? ` · ${report.dashboard.name}` : ''} · {report.quarter}
           </h1>
           {report.dashboard && (
-            <p className="text-xs text-slate-600">
+            <p className="text-xs text-muted">
               Covers only this dashboard&apos;s cards: {report.dashboard.kpiCount} KPI{report.dashboard.kpiCount === 1 ? '' : 's'}
               {report.dashboard.checkingSections ? ', plus the Checking campaigns, risks and decisions.' : '.'}
             </p>
           )}
-          <p className="text-xs text-slate-600">
+          <p className="text-xs text-muted">
             Generated {formatTimestamp(report.generatedAt)} · <strong>Internal data as of {formatDate(report.internalAsOf)}</strong> · Illustrative
           </p>
-          <p className="avoid-break mt-2 rounded bg-orange-50 p-2">
+          <p className="avoid-break mt-2 rounded-sm bg-accent-soft p-2">
             <strong>Headline:</strong> {report.headline.text}
-            <span className="mt-1 block text-xs text-slate-600">{report.headline.reference}</span>
+            <span className="mt-1 block text-xs text-muted">{report.headline.reference}</span>
           </p>
         </header>
 
         <Section title="1. KPI status">
           <table className="w-full text-left text-xs">
-            <thead className="border-b border-slate-200 text-slate-500">
+            <thead className="border-b border-line text-muted">
               <tr>
                 {['Product', 'KPI', 'Target', 'Actual', 'vs. expected', '% of full target', 'Status', 'Change vs. last week'].map((h) => (
                   <th key={h} scope="col" className="py-1 pr-2 font-medium">{h}</th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-line">
               {report.kpis.map((k) => (
                 <tr key={`${k.product}-${k.label}`}>
                   <td className="py-1 pr-2">{k.product}</td>
@@ -142,20 +142,23 @@ export default function WeeklyReport({ report, onClose }: Props) {
                   <td className="py-1 pr-2 tabular-nums">{k.actual}</td>
                   <td className="py-1 pr-2 tabular-nums">{k.vsExpected}</td>
                   <td className="py-1 pr-2 tabular-nums">{k.ofTarget}</td>
-                  <td className={`py-1 pr-2 font-medium ${k.status === 'At Risk' ? 'text-red-700' : k.status === 'Watch' ? 'text-amber-700' : 'text-green-700'}`}>{k.status}</td>
-                  <td className="py-1 text-slate-600">{k.change}</td>
+                  <td className={`py-1 pr-2 font-medium whitespace-nowrap ${k.status === 'At Risk' ? 'text-critical' : k.status === 'Watch' ? 'text-caution' : 'text-positive'}`}>
+                    <StatusIcon status={k.status} />
+                    {k.status}
+                  </td>
+                  <td className="py-1 text-muted">{k.change}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <p className="mt-1 text-[10px] text-slate-500">
+          <p className="mt-1 text-xs text-muted">
             vs. expected: counts and deposits = actual ÷ expected by now; rates = actual ÷ target. % of full target: counts and deposits only.
           </p>
         </Section>
 
         {report.dashboard && !report.dashboard.checkingSections ? (
           <Section title="2–5. Changes, campaigns, risks and decisions">
-            <p className="text-slate-500">{NOT_ON_DASHBOARD}</p>
+            <p className="text-muted">{NOT_ON_DASHBOARD}</p>
           </Section>
         ) : (
           <>
@@ -169,17 +172,17 @@ export default function WeeklyReport({ report, onClose }: Props) {
 
         <Section title="3. Campaign results (Live and Completed)">
           {report.campaigns.length === 0 ? (
-            <p className="text-slate-500">No Live or Completed campaigns.</p>
+            <p className="text-muted">No Live or Completed campaigns.</p>
           ) : (
             <table className="w-full text-left text-xs">
-              <thead className="border-b border-slate-200 text-slate-500">
+              <thead className="border-b border-line text-muted">
                 <tr>
                   {['Campaign', 'Status', 'Type', 'Result', 'Lift', 'Cost / incr. primary'].map((h) => (
                     <th key={h} scope="col" className="py-1 pr-2 font-medium">{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-line">
                 {report.campaigns.map((c) => (
                   <tr key={c.name} className="align-top">
                     <th scope="row" className="py-1 pr-2 font-medium">{c.name}</th>
@@ -189,7 +192,7 @@ export default function WeeklyReport({ report, onClose }: Props) {
                     <td className="py-1 pr-2">{c.liftLabel}</td>
                     <td className="py-1 tabular-nums">
                       {c.costPerIncrementalPrimary}
-                      <span className="block text-[10px] text-slate-500">{c.note}</span>
+                      <span className="block text-xs text-muted">{c.note}</span>
                     </td>
                   </tr>
                 ))}
@@ -203,10 +206,10 @@ export default function WeeklyReport({ report, onClose }: Props) {
               </li>
             ))}
           </ul>
-          <p className={`avoid-break mt-2 rounded p-2 text-xs ${report.feasibility.unlikely ? 'bg-red-50 text-red-900' : 'bg-slate-50'}`}>
+          <p className={`avoid-break mt-2 rounded-sm p-2 text-xs ${report.feasibility.unlikely ? 'bg-critical-soft text-critical' : 'bg-surface-subtle'}`}>
             <strong>Feasibility:</strong> {report.feasibility.text}
           </p>
-          <p className="mt-1 text-[10px] text-slate-500">Totals are by type and never summed across types. Campaign effects aren't additive.</p>
+          <p className="mt-1 text-xs text-muted">Totals are by type and never summed across types. Campaign effects aren't additive.</p>
         </Section>
 
         <Section title="4. Risks and early-warning signals">
@@ -230,9 +233,9 @@ export default function WeeklyReport({ report, onClose }: Props) {
                   value={d.text}
                   rows={2}
                   onChange={(ev) => setDecisions((prev) => prev.map((x, j) => (j === i ? { ...x, text: ev.target.value } : x)))}
-                  className="mt-0.5 block w-full rounded border border-slate-300 px-2 py-1 text-sm"
+                  className="field mt-0.5 block w-full"
                 />
-                <span className="block text-xs text-slate-600">Evidence: {d.evidence}</span>
+                <span className="block text-xs text-muted">Evidence: {d.evidence}</span>
                 <label className="sr-only" htmlFor={`proposed-${i}`}>
                   {d.title}: proposed
                 </label>
@@ -241,7 +244,7 @@ export default function WeeklyReport({ report, onClose }: Props) {
                   value={d.proposed}
                   rows={2}
                   onChange={(ev) => setDecisions((prev) => prev.map((x, j) => (j === i ? { ...x, proposed: ev.target.value } : x)))}
-                  className="mt-0.5 block w-full rounded border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-medium text-brand-ink"
+                  className="field mt-0.5 block w-full bg-surface-subtle text-xs font-medium"
                 />
               </li>
             ))}
@@ -251,7 +254,7 @@ export default function WeeklyReport({ report, onClose }: Props) {
           </>
         )}
 
-        <footer className="border-t border-slate-200 pt-2 text-xs text-slate-500">
+        <footer className="border-t border-line pt-2 text-xs text-muted">
           Internal figures are synthetic and illustrative (data as of {formatDate(report.internalAsOf)}). External facts are sourced and linked
           on the dashboard. Generated {formatTimestamp(report.generatedAt)}.
         </footer>
@@ -262,6 +265,12 @@ export default function WeeklyReport({ report, onClose }: Props) {
     </div>,
     document.body,
   )
+}
+
+/** Status is never colour alone: the report's status cells carry the same icons as the badges. */
+function StatusIcon({ status }: { status: string }) {
+  const Icon = status === 'At Risk' ? AlertTriangle : status === 'Watch' ? Eye : CheckCircle2
+  return <Icon className="mr-1 inline h-3.5 w-3.5 align-[-2px]" aria-hidden />
 }
 
 function Section({ title, children }: { title: string; children: ReactNode }) {

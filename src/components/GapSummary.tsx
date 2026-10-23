@@ -27,7 +27,7 @@ export default function GapSummary({ kpi, period, headingId = 'gap-heading' }: P
   const rf = reforecast && reforecast.kpiId === kpi.id ? againstReforecast(kpi, reforecast) : null
 
   return (
-    <section aria-labelledby={headingId} className="rounded-md border border-slate-200 bg-white p-6 shadow-sm">
+    <section aria-labelledby={headingId} className="card p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <h2 id={headingId} className="heading-accent text-lg font-semibold text-brand-ink">
           Gap Summary · {kpi.label}
@@ -35,7 +35,7 @@ export default function GapSummary({ kpi, period, headingId = 'gap-heading' }: P
         <StatusBadge status={getStatus(kpi, quarterElapsed)} />
       </div>
 
-      <h3 className="mt-5 text-xs font-semibold tracking-wide text-slate-500 uppercase">Where we are today</h3>
+      <h3 className="mt-5 text-xs font-semibold text-muted">Where we are today</h3>
       <dl className="mt-2 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Current / Target" value={`${fmt(kpi.actual)} / ${fmt(kpi.target)}`} note={`${quarter} full-quarter target`} />
         <Stat
@@ -67,7 +67,7 @@ export default function GapSummary({ kpi, period, headingId = 'gap-heading' }: P
       )}
       {rf && reforecast && (
         <>
-          <h3 className="mt-6 text-xs font-semibold tracking-wide text-brand-ink uppercase">
+          <h3 className="mt-6 text-xs font-semibold text-brand-ink">
             Original target vs. {reforecastLabel(reforecast)}
           </h3>
           <dl className="mt-2 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -90,7 +90,7 @@ export default function GapSummary({ kpi, period, headingId = 'gap-heading' }: P
               emphasis={rf.status === 'on-track' ? 'ahead' : 'pace'}
             />
           </dl>
-          <p className="mt-2 text-xs font-medium text-slate-700">{proposalCaveat(rf.originalStatus)}</p>
+          <p className="mt-2 text-xs font-medium text-body">{proposalCaveat(rf.originalStatus)}</p>
         </>
       )}
       <ProjectionRow
@@ -119,7 +119,7 @@ function ProjectionRow({ kpi, p, title, paceFormula, headline }: RowProps) {
   const perDay = (n: number) => `${fmt(n)}/day`
   return (
     <>
-      <h3 className={`mt-6 text-xs font-semibold tracking-wide uppercase ${headline ? 'text-brand-ink' : 'text-slate-500'}`}>{title}</h3>
+      <h3 className={`mt-6 text-xs font-semibold ${headline ? 'text-brand-ink' : 'text-muted'}`}>{title}</h3>
       <dl className={`mt-2 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 ${headline ? '' : 'opacity-80'}`}>
         <Stat
           label="Projected at quarter end"
@@ -161,17 +161,17 @@ interface StatProps {
 }
 
 const EMPHASIS_STYLES = {
-  pace: 'border-red-200 bg-red-50',
-  ahead: 'border-green-200 bg-green-50',
-  target: 'border-brand-blue/30 bg-blue-50',
+  pace: 'border-critical-line bg-critical-soft',
+  ahead: 'border-positive-line bg-positive-soft',
+  target: 'border-brand-blue/30 bg-info-soft',
 }
 
 function Stat({ label, value, note, emphasis }: StatProps) {
   return (
-    <div className={`rounded-lg border p-4 ${emphasis ? EMPHASIS_STYLES[emphasis] : 'border-slate-200 bg-slate-50'}`}>
-      <dt className="text-sm text-slate-600">{label}</dt>
-      <dd className="mt-1 text-2xl font-semibold tabular-nums text-brand-ink">{value}</dd>
-      <dd className="mt-1 text-xs text-slate-500">{note}</dd>
+    <div className={`rounded-sm border p-4 ${emphasis ? EMPHASIS_STYLES[emphasis] : 'border-line bg-surface-subtle'}`}>
+      <dt className="text-sm text-muted">{label}</dt>
+      <dd className="mt-1 text-xl font-semibold tabular-nums text-brand-ink">{value}</dd>
+      <dd className="mt-1 text-xs text-muted">{note}</dd>
     </div>
   )
 }

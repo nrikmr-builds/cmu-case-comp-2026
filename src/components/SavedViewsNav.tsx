@@ -73,9 +73,9 @@ export default function SavedViewsNav({ defaultView, views, activeId, onSelect, 
     <nav aria-label="Dashboard views" className="space-y-4 lg:sticky lg:top-6 lg:self-start">
       <ViewButton view={defaultView} active={activeId === defaultView.id} onSelect={onSelect} isDefault />
 
-      <div className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
-        <div className="space-y-3 border-b border-slate-200 p-3">
-          <h2 className="flex items-center justify-between text-xs font-semibold tracking-wide text-slate-500 uppercase">
+      <div className="overflow-hidden card">
+        <div className="space-y-3 border-b border-line p-3">
+          <h2 className="flex items-center justify-between text-xs font-semibold text-muted">
             <span className="flex items-center gap-1.5">
               <History className="h-3.5 w-3.5" aria-hidden />
               View history
@@ -85,7 +85,7 @@ export default function SavedViewsNav({ defaultView, views, activeId, onSelect, 
 
           <div className="flex items-center justify-between gap-2">
             <StepButton label="Newer" icon={ChevronUp} target={newer} onSelect={onSelect} />
-            <span className="text-xs tabular-nums text-slate-600" aria-live="polite">
+            <span className="text-xs tabular-nums text-muted" aria-live="polite">
               {index >= 0 ? `${index + 1} of ${views.length}` : activeId === defaultView.id ? 'Current' : 'Unsaved'}
             </span>
             <StepButton label="Older" icon={ChevronDown} target={older} onSelect={onSelect} />
@@ -99,11 +99,8 @@ export default function SavedViewsNav({ defaultView, views, activeId, onSelect, 
                   type="button"
                   onClick={() => jumpToMonth(group.key)}
                   aria-label={`Jump to ${group.label}`}
-                  className={`rounded-full border px-2 py-0.5 text-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue ${
-                    group.views.some((v) => v.id === activeId)
-                      ? 'border-brand-orange bg-orange-50 text-orange-800'
-                      : 'border-slate-200 text-slate-600 hover:border-brand-blue/40 hover:text-brand-blue'
-                  }`}
+                  aria-pressed={group.views.some((v) => v.id === activeId)}
+                  className="chip"
                 >
                   {group.shortLabel}
                 </button>
@@ -116,7 +113,7 @@ export default function SavedViewsNav({ defaultView, views, activeId, onSelect, 
           {groups.map((group) => (
             <section key={group.key} data-month={group.key} aria-label={group.label}>
               <h3
-                className="sticky top-0 z-10 border-b border-slate-100 bg-slate-50/95 px-3 py-1.5 text-[11px] font-semibold tracking-wide text-slate-500 uppercase backdrop-blur"
+                className="sticky top-0 z-10 border-b border-line bg-surface-subtle/95 px-3 py-1.5 text-xs font-semibold text-muted backdrop-blur"
               >
                 {group.label}
               </h3>
@@ -129,7 +126,7 @@ export default function SavedViewsNav({ defaultView, views, activeId, onSelect, 
                         type="button"
                         onClick={() => onDelete(view.id)}
                         aria-label={`Delete saved view: ${view.label}`}
-                        className="absolute top-2 right-2 rounded p-1 text-slate-400 opacity-0 group-hover:opacity-100 hover:bg-slate-100 hover:text-red-600 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-brand-blue"
+                        className="btn btn-tertiary btn-sm btn-icon absolute top-2 right-2 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
                       >
                         <Trash2 className="h-3.5 w-3.5" aria-hidden />
                       </button>
@@ -160,7 +157,7 @@ function StepButton({ label, icon: Icon, target, onSelect }: StepButtonProps) {
       onClick={() => target && onSelect(target.id)}
       disabled={!target}
       title={target ? `${label}: ${target.label}` : undefined}
-      className="inline-flex items-center gap-1 rounded border border-slate-300 px-2 py-1 text-xs font-medium text-brand-blue hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue disabled:cursor-not-allowed disabled:opacity-40"
+      className="btn btn-secondary btn-sm"
     >
       <Icon className="h-3.5 w-3.5" aria-hidden />
       {label}
@@ -181,10 +178,11 @@ function ViewButton({ view, active, onSelect, isDefault }: ViewButtonProps) {
       type="button"
       onClick={() => onSelect(view.id)}
       aria-current={active ? 'true' : undefined}
-      className={`w-full rounded border border-l-4 px-3 py-2 pr-8 text-left transition focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-blue ${
+      data-ui="row"
+      className={`w-full rounded-sm border border-l-4 px-3 py-2 pr-8 text-left transition focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-blue ${
         active
-          ? 'border-slate-200 border-l-brand-orange bg-white shadow-sm'
-          : `border-transparent border-l-transparent hover:border-slate-200 ${isDefault ? 'hover:bg-white' : 'hover:bg-slate-50'}`
+          ? 'border-line border-l-brand-orange bg-white'
+          : `border-transparent border-l-transparent hover:border-line ${isDefault ? 'hover:bg-white' : 'hover:bg-surface-subtle'}`
       }`}
     >
       <span className="flex items-center gap-1.5 text-sm font-medium text-brand-ink">
@@ -192,15 +190,15 @@ function ViewButton({ view, active, onSelect, isDefault }: ViewButtonProps) {
         {view.label}
       </span>
       {view.prompt ? (
-        <span className="mt-0.5 line-clamp-2 block text-xs text-slate-500 italic">“{view.prompt}”</span>
+        <span className="mt-0.5 line-clamp-2 block text-xs text-muted italic">“{view.prompt}”</span>
       ) : (
-        <span className="mt-0.5 block text-xs text-slate-500">
+        <span className="mt-0.5 block text-xs text-muted">
           {/* The built-in dashboard's default view vs. a user dashboard's "All cards". */}
           {view.label === 'Full portfolio' ? 'All KPIs across every product' : 'Every card on this dashboard'}
         </span>
       )}
       {view.prompt && (
-        <span className="mt-1 block text-[11px] tabular-nums text-slate-400">
+        <span className="mt-1 block text-xs tabular-nums text-muted">
           {formatTimestamp(view.createdAt)} · {view.kpiIds.length} {view.kpiIds.length === 1 ? 'metric' : 'metrics'}
         </span>
       )}

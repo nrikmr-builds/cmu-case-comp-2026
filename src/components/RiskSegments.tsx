@@ -18,25 +18,25 @@ export default function RiskSegments({ segments, onDesignCampaign }: Props) {
     >
       <div className="grid gap-4 md:grid-cols-2">
         {segments.map((s) => (
-          <article key={s.id} id={`risk-${s.id}`} className="scroll-mt-24 rounded-lg border border-slate-200 p-4 target:ring-2 target:ring-brand-orange">
+          <article key={s.id} id={`risk-${s.id}`} className="scroll-mt-24 rounded-sm border border-line p-4 target:ring-2 target:ring-brand-orange">
             <div className="flex items-start justify-between gap-3">
               <h4 className="font-semibold text-brand-ink">{s.name}</h4>
               <p className="text-right">
-                <span className="block text-xl font-semibold tabular-nums text-brand-ink">{formatValue(s.eligibleCustomers, 'accounts')}</span>
-                <span className="text-xs text-slate-500">customers</span>
+                <span className="block text-lg font-semibold tabular-nums text-brand-ink">{formatValue(s.eligibleCustomers, 'accounts')}</span>
+                <span className="text-xs text-muted">customers</span>
               </p>
             </div>
-            <p className="mt-2 text-sm text-slate-700">
+            <p className="mt-2 text-sm text-body">
               <span className="font-medium">Why it matters:</span> {s.whyRelevant}
             </p>
-            <p className="mt-1 text-sm text-amber-800">
+            <p className="mt-1 text-sm text-caution">
               <span className="font-medium">Consideration:</span> {s.consideration}
             </p>
             {onDesignCampaign && (
               <button
                 type="button"
                 onClick={() => onDesignCampaign(s.id)}
-                className="mt-3 inline-flex items-center gap-1 rounded border border-brand-blue px-2 py-1 text-xs font-medium text-brand-blue hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue"
+                className="btn btn-secondary btn-sm mt-3"
                 aria-label={`Design retention campaign for ${s.name}`}
               >
                 <Megaphone className="h-3.5 w-3.5" aria-hidden />

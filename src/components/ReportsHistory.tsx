@@ -10,8 +10,8 @@ export default function ReportsHistory({ onOpen, dashboardId }: { onOpen: (r: Re
   // On a dashboard, only its own reports (reports from before dashboards existed belong to the default one).
   const reports = dashboardId ? all.filter((r) => (r.dashboard?.id ?? 'deposit-portfolio') === dashboardId) : all
   return (
-    <section aria-labelledby="reports-history-heading" className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
-      <h2 id="reports-history-heading" className="flex items-center justify-between border-b border-slate-200 p-3 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+    <section aria-labelledby="reports-history-heading" className="overflow-hidden card">
+      <h2 id="reports-history-heading" className="flex items-center justify-between border-b border-line p-3 text-xs font-semibold text-muted">
         <span className="flex items-center gap-1.5">
           <FileText className="h-3.5 w-3.5" aria-hidden />
           Reports
@@ -19,24 +19,24 @@ export default function ReportsHistory({ onOpen, dashboardId }: { onOpen: (r: Re
         <span className="font-normal tracking-normal normal-case tabular-nums">{reports.length} saved</span>
       </h2>
       {reports.length === 0 ? (
-        <p className="p-3 text-xs text-slate-500">No saved reports yet. Generate one and save it.</p>
+        <p className="p-3 text-xs text-muted">No saved reports yet. Generate one and save it.</p>
       ) : (
-        <ul className="max-h-60 divide-y divide-slate-100 overflow-y-auto">
+        <ul className="max-h-60 divide-y divide-line overflow-y-auto">
           {reports.map((r) => (
             <li key={r.id} className="flex items-start gap-1 px-3 py-2">
               <button
                 type="button"
                 onClick={() => onOpen(r)}
-                className="flex-1 rounded text-left text-sm text-brand-ink hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue"
+                className="btn btn-tertiary btn-inline flex-1 text-left"
               >
                 Weekly report{r.dashboard && r.dashboard.id !== 'deposit-portfolio' ? ` · ${r.dashboard.name}` : ''} · {r.quarter}
-                <span className="block text-xs text-slate-500">Generated {formatTimestamp(r.generatedAt)} · data as of {shortDate(r.internalAsOf)}</span>
+                <span className="block text-xs text-muted">Generated {formatTimestamp(r.generatedAt)} · data as of {shortDate(r.internalAsOf)}</span>
               </button>
               <button
                 type="button"
                 onClick={() => deleteReport(r.id)}
                 aria-label={`Delete report generated ${formatTimestamp(r.generatedAt)}`}
-                className="rounded p-1 text-slate-400 hover:text-red-700 focus-visible:outline-2 focus-visible:outline-brand-blue"
+                className="btn btn-tertiary btn-sm btn-icon"
               >
                 <Trash2 className="h-3.5 w-3.5" aria-hidden />
               </button>

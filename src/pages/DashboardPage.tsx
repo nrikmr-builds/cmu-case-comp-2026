@@ -38,7 +38,7 @@ export default function DashboardPage() {
   }, [dashboard.id])
 
   const notice = missing ? (
-    <p role="note" className="mx-auto mt-4 flex max-w-7xl items-center gap-2 rounded border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900">
+    <p role="note" className="mx-auto mt-4 flex max-w-7xl items-center gap-2 rounded-sm border border-caution-line bg-caution-soft px-4 py-2 text-sm text-caution">
       <Info className="h-4 w-4 shrink-0" aria-hidden />
       No dashboard at “/d/{missing}”. Showing {dashboard.name} instead.
     </p>
@@ -77,7 +77,7 @@ function UserDashboard({ dashboard, notice }: { dashboard: Dashboard; notice: Re
         }
         icon={Icon}
       >
-        <p className="mt-3 flex flex-wrap items-center gap-2 text-sm text-slate-700">
+        <p className="mt-3 flex flex-wrap items-center gap-2 text-sm text-body">
           <DashboardIconBadge d={dashboard} />
           {dashboard.cards.length} cards · {kpiIds.length} KPIs · owner: {dashboard.owner} · updated {formatTimestamp(dashboard.updatedAt)}
           {dashboard.origin ? ` · ${dashboard.origin}` : ''}
@@ -89,7 +89,8 @@ function UserDashboard({ dashboard, notice }: { dashboard: Dashboard; notice: Re
       </PageHero>
       {notice}
 
-      <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[15rem_minmax(0,1fr)]">
+      <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-12">
+        <div className="lg:col-span-3">
         <SavedViewsNav
           defaultView={allCards}
           views={views}
@@ -105,7 +106,8 @@ function UserDashboard({ dashboard, notice }: { dashboard: Dashboard; notice: Re
           isDeletable={isUserView}
           footer={<ReportsHistory onOpen={setReport} dashboardId={dashboard.id} />}
         />
-        <section className="min-w-0 space-y-6">
+        </div>
+        <section className="min-w-0 space-y-6 lg:col-span-9">
           <DashboardPromptBar
             onGenerate={(v) => {
               const inScope = v.kpiIds.filter((id) => kpiIds.includes(id))
@@ -113,7 +115,7 @@ function UserDashboard({ dashboard, notice }: { dashboard: Dashboard; notice: Re
             }}
           />
           {active.id !== 'default' && (
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded border border-slate-200 bg-white px-4 py-2 text-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-sm border border-line bg-white px-4 py-2 text-sm">
               <span>
                 <strong>{active.label}</strong>
                 {draft ? ' · Unsaved view of this dashboard' : ` · saved ${formatTimestamp(active.createdAt)}`}
@@ -127,7 +129,7 @@ function UserDashboard({ dashboard, notice }: { dashboard: Dashboard; notice: Re
                       setSearchParams({ view: draft.id })
                       setDraft(null)
                     }}
-                    className="rounded bg-brand-blue px-3 py-1 text-sm font-medium text-white"
+                    className="btn btn-primary btn-sm"
                   >
                     Save view
                   </button>
@@ -138,14 +140,23 @@ function UserDashboard({ dashboard, notice }: { dashboard: Dashboard; notice: Re
                     setDraft(null)
                     setSearchParams({})
                   }}
-                  className="rounded border border-slate-300 px-3 py-1 text-sm"
+                  className="btn btn-secondary btn-sm"
                 >
                   {draft ? 'Discard' : 'All cards'}
                 </button>
               </span>
             </div>
           )}
-          <Suspense fallback={<p className="text-sm text-slate-500">Loading cards…</p>}>
+          <Suspense
+            fallback={
+              <div role="status" aria-busy="true" className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+                <span className="sr-only">Loading cards…</span>
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="skeleton h-48" />
+                ))}
+              </div>
+            }
+          >
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3 [&>*]:min-w-0">
               {cards.map((c) => (
                 <div key={c.id} className={WIDE.has(c.type) ? 'md:col-span-2 xl:col-span-3' : ''}>
@@ -154,7 +165,7 @@ function UserDashboard({ dashboard, notice }: { dashboard: Dashboard; notice: Re
               ))}
             </div>
           </Suspense>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-muted">
             Every card reuses the Hub’s existing calculations; opportunity pages are shared, not copied. Internal figures are synthetic and
             illustrative.
           </p>

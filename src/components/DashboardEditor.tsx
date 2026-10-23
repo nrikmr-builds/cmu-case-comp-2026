@@ -42,22 +42,22 @@ export function CardListEditor({ cards, scope, onChange }: { cards: DashboardCar
   }
   return (
     <div>
-      <ol className="divide-y divide-slate-100 rounded border border-slate-200">
-        {cards.length === 0 && <li className="p-3 text-sm text-slate-500">No cards yet. Add one below.</li>}
+      <ol className="divide-y divide-line rounded-sm border border-line">
+        {cards.length === 0 && <li className="p-3 text-sm text-muted">No cards yet. Add one below.</li>}
         {cards.map((c, i) => (
           <li key={c.id} className="flex items-center gap-2 px-3 py-1.5 text-sm">
-            <span className="w-5 text-xs text-slate-400 tabular-nums">{i + 1}</span>
-            <span className={`min-w-0 flex-1 truncate ${c.type === 'placeholder' ? 'text-amber-800' : ''}`}>
+            <span className="w-5 text-xs text-muted tabular-nums">{i + 1}</span>
+            <span className={`min-w-0 flex-1 truncate ${c.type === 'placeholder' ? 'text-caution' : ''}`}>
               {c.type === 'placeholder' && <Database className="mr-1 inline h-3.5 w-3.5" aria-hidden />}
               {cardTitle(c)}
             </span>
-            <button type="button" disabled={i === 0} onClick={() => move(i, -1)} aria-label={`Move ${cardTitle(c)} up`} className="rounded p-1 text-slate-500 hover:bg-slate-100 disabled:opacity-30">
+            <button type="button" disabled={i === 0} onClick={() => move(i, -1)} aria-label={`Move ${cardTitle(c)} up`} className="btn btn-tertiary btn-sm btn-icon">
               <ArrowUp className="h-3.5 w-3.5" aria-hidden />
             </button>
-            <button type="button" disabled={i === cards.length - 1} onClick={() => move(i, 1)} aria-label={`Move ${cardTitle(c)} down`} className="rounded p-1 text-slate-500 hover:bg-slate-100 disabled:opacity-30">
+            <button type="button" disabled={i === cards.length - 1} onClick={() => move(i, 1)} aria-label={`Move ${cardTitle(c)} down`} className="btn btn-tertiary btn-sm btn-icon">
               <ArrowDown className="h-3.5 w-3.5" aria-hidden />
             </button>
-            <button type="button" onClick={() => onChange(cards.filter((x) => x.id !== c.id))} aria-label={`Remove ${cardTitle(c)}`} className="rounded p-1 text-slate-500 hover:bg-red-50 hover:text-red-700">
+            <button type="button" onClick={() => onChange(cards.filter((x) => x.id !== c.id))} aria-label={`Remove ${cardTitle(c)}`} className="btn btn-tertiary btn-sm btn-icon">
               <X className="h-3.5 w-3.5" aria-hidden />
             </button>
           </li>
@@ -65,7 +65,7 @@ export function CardListEditor({ cards, scope, onChange }: { cards: DashboardCar
       </ol>
       {available.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-2">
-          <select value={toAdd} onChange={(e) => setToAdd(e.target.value)} aria-label="Card to add" className="min-w-0 flex-1 rounded border border-slate-300 px-2 py-1 text-sm">
+          <select value={toAdd} onChange={(e) => setToAdd(e.target.value)} aria-label="Card to add" className="field h-8 min-w-0 flex-1">
             <option value="">Add a card…</option>
             {available.map((c) => (
               <option key={c.id} value={c.id}>
@@ -81,7 +81,7 @@ export function CardListEditor({ cards, scope, onChange }: { cards: DashboardCar
               if (c) onChange([...cards, c])
               setToAdd('')
             }}
-            className="inline-flex items-center gap-1 rounded border border-brand-blue px-2 py-1 text-sm font-medium text-brand-blue disabled:opacity-40"
+            className="btn btn-secondary btn-sm"
           >
             <Plus className="h-3.5 w-3.5" aria-hidden /> Add
           </button>
@@ -100,11 +100,11 @@ export function Modal({ title, onClose, children, wide = false }: { title: strin
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
   return createPortal(
-    <div className="fixed inset-0 z-[55] overflow-y-auto bg-slate-900/50 sm:p-4" role="dialog" aria-modal="true" aria-label={title}>
-      <div ref={ref} tabIndex={-1} className={`mx-auto min-h-full bg-white p-5 shadow-xl outline-none sm:min-h-0 sm:rounded-md ${wide ? 'max-w-3xl' : 'max-w-lg'}`}>
+    <div className="fixed inset-0 z-[55] overflow-y-auto bg-ink/50 sm:p-4" role="dialog" aria-modal="true" aria-label={title}>
+      <div ref={ref} tabIndex={-1} className={`mx-auto min-h-full animate-sheet bg-white p-6 shadow-pop outline-none sm:min-h-0 sm:rounded-sm ${wide ? 'max-w-3xl' : 'max-w-lg'}`}>
         <div className="flex items-start justify-between gap-3">
           <h2 className="text-lg font-semibold text-brand-ink">{title}</h2>
-          <button type="button" onClick={onClose} aria-label="Close" className="rounded p-1 text-slate-500 hover:bg-slate-100">
+          <button type="button" onClick={onClose} aria-label="Close" className="btn btn-tertiary btn-sm btn-icon">
             <X className="h-4 w-4" aria-hidden />
           </button>
         </div>
@@ -187,7 +187,7 @@ function NewDashboardDialog({ initial, onClose }: { initial: CreateRequest; onCl
                 role="tab"
                 aria-selected={mode === m}
                 onClick={() => setMode(m)}
-                className={`rounded-full px-3 py-1.5 text-sm font-medium ${mode === m ? 'bg-brand-ink text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+                className="chip"
               >
                 {label}
               </button>
@@ -202,10 +202,10 @@ function NewDashboardDialog({ initial, onClose }: { initial: CreateRequest; onCl
                 describe(prompt)
               }}
             >
-              <p className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
+              <p className="flex flex-wrap items-center gap-2 text-sm text-body">
                 <Sparkles className="h-4 w-4 text-brand-orange" aria-hidden />
                 Ask AI to build a dashboard
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">Simulated · runs locally</span>
+                <span className="rounded-full bg-surface px-2 py-0.5 text-xs text-muted">Simulated · runs locally</span>
               </p>
               <div className="mt-2 flex flex-col gap-2 sm:flex-row">
                 <input
@@ -213,21 +213,21 @@ function NewDashboardDialog({ initial, onClose }: { initial: CreateRequest; onCl
                   onChange={(e) => setPrompt(e.target.value)}
                   aria-label="Describe the dashboard you want"
                   placeholder="e.g. Checking openings, daily pace and campaigns"
-                  className="min-w-0 flex-1 rounded border border-slate-300 px-3 py-2 text-sm"
+                  className="field min-w-0 flex-1"
                 />
-                <button type="submit" disabled={busy || !prompt.trim()} className="inline-flex items-center justify-center gap-1.5 rounded bg-brand-blue px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
+                <button type="submit" disabled={busy || !prompt.trim()} className="btn btn-primary">
                   {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Sparkles className="h-4 w-4" aria-hidden />}
                   {busy ? 'Building…' : 'Build'}
                 </button>
               </div>
               <div className="mt-2 flex flex-wrap gap-2">
                 {SUGGESTIONS.map((s) => (
-                  <button key={s} type="button" onClick={() => describe(s)} className="rounded-full border border-slate-300 px-2.5 py-1 text-xs text-slate-700 hover:bg-slate-50">
+                  <button key={s} type="button" onClick={() => describe(s)} className="chip">
                     {s}
                   </button>
                 ))}
               </div>
-              <p className="mt-2 text-xs text-slate-500">
+              <p className="mt-2 text-xs text-muted">
                 Cards come only from approved data. Anything the data layer doesn’t have becomes a “Needs a data source” placeholder, never a number.
               </p>
             </form>
@@ -243,13 +243,13 @@ function NewDashboardDialog({ initial, onClose }: { initial: CreateRequest; onCl
                       setDraft({ name: t.name, icon: t.icon, color: t.color, scope: t.scope, cards: t.cards.map((c) => ({ ...c })), origin: `Template: ${t.name}` })
                       setStep('review')
                     }}
-                    className="flex h-full w-full items-start gap-2 rounded border border-slate-200 p-3 text-left hover:border-brand-blue hover:bg-blue-50/40"
+                    data-ui="option" className="flex h-full w-full items-start gap-2 rounded-sm border border-line p-3 text-left hover:border-brand-blue hover:bg-info-soft/40"
                   >
                     <DashboardIconBadge d={t} />
                     <span>
                       <span className="block text-sm font-semibold text-brand-ink">{t.name}</span>
-                      <span className="block text-xs text-slate-600">{t.description}</span>
-                      <span className="mt-1 block text-[11px] text-slate-500">
+                      <span className="block text-xs text-muted">{t.description}</span>
+                      <span className="mt-1 block text-xs text-muted">
                         {scopeLabel(t.scope)} · {t.cards.length} cards
                       </span>
                     </span>
@@ -262,7 +262,7 @@ function NewDashboardDialog({ initial, onClose }: { initial: CreateRequest; onCl
           {mode === 'blank' && (
             <div className="mt-4 space-y-3">
               <fieldset>
-                <legend className="text-sm font-medium text-slate-700">Product scope</legend>
+                <legend className="text-sm font-medium text-body">Product scope</legend>
                 <div className="mt-1 flex flex-wrap gap-3 text-sm">
                   {ALL.map((p) => (
                     <label key={p} className="inline-flex items-center gap-1.5">
@@ -283,8 +283,8 @@ function NewDashboardDialog({ initial, onClose }: { initial: CreateRequest; onCl
                 </div>
               </fieldset>
               <fieldset>
-                <legend className="text-sm font-medium text-slate-700">Tick the cards you want</legend>
-                <div className="mt-1 grid max-h-64 gap-1 overflow-y-auto rounded border border-slate-200 p-2 text-sm sm:grid-cols-2">
+                <legend className="text-sm font-medium text-body">Tick the cards you want</legend>
+                <div className="mt-1 grid max-h-64 gap-1 overflow-y-auto rounded-sm border border-line p-2 text-sm sm:grid-cols-2">
                   {cardCatalogue(blankScope).map((c) => (
                     <label key={c.id} className="inline-flex items-center gap-1.5">
                       <input
@@ -306,7 +306,7 @@ function NewDashboardDialog({ initial, onClose }: { initial: CreateRequest; onCl
                   setDraft({ name: `${scopeLabel(blankScope)} dashboard`, icon: 'star', color: 'slate', scope: blankScope, cards: blankCards, origin: 'Blank' })
                   setStep('review')
                 }}
-                className="rounded bg-brand-blue px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
+                className="btn btn-primary"
               >
                 Next: name and preview
               </button>
@@ -317,39 +317,39 @@ function NewDashboardDialog({ initial, onClose }: { initial: CreateRequest; onCl
         draft && (
           <div className="space-y-3">
             <label className="block text-sm">
-              <span className="font-medium text-slate-700">Name</span>
+              <span className="font-medium text-body">Name</span>
               <input
                 value={draft.name}
                 onChange={(e) => setDraft({ ...draft, name: e.target.value })}
                 aria-label="Dashboard name"
-                className="mt-1 block w-full rounded border border-slate-300 px-3 py-2 text-sm"
+                className="field mt-1 block w-full"
               />
             </label>
-            <p className="text-xs text-slate-600">
+            <p className="text-xs text-muted">
               {draft.origin} · {scopeLabel(draft.scope)} · owner: Product owner
               {draft.matched && draft.matched.length > 0 ? ` · matched ${draft.matched.join(', ')}` : ''}
             </p>
             <div>
-              <p className="text-sm font-medium text-slate-700">Cards (review, reorder or remove)</p>
+              <p className="text-sm font-medium text-body">Cards (review, reorder or remove)</p>
               <div className="mt-1">
                 <CardListEditor cards={draft.cards} scope={draft.scope} onChange={(cards) => setDraft({ ...draft, cards })} />
               </div>
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-700">Preview</p>
+              <p className="text-sm font-medium text-body">Preview</p>
               <ul aria-label="Preview" className="mt-1 grid gap-2 sm:grid-cols-3">
                 {draft.cards.map((c) => (
-                  <li key={c.id} className={`rounded border p-2 text-xs ${c.type === 'placeholder' ? 'border-dashed border-amber-300 bg-amber-50 text-amber-900' : 'border-slate-200 bg-slate-50 text-slate-700'}`}>
+                  <li key={c.id} className={`rounded-sm border p-2 text-xs ${c.type === 'placeholder' ? 'border-dashed border-caution-line bg-caution-soft text-caution' : 'border-line bg-surface-subtle text-body'}`}>
                     {c.type === 'placeholder' ? `Needs a data source: ${c.request}` : cardTitle(c)}
                   </li>
                 ))}
               </ul>
             </div>
             <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={create} disabled={!draft.name.trim() || draft.cards.length === 0} className="rounded bg-brand-blue px-4 py-2 text-sm font-medium text-white disabled:opacity-40">
+              <button type="button" onClick={create} disabled={!draft.name.trim() || draft.cards.length === 0} className="btn btn-primary">
                 Create
               </button>
-              <button type="button" onClick={() => setStep('start')} className="rounded border border-slate-300 px-4 py-2 text-sm">
+              <button type="button" onClick={() => setStep('start')} className="btn btn-secondary">
                 Back
               </button>
             </div>
@@ -373,11 +373,11 @@ export function EditCardsDialog({ dashboard, onClose }: { dashboard: Dashboard; 
             dashboardStore.update(dashboard.id, { cards })
             onClose()
           }}
-          className="rounded bg-brand-blue px-4 py-2 text-sm font-medium text-white"
+          className="btn btn-primary"
         >
           Save cards
         </button>
-        <button type="button" onClick={onClose} className="rounded border border-slate-300 px-4 py-2 text-sm">
+        <button type="button" onClick={onClose} className="btn btn-secondary">
           Cancel
         </button>
       </div>
