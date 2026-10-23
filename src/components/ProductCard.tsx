@@ -1,6 +1,6 @@
 import { ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { formatValue, getAttainment, getExpected, getStatus } from '../lib/metrics'
+import { formatPercent, formatValue, getAttainment, getExpected, getPaceRatio, getStatus } from '../lib/metrics'
 import { PRODUCT_ICONS } from '../lib/productIcons'
 import type { Kpi, KpiStatus, Product } from '../types'
 import KPIProgressBar from './KPIProgressBar'
@@ -78,7 +78,10 @@ function KpiRow({ kpi, quarterElapsed }: { kpi: Kpi; quarterElapsed: number }) {
   return (
     <li className={`space-y-2 py-3 ${status === 'at-risk' ? '-mx-2 rounded-lg bg-red-50/60 px-2' : ''}`}>
       <div className="flex items-start justify-between gap-2">
-        <span className="text-sm font-medium text-slate-800">{kpi.label}</span>
+        <span className="text-sm font-medium text-slate-800">
+          {kpi.label}
+          {kpi.definition && <span className="block text-xs font-normal text-slate-500">{kpi.definition}</span>}
+        </span>
         <span className="shrink-0">
           <StatusBadge status={status} />
         </span>
@@ -92,7 +95,22 @@ function KpiRow({ kpi, quarterElapsed }: { kpi: Kpi; quarterElapsed: number }) {
           <span className="text-xs tabular-nums text-slate-500">{formatValue(expected, kpi.unit)} expected by now</span>
         )}
       </div>
-      <KPIProgressBar attainment={getAttainment(kpi)} status={status} label={`${kpi.label}: share of target`} />
+      <KPIProgressBar attainment={getAttainment(kpi)} status={status} label={`${kpi.label}: share of target`} showValue={false} />
+      {/* Bar length is share of the full-quarter target; the status badge is based on pace, so label both. */}
+      <p className="text-xs tabular-nums text-slate-600">
+        {formatPercent(getAttainment(kpi))} of target
+        {kpi.kind === 'cumulative' && <> · {formatPercent(getPaceRatio(kpi, quarterElapsed))} of pace</>}
+      </p>
+      {kpi.related && (
+        // Sits above the card's stretched link so it gets its own click.
+        <Link
+          to={kpi.related.to}
+          className="relative z-10 inline-flex items-center gap-1 text-xs font-medium text-brand-blue hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue"
+        >
+          {kpi.related.label}
+          <ArrowRight className="h-3 w-3" aria-hidden />
+        </Link>
+      )}
     </li>
   )
 }

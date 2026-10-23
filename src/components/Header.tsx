@@ -1,6 +1,7 @@
 import { UserRound } from 'lucide-react'
 import { Link, NavLink } from 'react-router-dom'
 import pncLogo from '../assets/pnc-logo-white.svg'
+import DataFreshness from './DataFreshness'
 import { opportunities } from '../data/opportunities'
 import { products, reportingPeriod } from '../data/productMetrics'
 import { getStatus } from '../lib/metrics'
@@ -60,16 +61,14 @@ export default function Header() {
                 }
               >
                 {label}
-                {atRisk && (
-                  <span className="h-2 w-2 rounded-full bg-red-500" title="Has an at-risk KPI">
-                    <span className="sr-only">(has an at-risk KPI)</span>
-                  </span>
-                )}
+                {/* Label lives on the dot, so the tab's own name stays "Checking Insights". */}
+                {atRisk && <span role="img" aria-label="At risk" title="Has an at-risk KPI" className="h-2 w-2 rounded-full bg-red-500" />}
               </NavLink>
             </li>
           ))}
         </ul>
       </nav>
+      <DataFreshness />
     </header>
   )
 }

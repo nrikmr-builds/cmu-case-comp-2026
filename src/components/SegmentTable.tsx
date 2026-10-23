@@ -1,13 +1,24 @@
 import { ChevronDown, ChevronRight, RotateCcw } from 'lucide-react'
 import { Fragment, useState } from 'react'
+import { products, reportingPeriod } from '../data/productMetrics'
 import type { SegmentQuarter } from '../data/segmentHistory'
-import { formatPercent, formatValue, getPotentialAccounts } from '../lib/metrics'
-import { compareToHistory, getQuarterRate, getRateReference, type RateReference } from '../lib/segmentHistory'
+import { formatValue, getPotentialAccounts, getStatus } from '../lib/metrics'
+import {
+  compareToHistory,
+  formatRate,
+  getHistoricalOpportunity,
+  getLastQuarterPotential,
+  getQuarterRate,
+  getRateReference,
+  type RateReference,
+} from '../lib/segmentHistory'
 import type { CustomerSegment } from '../types'
+import StatusBadge from './StatusBadge'
 
 /** Slider range for the Product Owner's conversion-rate assumptions. */
 const MAX_CONVERSION_RATE = 0.3
-const CONVERSION_STEP = 0.005
+// 0.1% steps so the slider can land exactly on any historical rate shown.
+const CONVERSION_STEP = 0.001
 
 interface Props {
   /** Segments with the Product Owner's adjusted conversion rates applied. */
@@ -25,8 +36,9 @@ interface Props {
 const accounts = (n: number) => formatValue(n, 'accounts')
 /** Position along the slider track, as a CSS percentage. */
 const trackPosition = (rate: number) => `${(Math.min(rate, MAX_CONVERSION_RATE) / MAX_CONVERSION_RATE) * 100}%`
-/** Snap a reference rate onto the slider's step so the thumb lands on it. */
-const toStep = (rate: number) => Math.round(rate / CONVERSION_STEP) * CONVERSION_STEP
+/** KPI whose "related" link points at this segment's row, e.g. Digital Opening Completion → Abandoned Digital. */
+const relatedKpi = (segmentId: string) =>
+  products.flatMap((p) => p.kpis).find((k) => k.related?.to.endsWith(`#segment-${segmentId}`))
 
 export default function SegmentTable({ segments, accountNoun, baselineRates, history, onRateChange, onReset }: Props) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
@@ -35,11 +47,7 @@ export default function SegmentTable({ segments, accountNoun, baselineRates, his
   const isAdjusted = segments.some((s) => s.estimatedConversionRate !== baselineRates[s.id])
   const references = Object.fromEntries(segments.map((s) => [s.id, getRateReference(history[s.id])]))
   // What this quarter would look like if every segment converted at its last-quarter rate.
-  const totalAtLastQuarter = segments.reduce((sum, s) => {
-    const ref = references[s.id]
-    return sum + (ref ? Math.round(s.eligibleCustomers * ref.last.rate) : 0)
-  }, 0)
-  const allHaveHistory = segments.every((s) => references[s.id])
+  const { totalAtLastQuarter, complete: allHaveHistory } = getHistoricalOpportunity(segments, history)
 
   const toggle = (id: string) =>
     setExpanded((prev) => {
@@ -91,11 +99,17 @@ export default function SegmentTable({ segments, accountNoun, baselineRates, his
               const changed = s.estimatedConversionRate !== baseline
               const ref = references[s.id]
               const isOpen = expanded.has(s.id)
+              const kpi = relatedKpi(s.id)
               return (
                 <Fragment key={s.id}>
-                  <tr className="align-top">
+                  <tr id={`segment-${s.id}`} className="scroll-mt-24 align-top target:bg-orange-50">
                     <th scope="row" className="py-3 pr-4 font-medium text-brand-ink">
                       {s.name}
+                      {kpi && (
+                        <span className="mt-1 flex flex-wrap items-center gap-1 text-xs font-normal text-slate-600">
+                          Related KPI: {kpi.label} <StatusBadge status={getStatus(kpi, reportingPeriod.quarterElapsed)} />
+                        </span>
+                      )}
                       {ref && (
                         <button
                           type="button"
@@ -122,11 +136,11 @@ export default function SegmentTable({ segments, accountNoun, baselineRates, his
                           value={s.estimatedConversionRate}
                           onChange={(e) => onRateChange(s.id, Number(e.target.value))}
                           aria-label={`${s.name} estimated conversion rate`}
-                          aria-valuetext={formatPercent(s.estimatedConversionRate)}
+                          aria-valuetext={formatRate(s.estimatedConversionRate)}
                           className="w-full cursor-pointer accent-brand-blue"
                         />
                         <span className={`w-12 text-right tabular-nums ${changed ? 'font-semibold text-brand-blue' : ''}`}>
-                          {formatPercent(s.estimatedConversionRate)}
+                          {formatRate(s.estimatedConversionRate)}
                         </span>
                       </div>
                       {ref && <HistoryTrack rate={s.estimatedConversionRate} reference={ref} />}
@@ -135,11 +149,11 @@ export default function SegmentTable({ segments, accountNoun, baselineRates, his
                           rate={s.estimatedConversionRate}
                           reference={ref}
                           baseline={changed ? baseline : undefined}
-                          onUse={(rate) => onRateChange(s.id, toStep(rate))}
+                          onUse={(rate) => onRateChange(s.id, rate)}
                         />
                       ) : (
                         <p className="mt-1 text-xs text-slate-500">
-                          {changed ? `Baseline ${formatPercent(baseline)} · ` : 'Baseline · '}No history yet
+                          {changed ? `Baseline ${formatRate(baseline)} · ` : 'Baseline · '}No history yet
                         </p>
                       )}
                     </td>
@@ -147,7 +161,7 @@ export default function SegmentTable({ segments, accountNoun, baselineRates, his
                       <span className="font-semibold text-brand-ink">{accounts(getPotentialAccounts(s))}</span>
                       {ref && (
                         <span className="mt-1 block text-xs text-slate-500">
-                          {accounts(Math.round(s.eligibleCustomers * ref.last.rate))} at last-qtr rate
+                          {accounts(getLastQuarterPotential(s, ref))} at {formatRate(ref.last.rate)} last-qtr rate
                         </span>
                       )}
                     </td>
@@ -227,11 +241,11 @@ function HistoryNote({ rate, reference, baseline, onUse }: NoteProps) {
     <div className="mt-1.5 space-y-1 text-xs text-slate-600">
       <p className="tabular-nums">
         <span className="inline-block h-2 w-2 rounded-full bg-brand-blue align-middle" aria-hidden /> Last qtr ({reference.last.quarter}){' '}
-        <span className="font-medium text-slate-800">{formatPercent(reference.last.rate)}</span>
+        <span className="font-medium text-slate-800">{formatRate(reference.last.rate)}</span>
         {' · '}
         <span className="inline-block h-2.5 w-0.5 bg-slate-500 align-middle" aria-hidden /> {reference.quarters}-qtr avg{' '}
-        <span className="font-medium text-slate-800">{formatPercent(reference.average)}</span>
-        {' · '}Range {formatPercent(reference.min)}–{formatPercent(reference.max)}
+        <span className="font-medium text-slate-800">{formatRate(reference.average)}</span>
+        {' · '}Range {formatRate(reference.min)}–{formatRate(reference.max)}
       </p>
       <div className="flex flex-wrap items-center gap-1.5">
         <button type="button" className={chip} onClick={() => onUse(reference.last.rate)}>
@@ -240,7 +254,7 @@ function HistoryNote({ rate, reference, baseline, onUse }: NoteProps) {
         <button type="button" className={chip} onClick={() => onUse(reference.average)}>
           Use avg
         </button>
-        {baseline !== undefined && <span className="text-slate-500">Baseline {formatPercent(baseline)}</span>}
+        {baseline !== undefined && <span className="text-slate-500">Baseline {formatRate(baseline)}</span>}
       </div>
       {status !== 'within' && (
         <p className="font-medium text-amber-700">
@@ -270,13 +284,13 @@ function HistoryTable({ quarters, assumption }: { quarters: SegmentQuarter[]; as
             <th scope="row" className="py-1 pr-4 font-normal">{q.quarter}</th>
             <td className="py-1 pr-4 text-right">{accounts(q.eligible)}</td>
             <td className="py-1 pr-4 text-right">{accounts(q.converted)}</td>
-            <td className="py-1 text-right">{formatPercent(getQuarterRate(q))}</td>
+            <td className="py-1 text-right">{formatRate(getQuarterRate(q))}</td>
           </tr>
         ))}
         <tr className="border-t border-slate-200 font-semibold text-brand-blue">
           <th scope="row" className="py-1 pr-4">This quarter (your assumption)</th>
           <td colSpan={2} />
-          <td className="py-1 text-right">{formatPercent(assumption)}</td>
+          <td className="py-1 text-right">{formatRate(assumption)}</td>
         </tr>
       </tbody>
     </table>

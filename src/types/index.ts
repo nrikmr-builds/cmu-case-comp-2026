@@ -21,6 +21,10 @@ export interface Kpi {
   unit: KpiUnit
   target: number
   actual: number
+  /** Short plain-language definition shown under the label. */
+  definition?: string
+  /** A related place to dig in, e.g. the segment that explains this KPI. */
+  related?: { label: string; to: string }
 }
 
 export interface Product {
@@ -34,6 +38,10 @@ export interface ReportingPeriod {
   quarter: string
   /** Fraction of the quarter that has passed, 0–1. */
   quarterElapsed: number
+  /** Calendar days in the quarter. */
+  quarterDays: number
+  /** ISO date the internal (synthetic) data snapshot represents. */
+  internalAsOf: string
 }
 
 export interface CustomerSegment {

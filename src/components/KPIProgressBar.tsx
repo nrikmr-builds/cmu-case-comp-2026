@@ -11,9 +11,11 @@ interface Props {
   attainment: number
   status: KpiStatus
   label: string
+  /** Hide the % beside the bar when the caller prints a labeled figure instead. */
+  showValue?: boolean
 }
 
-export default function KPIProgressBar({ attainment, status, label }: Props) {
+export default function KPIProgressBar({ attainment, status, label, showValue = true }: Props) {
   const percent = Math.round(attainment * 100)
   return (
     <div className="flex items-center gap-3">
@@ -27,7 +29,7 @@ export default function KPIProgressBar({ attainment, status, label }: Props) {
       >
         <div className={`h-full rounded-full ${BAR_COLORS[status]}`} style={{ width: `${Math.min(percent, 100)}%` }} />
       </div>
-      <span className="w-10 text-right text-xs tabular-nums text-slate-600">{percent}%</span>
+      {showValue && <span className="w-10 text-right text-xs tabular-nums text-slate-600">{percent}%</span>}
     </div>
   )
 }

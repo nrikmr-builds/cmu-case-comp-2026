@@ -5,6 +5,9 @@ import type { CustomerSegment } from '../types'
 
 export type ChannelId = 'branch' | 'digital'
 
+/** The one definition of a primary checking account, used by the funnel, health mix, and home page KPI. */
+export const PRIMACY_DEFINITION = 'direct deposit + 2 bill payments'
+
 /** New checking accounts opened this quarter, by how far they got. */
 export interface ActivationFunnel {
   channel: ChannelId
@@ -14,7 +17,7 @@ export interface ActivationFunnel {
   funded: number
   /** First debit card transaction within 30 days. */
   activated: number
-  /** Recurring direct deposit and 2+ bill payments within 90 days. */
+  /** Primary (direct deposit + 2 bill payments) within 90 days. */
   primary: number
 }
 
@@ -90,7 +93,7 @@ export const healthMixHistory: HealthMix[] = [
   { quarter: 'Q4 2025', primary: 196000, active: 170000, slipping: 31000, dormant: 21000 },
   { quarter: 'Q1 2026', primary: 193000, active: 175000, slipping: 30500, dormant: 22500 },
   { quarter: 'Q2 2026', primary: 189000, active: 181000, slipping: 29000, dormant: 25000 },
-  { quarter: 'Q3 2026', primary: 182000, active: 188000, slipping: 28000, dormant: 27300 },
+  { quarter: 'Q3 2026', primary: 182750, active: 187000, slipping: 28050, dormant: 27200 },
 ]
 
 export const currentQuarterHealth = {

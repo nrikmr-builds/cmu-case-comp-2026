@@ -1,7 +1,7 @@
 // Owner: Kem (Developer 2). Shows evidence and trade-offs; the decision stays with the Product Owner.
 import { ArrowLeft } from 'lucide-react'
-import { useState } from 'react'
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, Navigate, useLocation, useParams } from 'react-router-dom'
 import AIInsightPanel from '../components/AIInsightPanel'
 import CheckingHealthSections from '../components/CheckingHealthSections'
 import CheckingSummaryAddendum from '../components/CheckingSummaryAddendum'
@@ -16,14 +16,19 @@ import type { ProductOpportunity } from '../types'
 
 export default function OpportunityInsights() {
   const { productId = '' } = useParams()
+  const { hash } = useLocation()
   const opportunity = getOpportunity(productId)
+  // Client-side navigation doesn't scroll to #anchors on its own (e.g. a home page KPI linking to its segment).
+  useEffect(() => {
+    if (hash) document.getElementById(decodeURIComponent(hash.slice(1)))?.scrollIntoView({ block: 'start' })
+  }, [hash, productId])
   if (!opportunity) return <Navigate to="/" replace />
   // Keyed so slider adjustments reset when switching products.
   return <OpportunityDetail key={opportunity.productId} opportunity={opportunity} />
 }
 
 function OpportunityDetail({ opportunity }: { opportunity: ProductOpportunity }) {
-  const { quarter, quarterElapsed } = reportingPeriod
+  const { quarter } = reportingPeriod
   const kpi = getKpi(opportunity.focusKpiId)
   // "New CD Account Openings" already names its product; "New Account Openings" doesn't.
   const kpiName = kpi.label.includes(opportunity.shortName) ? kpi.label : `${opportunity.shortName} ${kpi.label}`
@@ -56,7 +61,7 @@ function OpportunityDetail({ opportunity }: { opportunity: ProductOpportunity })
       </PageHero>
 
       <section className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6">
-        <GapSummary kpi={kpi} quarter={quarter} quarterElapsed={quarterElapsed} />
+        <GapSummary kpi={kpi} period={reportingPeriod} />
         <SegmentTable
           segments={segments}
           accountNoun={opportunity.accountNoun}
@@ -67,8 +72,9 @@ function OpportunityDetail({ opportunity }: { opportunity: ProductOpportunity })
         />
         <AIInsightPanel
           kpi={kpi}
-          quarterElapsed={quarterElapsed}
+          period={reportingPeriod}
           segments={segments}
+          history={segmentHistory}
           openQuestions={opportunity.openQuestions}
           addendum={opportunity.productId === 'checking' ? <CheckingSummaryAddendum /> : undefined}
         />

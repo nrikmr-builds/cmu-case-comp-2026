@@ -15,7 +15,7 @@ const TOPIC_RULES: { name: string; pattern: RegExp; matches: (kpi: Kpi) => boole
   { name: 'Deposit growth', pattern: /deposit|balance|dollar|\$/i, matches: (k) => k.unit === 'usd' },
   { name: 'Digital adoption', pattern: /digital|online|mobile/i, matches: (k) => /digital/i.test(k.label) },
   { name: 'Renewals', pattern: /renew|retention|retain/i, matches: (k) => /renewal/i.test(k.label) },
-  { name: 'Account activity', pattern: /\bactiv|engag|usage/i, matches: (k) => /active/i.test(k.label) },
+  { name: 'Account activity', pattern: /\bactiv|engag|usage/i, matches: (k) => /active|primacy/i.test(k.label) },
 ]
 
 /** First match wins, so the more specific phrasing comes first. */

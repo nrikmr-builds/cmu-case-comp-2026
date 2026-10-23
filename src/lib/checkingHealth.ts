@@ -36,13 +36,24 @@ export function getDormancyRate(mix: HealthMix): number {
   return mix.dormant / getHealthTotal(mix)
 }
 
-export function getPrimacyRate(accountsWithDirectDeposit: number, mix: HealthMix): number {
+/** Primary tier ÷ all open accounts. Primary = PRIMACY_DEFINITION (direct deposit + 2 bill payments). */
+export function getPrimacyRate(mix: HealthMix): number {
+  return mix.primary / getHealthTotal(mix)
+}
+
+/** Any direct deposit ÷ all open accounts. Broader than primacy: no bill-payment condition. */
+export function getDirectDepositRate(accountsWithDirectDeposit: number, mix: HealthMix): number {
   return accountsWithDirectDeposit / getHealthTotal(mix)
 }
 
-/** Closed plus newly dormant accounts, as a share of the accounts open at the start of the quarter. */
-export function getAttritionRate(closed: number, newlyDormant: number, startOfQuarter: HealthMix): number {
-  return (closed + newlyDormant) / getHealthTotal(startOfQuarter)
+/** Accounts closed this quarter ÷ accounts open at the start of the quarter. */
+export function getClosureRate(closed: number, startOfQuarter: HealthMix): number {
+  return closed / getHealthTotal(startOfQuarter)
+}
+
+/** Accounts that went dormant this quarter ÷ accounts open at the start of the quarter. */
+export function getNewDormancyRate(newlyDormant: number, startOfQuarter: HealthMix): number {
+  return newlyDormant / getHealthTotal(startOfQuarter)
 }
 
 /** The signal that best separates churned from retained accounts. */
@@ -50,13 +61,13 @@ export function getStrongestSignal(signals: DropOffSignal[]): DropOffSignal {
   return signals.reduce((best, s) => (s.lift > best.lift ? s : best))
 }
 
-export function getClosureRate(cohort: FeeCohort): number {
+export function getFeeCohortClosureRate(cohort: FeeCohort): number {
   return cohort.closedWithin60Days / cohort.accounts
 }
 
 /** Closures above what the no-fee group's rate would predict for the fee group. */
 export function getExcessFeeClosures(feeGroup: FeeCohort, baseline: FeeCohort): number {
-  return Math.round((getClosureRate(feeGroup) - getClosureRate(baseline)) * feeGroup.accounts)
+  return Math.round((getFeeCohortClosureRate(feeGroup) - getFeeCohortClosureRate(baseline)) * feeGroup.accounts)
 }
 
 export function getSavingsToCheckingRatio(group: SavingsLinkGroup): number {
@@ -65,6 +76,11 @@ export function getSavingsToCheckingRatio(group: SavingsLinkGroup): number {
 
 export function getExternalSavingsShare(group: SavingsLinkGroup): number {
   return group.recurringExternalSavingsTransfers / group.customers
+}
+
+/** Always one decimal (42.8%, 28.0%), for figures that sit next to each other and must not look alike by rounding. */
+export function formatPercent1(fraction: number): string {
+  return `${(fraction * 100).toFixed(1)}%`
 }
 
 export function formatUsd(value: number): string {

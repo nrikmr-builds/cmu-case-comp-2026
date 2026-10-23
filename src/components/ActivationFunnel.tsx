@@ -1,7 +1,7 @@
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import type { ActivationFunnel as Funnel } from '../data/checkingHealth'
-import { FUNNEL_STAGES, getNeverActivated, getStageConversion, getTotalFunnel } from '../lib/checkingHealth'
-import { formatPercent, formatValue } from '../lib/metrics'
+import { PRIMACY_DEFINITION, type ActivationFunnel as Funnel } from '../data/checkingHealth'
+import { formatPercent1, FUNNEL_STAGES, getNeverActivated, getStageConversion, getTotalFunnel } from '../lib/checkingHealth'
+import { formatValue } from '../lib/metrics'
 import { CHART_COLORS } from '../lib/chartColors'
 import SectionCard from './SectionCard'
 
@@ -27,22 +27,26 @@ export default function ActivationFunnel({ channels, quarter }: Props) {
       id="activation-heading"
       title="Activation Funnel · New Accounts"
       source="internal"
-      description={`Checking accounts opened in ${quarter}, followed through first deposit, first debit card use (30 days), and primacy (direct deposit + 2 bill payments, 90 days). Accounts opened late in the quarter are still inside those windows.`}
+      description={`Checking accounts opened in ${quarter}, followed through first deposit, first debit card use (30 days), and primacy (${PRIMACY_DEFINITION}, 90 days). Accounts opened late in the quarter are still inside those windows.`}
     >
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="rounded-lg border border-red-200 bg-red-50 p-4">
           <p className="text-sm text-slate-600">Opened but never activated</p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums text-brand-ink">{formatPercent(neverActivated.share)}</p>
+          <p className="mt-1 text-2xl font-semibold tabular-nums text-brand-ink">{formatPercent1(neverActivated.share)}</p>
           <p className="mt-1 text-xs text-slate-600">
             {accounts(neverActivated.accounts)} of {accounts(total.opened)} new accounts have no debit card use yet.
           </p>
         </div>
         {byChannel.map((c) => (
           <div key={c.channel} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <p className="text-sm text-slate-600">{c.label}: never activated</p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums text-brand-ink">{formatPercent(c.never.share)}</p>
+            <p className="text-sm font-medium text-slate-700">{c.label} · {accounts(c.opened)} opened</p>
+            <p className="mt-1 text-2xl font-semibold tabular-nums text-brand-ink">
+              {formatPercent1(c.never.share)} <span className="text-sm font-normal text-slate-600">never activated</span>
+            </p>
             <p className="mt-1 text-xs text-slate-600">
-              {accounts(c.opened)} opened · {formatPercent(c.primary / c.opened)} reached primary
+              {accounts(c.opened - c.activated)} ÷ {accounts(c.opened)} never activated ·{' '}
+              <span className="font-medium text-slate-700">{formatPercent1(c.primary / c.opened)} reached primary</span>{' '}
+              ({accounts(c.primary)} ÷ {accounts(c.opened)})
             </p>
           </div>
         ))}
@@ -82,7 +86,7 @@ export default function ActivationFunnel({ channels, quarter }: Props) {
                   <td key={j} className="py-2 pr-4 text-right tabular-nums">
                     {accounts(funnel[key])}
                     {i > 0 && (
-                      <span className="ml-2 text-xs text-slate-500">{formatPercent(getStageConversion(funnel, i))}</span>
+                      <span className="ml-2 text-xs text-slate-500">{formatPercent1(getStageConversion(funnel, i))}</span>
                     )}
                   </td>
                 ))}
@@ -95,7 +99,7 @@ export default function ActivationFunnel({ channels, quarter }: Props) {
 
       <p className="mt-4 rounded-md bg-orange-50 p-4 text-sm text-slate-800">
         <span className="font-semibold">Insight:</span> {worst.label} opens more accounts, but{' '}
-        {formatPercent(worst.never.share)} of them never activate, against {formatPercent(best.never.share)} for{' '}
+        {formatPercent1(worst.never.share)} of them never activate, against {formatPercent1(best.never.share)} for{' '}
         {best.label.toLowerCase()}.
         {worst.channel === 'branch' &&
           " Branch teams are measured on openings, not activation, so this gap may not show up in today's branch scorecards."}

@@ -1,8 +1,16 @@
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import type { HealthMix } from '../data/checkingHealth'
+import { PRIMACY_DEFINITION, type HealthMix } from '../data/checkingHealth'
 import { CHART_COLORS } from '../lib/chartColors'
-import { getAttritionRate, getDormancyRate, getHealthTotal, getPrimacyRate } from '../lib/checkingHealth'
-import { formatPercent, formatValue } from '../lib/metrics'
+import {
+  formatPercent1,
+  getClosureRate,
+  getDirectDepositRate,
+  getDormancyRate,
+  getHealthTotal,
+  getNewDormancyRate,
+  getPrimacyRate,
+} from '../lib/checkingHealth'
+import { formatValue } from '../lib/metrics'
 import SectionCard from './SectionCard'
 
 interface Props {
@@ -14,7 +22,7 @@ interface Props {
 }
 
 const TIERS = [
-  { key: 'primary', label: 'Primary', note: 'Direct deposit + bill payments' },
+  { key: 'primary', label: 'Primary', note: `${PRIMACY_DEFINITION[0].toUpperCase()}${PRIMACY_DEFINITION.slice(1)}` },
   { key: 'active', label: 'Active', note: 'Regular use, no direct deposit' },
   { key: 'slipping', label: 'Slipping', note: 'Activity falling' },
   { key: 'dormant', label: 'Dormant', note: 'No customer activity 90+ days' },
@@ -29,23 +37,35 @@ export default function AccountHealthMix({ history, accountsWithDirectDeposit, c
     quarter: mix.quarter,
     ...Object.fromEntries(TIERS.map(({ key, label }) => [label, mix[key] / getHealthTotal(mix)])),
   }))
-  const primaryShare = (mix: HealthMix) => mix.primary / getHealthTotal(mix)
+  const accounts = (n: number) => formatValue(n, 'accounts')
+  const currentTotal = getHealthTotal(current)
+  const startTotal = getHealthTotal(previous)
 
   const tiles = [
     {
       label: 'Primacy rate',
-      value: formatPercent(getPrimacyRate(accountsWithDirectDeposit, current)),
-      note: 'Open accounts with a direct deposit',
+      value: formatPercent1(getPrimacyRate(current)),
+      note: `Primary tier (${PRIMACY_DEFINITION}): ${accounts(current.primary)} ÷ ${accounts(currentTotal)} open accounts`,
+    },
+    {
+      label: 'Direct-deposit rate',
+      value: formatPercent1(getDirectDepositRate(accountsWithDirectDeposit, current)),
+      note: `Any direct deposit, bill payments or not: ${accounts(accountsWithDirectDeposit)} ÷ ${accounts(currentTotal)}`,
     },
     {
       label: '90-day dormancy rate',
-      value: formatPercent(getDormancyRate(current)),
-      note: `${formatPercent(getDormancyRate(first))} in ${first.quarter}`,
+      value: formatPercent1(getDormancyRate(current)),
+      note: `${accounts(current.dormant)} ÷ ${accounts(currentTotal)}; ${formatPercent1(getDormancyRate(first))} in ${first.quarter}`,
     },
     {
-      label: 'Attrition rate',
-      value: formatPercent(getAttritionRate(closedThisQuarter, newlyDormantThisQuarter, previous)),
-      note: `${formatValue(closedThisQuarter, 'accounts')} closed + ${formatValue(newlyDormantThisQuarter, 'accounts')} newly dormant this quarter`,
+      label: 'Closure rate (this quarter)',
+      value: formatPercent1(getClosureRate(closedThisQuarter, previous)),
+      note: `${accounts(closedThisQuarter)} closed ÷ ${accounts(startTotal)} open at quarter start`,
+    },
+    {
+      label: 'New dormancy (this quarter)',
+      value: formatPercent1(getNewDormancyRate(newlyDormantThisQuarter, previous)),
+      note: `${accounts(newlyDormantThisQuarter)} went dormant ÷ ${accounts(startTotal)} open at quarter start`,
     },
   ]
 
@@ -56,7 +76,7 @@ export default function AccountHealthMix({ history, accountsWithDirectDeposit, c
       source="internal"
       description={`Every open checking account sorted into four health tiers at quarter end, for the last ${history.length} quarters.`}
     >
-      <dl className="grid gap-4 sm:grid-cols-3">
+      <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {tiles.map((t) => (
           <div key={t.label} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
             <dt className="text-sm text-slate-600">{t.label}</dt>
@@ -71,8 +91,8 @@ export default function AccountHealthMix({ history, accountsWithDirectDeposit, c
           <BarChart data={chartData} margin={{ left: 0, right: 8 }}>
             <CartesianGrid vertical={false} stroke={CHART_COLORS.grid} />
             <XAxis dataKey="quarter" tick={{ fontSize: 12 }} />
-            <YAxis tickFormatter={(v: number) => formatPercent(v)} tick={{ fontSize: 12 }} width={48} domain={[0, 1]} />
-            <Tooltip formatter={(value) => formatPercent(Number(value))} />
+            <YAxis tickFormatter={(v: number) => `${Math.round(v * 100)}%`} tick={{ fontSize: 12 }} width={48} domain={[0, 1]} />
+            <Tooltip formatter={(value) => formatPercent1(Number(value))} />
             <Legend itemSorter={null} />
             {TIERS.map(({ key, label }) => (
               <Bar key={key} dataKey={label} stackId="mix" fill={CHART_COLORS[key]} />
@@ -89,10 +109,12 @@ export default function AccountHealthMix({ history, accountsWithDirectDeposit, c
       </ul>
 
       <p className="mt-4 rounded-md bg-orange-50 p-4 text-sm text-slate-800">
-        <span className="font-semibold">Insight:</span> The Primary tier went from {formatPercent(primaryShare(first))} to{' '}
-        {formatPercent(primaryShare(current))} of accounts over {history.length} quarters, and dormancy from{' '}
-        {formatPercent(getDormancyRate(first))} to {formatPercent(getDormancyRate(current))}. The headline active-account
-        rate counts Primary and Active together, so it can hold steady while accounts lose their paycheck.
+        <span className="font-semibold">Insight:</span> The primacy rate (Primary tier: {PRIMACY_DEFINITION}) went from{' '}
+        {formatPercent1(getPrimacyRate(first))} to {formatPercent1(getPrimacyRate(current))} of open accounts over{' '}
+        {history.length} quarters, and dormancy from {formatPercent1(getDormancyRate(first))} to{' '}
+        {formatPercent1(getDormancyRate(current))}. The headline Active Account Rate counts Primary and Active together
+        ({formatPercent1((current.primary + current.active) / currentTotal)}), so it can hold steady while accounts lose
+        their paycheck.
       </p>
     </SectionCard>
   )

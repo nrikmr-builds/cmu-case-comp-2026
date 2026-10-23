@@ -1,7 +1,7 @@
 import { Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { FeeCohort } from '../data/checkingHealth'
 import { CHART_COLORS } from '../lib/chartColors'
-import { formatUsd, getClosureRate, getExcessFeeClosures } from '../lib/checkingHealth'
+import { formatUsd, getFeeCohortClosureRate as getClosureRate, getExcessFeeClosures } from '../lib/checkingHealth'
 import { formatPercent, formatValue } from '../lib/metrics'
 import SectionCard from './SectionCard'
 
