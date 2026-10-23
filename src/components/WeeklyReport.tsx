@@ -138,7 +138,7 @@ export default function WeeklyReport({ report, onClose }: Props) {
           <table className="w-full text-left text-xs">
             <thead className="border-b border-slate-200 text-slate-500">
               <tr>
-                {['Product', 'KPI', 'Target', 'Actual', 'Pace', 'Status', 'Change vs. last week'].map((h) => (
+                {['Product', 'KPI', 'Target', 'Actual', 'vs. expected', '% of full target', 'Status', 'Change vs. last week'].map((h) => (
                   <th key={h} scope="col" className="py-1 pr-2 font-medium">{h}</th>
                 ))}
               </tr>
@@ -150,13 +150,17 @@ export default function WeeklyReport({ report, onClose }: Props) {
                   <th scope="row" className="py-1 pr-2 font-medium">{k.label}</th>
                   <td className="py-1 pr-2 tabular-nums">{k.target}</td>
                   <td className="py-1 pr-2 tabular-nums">{k.actual}</td>
-                  <td className="py-1 pr-2 tabular-nums">{k.pace}</td>
+                  <td className="py-1 pr-2 tabular-nums">{k.vsExpected}</td>
+                  <td className="py-1 pr-2 tabular-nums">{k.ofTarget}</td>
                   <td className={`py-1 pr-2 font-medium ${k.status === 'At Risk' ? 'text-red-700' : k.status === 'Watch' ? 'text-amber-700' : 'text-green-700'}`}>{k.status}</td>
                   <td className="py-1 text-slate-600">{k.change}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+          <p className="mt-1 text-[10px] text-slate-500">
+            vs. expected: counts and deposits = actual ÷ expected by now; rates = actual ÷ target. % of full target: counts and deposits only.
+          </p>
         </Section>
 
         <Section title="2. Top 3 things that changed and why">
@@ -233,6 +237,16 @@ export default function WeeklyReport({ report, onClose }: Props) {
                   className="mt-0.5 block w-full rounded border border-slate-300 px-2 py-1 text-sm"
                 />
                 <span className="block text-xs text-slate-600">Evidence: {d.evidence}</span>
+                <label className="sr-only" htmlFor={`proposed-${i}`}>
+                  {d.title}: proposed
+                </label>
+                <textarea
+                  id={`proposed-${i}`}
+                  value={d.proposed}
+                  rows={2}
+                  onChange={(ev) => setDecisions((prev) => prev.map((x, j) => (j === i ? { ...x, proposed: ev.target.value } : x)))}
+                  className="mt-0.5 block w-full rounded border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-medium text-brand-ink"
+                />
               </li>
             ))}
           </ol>

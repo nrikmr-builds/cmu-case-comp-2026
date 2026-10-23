@@ -6,7 +6,7 @@ import { seedCampaigns } from '../data/campaignSeeds'
 import { DAYS_WITH_DATA, dayToIso } from '../data/dailyOpenings'
 import { marketSignals } from '../data/marketSignals'
 import { getKpi, products, reportingPeriod } from '../data/productMetrics'
-import { feeClosureGap, OUTCOME_LABELS } from './campaignEconomics'
+import { computeEconomics, feeClosureGap, inputsFromPreset, OUTCOME_LABELS } from './campaignEconomics'
 import type { SavedCampaign } from './campaignStore'
 import { getTotals, getTrackedCampaigns } from './campaignTracking'
 import {
@@ -45,6 +45,8 @@ export interface ReportDecision {
   evidence: string
   /** Editable before export. */
   text: string
+  /** Computed proposal from the data layer; editable before export. */
+  proposed: string
 }
 
 export interface ReportSnapshot {
@@ -54,7 +56,8 @@ export interface ReportSnapshot {
   internalAsOf: string
   quarter: string
   headline: { text: string; reference: string }
-  kpis: { product: string; label: string; target: string; actual: string; pace: string; status: string; change: string }[]
+  /** vsExpected: counts/deposits = actual ÷ expected by now; rates = actual ÷ target. ofTarget: actual ÷ full target (counts/deposits only). */
+  kpis: { product: string; label: string; target: string; actual: string; vsExpected: string; ofTarget: string; status: string; change: string }[]
   changes: string[]
   campaigns: { name: string; status: string; type: string; result: string; liftLabel: string; costPerIncrementalPrimary: string; note: string }[]
   totals: { label: string; value: string }[]
@@ -75,18 +78,19 @@ export function buildWeeklyReport(saved: SavedCampaign[], rules: AlertRule[], no
     p.kpis.map((k) => {
       const status = getStatus(k, reportingPeriod.quarterElapsed)
       let change = '—, no weekly history'
-      let pace = k.kind === 'cumulative' ? formatPercent(k.actual / (k.target * reportingPeriod.quarterElapsed)) : formatPercent(k.actual / k.target)
+      let vsExpected = k.kind === 'cumulative' ? formatPercent(k.actual / (k.target * reportingPeriod.quarterElapsed)) : formatPercent(k.actual / k.target)
       if (k.id === openingsKpi.id) {
         const before = cumulativeOpenings(lastWeekDay)
         change = `+${accounts(k.actual - before)} (${accounts(before)} → ${accounts(k.actual)}); pace ${formatPercent(paceRatioAt(lastWeekDay))} → ${formatPercent(paceRatioAt(DAYS_WITH_DATA))}`
-        pace = formatPercent(paceRatioAt(DAYS_WITH_DATA))
+        vsExpected = formatPercent(paceRatioAt(DAYS_WITH_DATA))
       }
       return {
         product: p.name,
         label: k.label,
         target: formatValue(k.target, k.unit),
         actual: formatValue(k.actual, k.unit),
-        pace,
+        vsExpected,
+        ofTarget: k.kind === 'cumulative' ? formatPercent(k.actual / k.target) : '—',
         status: STATUS_TEXT[status],
         change,
       }
@@ -175,11 +179,14 @@ export function buildWeeklyReport(saved: SavedCampaign[], rules: AlertRule[], no
   const branch = activationFunnel.find((c) => c.channel === 'branch')
   const digital = activationFunnel.find((c) => c.channel === 'digital')
   const g = feeClosureGap()
+  const feeTest = inputsFromPreset('first-fee-forgiveness')
+  const feeTestCost = computeEconomics(feeTest).costs.total
   const decisions: ReportDecision[] = [
     {
       title: 'Re-forecast the Q3 openings target',
       evidence: `Plan covers about ${accounts(a.planQ3)} of ${accounts(a.gap)} incremental openings needed (${formatPercent(a.share)}).`,
       text: 'Approve a re-forecast of Q3 new checking openings, or name the new levers expected to close the rest.',
+      proposed: `Proposed Q3 re-forecast ≈ ${accounts(Math.round(head.projected) + a.planQ3)} = ${accounts(head.projected)} (last-7-day pace) + ${accounts(a.planQ3)} (plan). Campaign effects aren't additive, so treat this as an upper bound.`,
     },
     {
       title: 'Application Rescue full rollout',
@@ -187,11 +194,13 @@ export function buildWeeklyReport(saved: SavedCampaign[], rules: AlertRule[], no
         ? `Pilot is "${pilotTracked.actual.lift.label}": ${(pilotTracked.actual.lift.uplift * 100).toFixed(1)} pp uplift after ${pilotTracked.actual.lift.daysRun} days, 95% CI ${(pilotTracked.actual.lift.ci[0] * 100).toFixed(1)} to ${(pilotTracked.actual.lift.ci[1] * 100).toFixed(1)} pp.`
         : 'Pilot results unavailable.',
       text: `Decide after ${decideOn}, or as soon as the interval excludes 0.`,
+      proposed: `Proposed: hold the full rollout; re-read the pilot on ${decideOn}.`,
     },
     {
       title: 'First-fee policy',
       evidence: `First-fee closures ${(g.feeRate * 100).toFixed(1)}% vs. ${(g.noFeeRate * 100).toFixed(1)}%: ${formatUsd(perLost)} of fee revenue per extra closed account vs. ${formatUsd(campaignAssumptions.annualValuePerPrimary)} illustrative account value.`,
       text: 'Approve a First-Fee Forgiveness test on the customers approaching the fee threshold.',
+      proposed: `Proposed: approve a ${feeTest.offer.durationDays}-day First-Fee Forgiveness test on ${accounts(feeTest.audience)} accounts (${Math.round(feeTest.holdoutShare * 100)}% holdout), planned cost ${formatUsd(feeTestCost)}.`,
     },
     {
       title: 'Branch scorecard',
@@ -200,6 +209,7 @@ export function buildWeeklyReport(saved: SavedCampaign[], rules: AlertRule[], no
           ? `Branch never-activated ${formatPercent1(getNeverActivated(branch).share)} vs. ${formatPercent1(getNeverActivated(digital).share)} for digital.`
           : '',
       text: 'Add 30-day activation to branch scorecards alongside openings.',
+      proposed: 'Proposed: add the 30-day activation rate to the branch scorecard, next to openings.',
     },
   ]
 
@@ -236,9 +246,10 @@ export function reportToMarkdown(r: ReportSnapshot): string {
     `${r.headline.reference}`,
     '',
     '## 1. KPI status',
-    '| Product | KPI | Target | Actual | Pace | Status | Change vs. last week |',
-    '|---|---|---:|---:|---:|---|---|',
-    ...r.kpis.map((k) => `| ${k.product} | ${k.label} | ${k.target} | ${k.actual} | ${k.pace} | ${k.status} | ${k.change} |`),
+    '| Product | KPI | Target | Actual | vs. expected | % of full target | Status | Change vs. last week |',
+    '|---|---|---:|---:|---:|---:|---|---|',
+    ...r.kpis.map((k) => `| ${k.product} | ${k.label} | ${k.target} | ${k.actual} | ${k.vsExpected} | ${k.ofTarget} | ${k.status} | ${k.change} |`),
+    '_vs. expected: counts and deposits = actual ÷ expected by now; rates = actual ÷ target._',
     '',
     '## 2. Top 3 things that changed',
     ...r.changes.map((c, i) => `${i + 1}. ${c}`),
@@ -255,7 +266,7 @@ export function reportToMarkdown(r: ReportSnapshot): string {
     ...r.risks.map((x) => `- ${x}`),
     '',
     '## 5. Decisions needed from leadership',
-    ...r.decisions.map((d, i) => `${i + 1}. **${d.title}.** ${d.text} _Evidence: ${d.evidence}_`),
+    ...r.decisions.map((d, i) => `${i + 1}. **${d.title}.** ${d.text} _Evidence: ${d.evidence}_ ${d.proposed}`),
     '',
     '_All internal figures are synthetic and illustrative. External facts are sourced on the dashboard._',
   ]

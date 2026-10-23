@@ -70,11 +70,9 @@ export default function CampaignCenter({ onDesign }: Props) {
           const source = getAudienceSource(t)
           return (
             <article key={t.id} className="flex flex-col rounded-lg border border-slate-200 p-4">
-              <div className="flex items-start justify-between gap-2">
+              <div className="flex flex-wrap items-start justify-between gap-2">
                 <h4 className="font-semibold text-brand-ink">{t.name}</h4>
-                <span className="shrink-0">
-                  <KindBadge kind={t.kind} outcome={t.outcome} />
-                </span>
+                <KindBadge kind={t.kind} outcome={t.outcome} />
               </div>
               <p className="mt-1 text-xs text-slate-500">
                 Audience: {source.label} ({accounts(source.size)})

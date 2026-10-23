@@ -588,7 +588,7 @@ export function KindBadge({ kind, outcome }: { kind: CampaignKind; outcome: Camp
     'cross-sell': 'bg-purple-50 text-purple-800 ring-purple-300',
   }
   return (
-    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${styles[kind]}`}>
+    <span className={`inline-flex max-w-full rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${styles[kind]}`}>
       {KIND_LABEL[kind]} · {OUTCOME_LABELS[outcome].noun}
     </span>
   )
