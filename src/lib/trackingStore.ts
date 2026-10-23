@@ -3,7 +3,8 @@
 import { useSyncExternalStore } from 'react'
 import { DEFAULT_ALERT_RULES, evaluateRule, type AlertRule } from './dailyTracking'
 
-const RULES_KEY = 'pih.alertRules'
+// v2: rule 1 became "7-day average below plan pace"; older saved rules are ignored.
+const RULES_KEY = 'pih.alertRules.v2'
 const LAST_VISIT_KEY = 'pih.lastVisit'
 const CHANGE_EVENT = 'pih:tracking-changed'
 

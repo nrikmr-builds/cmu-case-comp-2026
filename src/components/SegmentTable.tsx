@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, RotateCcw } from 'lucide-react'
+import { ChevronDown, ChevronRight, Megaphone, RotateCcw } from 'lucide-react'
 import { Fragment, useState } from 'react'
 import { products, reportingPeriod } from '../data/productMetrics'
 import type { SegmentQuarter } from '../data/segmentHistory'
@@ -31,6 +31,8 @@ interface Props {
   history: Record<string, SegmentQuarter[]>
   onRateChange: (segmentId: string, rate: number) => void
   onReset: () => void
+  /** When set (checking), each row gets a "Design campaign" button. */
+  onDesignCampaign?: (segmentId: string) => void
 }
 
 const accounts = (n: number) => formatValue(n, 'accounts')
@@ -40,7 +42,7 @@ const trackPosition = (rate: number) => `${(Math.min(rate, MAX_CONVERSION_RATE) 
 const relatedKpi = (segmentId: string) =>
   products.flatMap((p) => p.kpis).find((k) => k.related?.to.endsWith(`#segment-${segmentId}`))
 
-export default function SegmentTable({ segments, accountNoun, baselineRates, history, onRateChange, onReset }: Props) {
+export default function SegmentTable({ segments, accountNoun, baselineRates, history, onRateChange, onReset, onDesignCampaign }: Props) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const totalEligible = segments.reduce((sum, s) => sum + s.eligibleCustomers, 0)
   const totalPotential = segments.reduce((sum, s) => sum + getPotentialAccounts(s), 0)
@@ -120,6 +122,17 @@ export default function SegmentTable({ segments, accountNoun, baselineRates, his
                         >
                           {isOpen ? <ChevronDown className="h-3.5 w-3.5" aria-hidden /> : <ChevronRight className="h-3.5 w-3.5" aria-hidden />}
                           {isOpen ? 'Hide history' : 'Show history'}
+                        </button>
+                      )}
+                      {onDesignCampaign && (
+                        <button
+                          type="button"
+                          onClick={() => onDesignCampaign(s.id)}
+                          className="mt-2 flex items-center gap-1 rounded border border-brand-blue px-2 py-1 text-xs font-medium text-brand-blue hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue"
+                          aria-label={`Design campaign for ${s.name}`}
+                        >
+                          <Megaphone className="h-3.5 w-3.5" aria-hidden />
+                          Design campaign
                         </button>
                       )}
                     </th>

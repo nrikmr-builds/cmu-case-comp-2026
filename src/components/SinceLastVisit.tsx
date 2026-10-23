@@ -1,28 +1,34 @@
 import { ArrowRight, Bell, CheckCheck, ChevronDown, ChevronRight, History } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { dropOffSignals } from '../data/checkingHealth'
 import { dailyOpenings } from '../data/dailyOpenings'
+import { getKpi, reportingPeriod } from '../data/productMetrics'
 import { marketSignals } from '../data/marketSignals'
 import {
   cumulativeOpenings,
   daysUntil,
   expiryLabel,
   getFlagChanges,
+  getWeeklyPace,
   getWindow,
+  planDailyPace,
   paceRatioAt,
   statusFromRatio,
   sumDays,
   windowLabel,
 } from '../lib/dailyTracking'
 import { formatPercent, formatTimestamp, formatValue } from '../lib/metrics'
+import { getPaceProjection } from '../lib/projection'
+import { getStrongestSignal } from '../lib/checkingHealth'
 import { markVisitSeen, useLastVisit, useTriggeredAlerts } from '../lib/trackingStore'
 import AlertRulesEditor from './AlertRulesEditor'
 import StatusBadge from './StatusBadge'
 
 /** Competitor offers that end within this many days of their retrieval date. */
 const EXPIRING_WITHIN_DAYS = 30
-/** How many early-warning signals to list, biggest movers first. */
-const TOP_SIGNALS = 3
+/** Besides the strongest signal (always shown first), how many other signals to list, biggest movers first. */
+const OTHER_SIGNALS = 2
 
 const accounts = (n: number) => formatValue(n, 'accounts')
 const signedPct = (x: number) => `${x >= 0 ? '+' : '−'}${Math.abs(x * 100).toFixed(1)}%`
@@ -46,9 +52,17 @@ export default function SinceLastVisit({ compact = false }: Props) {
   const paceNow = paceRatioAt(w.toDay)
   const statusBefore = statusFromRatio(paceBefore)
   const statusNow = statusFromRatio(paceNow)
-  const flagMovers = getFlagChanges(w)
-    .sort((a, b) => Math.abs(b.change) - Math.abs(a.change))
-    .slice(0, TOP_SIGNALS)
+  const strongestId = getStrongestSignal(dropOffSignals).id
+  const flagChanges = getFlagChanges(w)
+  const flagMovers = [
+    ...flagChanges.filter((f) => f.id === strongestId),
+    ...flagChanges
+      .filter((f) => f.id !== strongestId)
+      .sort((a, b) => Math.abs(b.change) - Math.abs(a.change))
+      .slice(0, OTHER_SIGNALS),
+  ]
+  const weekly = getWeeklyPace()
+  const required = getPaceProjection(getKpi('checking-new-accounts'), reportingPeriod).requiredDailyRate
   const expiring = marketSignals
     .map((s) => ({ s, left: daysUntil(s.offer?.expires, s.retrievedOn) }))
     .filter((x): x is { s: (typeof marketSignals)[number]; left: number } => x.left !== undefined && x.left <= EXPIRING_WITHIN_DAYS)
@@ -131,13 +145,28 @@ export default function SinceLastVisit({ compact = false }: Props) {
             Status <StatusBadge status={statusBefore} /> → <StatusBadge status={statusNow} />
             {statusBefore === statusNow && <span className="text-xs text-slate-500">(no change)</span>}
           </p>
+          <p className="mt-2 border-t border-slate-100 pt-2">
+            This week <strong>{Math.round(weekly.weekPerDay)}/day</strong> ({accounts(weekly.weekTotal)} ÷ 7) vs.{' '}
+            {Math.round(weekly.quarterPerDay)}/day quarter average:{' '}
+            <span className={weekly.slowing ? 'font-medium text-red-700' : 'font-medium text-green-700'}>
+              {weekly.slowing ? 'slowing' : 'speeding up'}
+            </span>
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            For reference: plan pace {Math.round(planDailyPace())}/day; required from here {Math.round(required)}/day to hit
+            target.
+          </p>
         </Item>
 
         <Item title="Early-warning flags">
           <ul className="space-y-1">
             {flagMovers.map((f) => (
               <li key={f.id}>
-                {f.name}: <strong>{accounts(f.current)}</strong> new{' '}
+                {f.name}
+                {f.id === strongestId && (
+                  <span className="ml-1 rounded-full bg-orange-100 px-1.5 py-0.5 text-[10px] font-medium text-orange-800">Strongest</span>
+                )}
+                : <strong>{accounts(f.current)}</strong> new{' '}
                 <span className={f.change > 0 ? 'text-red-700' : 'text-green-700'}>({signedPct(f.change)})</span>
                 <span className="block text-xs text-slate-500">
                   vs. {accounts(f.previous)} in the {w.days} day{w.days === 1 ? '' : 's'} before

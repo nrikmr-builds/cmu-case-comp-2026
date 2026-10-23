@@ -17,8 +17,8 @@ export default function AlertRulesEditor() {
   function add() {
     const id = `rule-${Date.now()}`
     addRule(
-      newKind === 'openings-below-pace'
-        ? { id, kind: 'openings-below-pace', enabled: true, days: 3 }
+      newKind === 'avg7-below-plan'
+        ? { id, kind: 'avg7-below-plan', enabled: true, days: 3 }
         : { id, kind: 'flags-week-over-week', enabled: true, signalId: dropOffSignals[0].id, thresholdPct: 15 },
     )
   }
@@ -53,7 +53,7 @@ export default function AlertRulesEditor() {
             </div>
 
             <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-600">
-              {rule.kind === 'openings-below-pace' ? (
+              {rule.kind === 'avg7-below-plan' ? (
                 <label className="inline-flex items-center gap-1">
                   Days in a row
                   <input
@@ -107,7 +107,7 @@ export default function AlertRulesEditor() {
           New rule
           <select value={newKind} onChange={(e) => setNewKind(e.target.value as AlertRule['kind'])} className={input}>
             <option value="flags-week-over-week">Early-warning flags up week over week</option>
-            <option value="openings-below-pace">Daily openings below required pace</option>
+            <option value="avg7-below-plan">7-day average openings below plan pace</option>
           </select>
         </label>
         <button type="button" onClick={add} className={iconButton}>

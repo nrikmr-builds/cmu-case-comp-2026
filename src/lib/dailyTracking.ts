@@ -12,6 +12,25 @@ export const dailyTotal = (day: number) => {
   return d ? d.branch + d.digital : 0
 }
 
+/** Target ÷ days in the quarter: the even daily pace the plan assumes (12,000 ÷ 92 ≈ 130/day). */
+export function planDailyPace(): number {
+  return openingsKpi().target / reportingPeriod.quarterDays
+}
+
+/** Average daily openings over the 7 days ending on `day` (undefined before day 7). */
+export function sevenDayAverage(day: number): number | undefined {
+  if (day < 7) return undefined
+  return (cumulativeOpenings(day) - cumulativeOpenings(day - 7)) / 7
+}
+
+/** This week (last 7 days of data) vs. the quarter-to-date daily average. */
+export function getWeeklyPace() {
+  const p = getPaceProjection(openingsKpi(), reportingPeriod)
+  const weekTotal = cumulativeOpenings(DAYS_WITH_DATA) - cumulativeOpenings(DAYS_WITH_DATA - 7)
+  const weekPerDay = weekTotal / 7
+  return { weekTotal, weekPerDay, quarterPerDay: p.currentDailyRate, slowing: weekPerDay < p.currentDailyRate }
+}
+
 /** Openings from day 1 through `day`. */
 export function cumulativeOpenings(day: number): number {
   return dailyOpenings.slice(0, day).reduce((sum, d) => sum + d.branch + d.digital, 0)
@@ -107,11 +126,11 @@ export function getFlagChanges(w: Window): FlagChange[] {
 // --- Alert rules ------------------------------------------------------------------------------------
 
 export type AlertRule =
-  | { id: string; kind: 'openings-below-pace'; enabled: boolean; days: number }
+  | { id: string; kind: 'avg7-below-plan'; enabled: boolean; days: number }
   | { id: string; kind: 'flags-week-over-week'; enabled: boolean; signalId: string; thresholdPct: number }
 
 export const DEFAULT_ALERT_RULES: AlertRule[] = [
-  { id: 'rule-openings-pace', kind: 'openings-below-pace', enabled: true, days: 3 },
+  { id: 'rule-avg7-plan', kind: 'avg7-below-plan', enabled: true, days: 3 },
   { id: 'rule-dd-leaving', kind: 'flags-week-over-week', enabled: true, signalId: 'direct-deposit-leaving', thresholdPct: 15 },
 ]
 
@@ -125,23 +144,25 @@ export interface AlertResult {
 }
 
 export function describeRule(rule: AlertRule): string {
-  if (rule.kind === 'openings-below-pace') return `Daily openings below required pace for ${rule.days}+ days in a row`
+  if (rule.kind === 'avg7-below-plan') return `7-day average openings below plan pace for ${rule.days}+ days in a row`
   const signal = dropOffSignals.find((s) => s.id === rule.signalId)
   return `${signal?.name ?? rule.signalId} flags up more than ${rule.thresholdPct}% week over week`
 }
 
 export function evaluateRule(rule: AlertRule): AlertResult {
   const title = describeRule(rule)
-  if (rule.kind === 'openings-below-pace') {
-    const required = getPaceProjection(openingsKpi(), reportingPeriod).requiredDailyRate
+  if (rule.kind === 'avg7-below-plan') {
+    const plan = planDailyPace()
+    // Count back from today while the trailing 7-day average stays below plan.
     let streak = 0
-    for (let day = DAYS_WITH_DATA; day >= 1 && dailyTotal(day) < required; day--) streak++
-    const lastDays = Array.from({ length: Math.min(rule.days, DAYS_WITH_DATA) }, (_, i) => dailyTotal(DAYS_WITH_DATA - i)).reverse()
+    for (let day = DAYS_WITH_DATA; (sevenDayAverage(day) ?? Infinity) < plan; day--) streak++
+    const now = sevenDayAverage(DAYS_WITH_DATA) ?? 0
+    const since = streak > 0 ? ` since ${shortDate(dayToIso(DAYS_WITH_DATA - streak + 1))}` : ''
     return {
       rule,
       title,
       triggered: streak >= rule.days,
-      evidence: `Last ${lastDays.length} days: ${lastDays.join(', ')} vs. ${Math.round(required)}/day required. Below pace ${streak} day${streak === 1 ? '' : 's'} in a row.`,
+      evidence: `7-day average now ${Math.round(now)}/day vs. plan ${Math.round(plan)}/day (${openingsKpi().target.toLocaleString('en-US')} ÷ ${reportingPeriod.quarterDays}). Below plan ${streak} day${streak === 1 ? '' : 's'} in a row${since}.`,
     }
   }
   const series = dailyFlags[rule.signalId] ?? []

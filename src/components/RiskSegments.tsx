@@ -1,8 +1,14 @@
+import { Megaphone } from 'lucide-react'
 import type { RiskSegment } from '../data/checkingHealth'
 import { formatValue } from '../lib/metrics'
 import SectionCard from './SectionCard'
 
-export default function RiskSegments({ segments }: { segments: RiskSegment[] }) {
+interface Props {
+  segments: RiskSegment[]
+  onDesignCampaign?: (riskId: string) => void
+}
+
+export default function RiskSegments({ segments, onDesignCampaign }: Props) {
   return (
     <SectionCard
       id="risk-segments-heading"
@@ -26,6 +32,17 @@ export default function RiskSegments({ segments }: { segments: RiskSegment[] }) 
             <p className="mt-1 text-sm text-amber-800">
               <span className="font-medium">Consideration:</span> {s.consideration}
             </p>
+            {onDesignCampaign && (
+              <button
+                type="button"
+                onClick={() => onDesignCampaign(s.id)}
+                className="mt-3 inline-flex items-center gap-1 rounded border border-brand-blue px-2 py-1 text-xs font-medium text-brand-blue hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue"
+                aria-label={`Design retention campaign for ${s.name}`}
+              >
+                <Megaphone className="h-3.5 w-3.5" aria-hidden />
+                Design campaign
+              </button>
+            )}
           </article>
         ))}
       </div>

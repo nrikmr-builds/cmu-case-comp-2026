@@ -2,7 +2,7 @@ import { Bar, CartesianGrid, ComposedChart, Legend, Line, ReferenceLine, Respons
 import { dailyOpenings, DAYS_WITH_DATA, dayToIso } from '../data/dailyOpenings'
 import { getKpi, reportingPeriod } from '../data/productMetrics'
 import { CHART_COLORS } from '../lib/chartColors'
-import { cumulativeChartData, shortDate } from '../lib/dailyTracking'
+import { cumulativeChartData, planDailyPace, shortDate } from '../lib/dailyTracking'
 import { formatValue } from '../lib/metrics'
 import { getPaceProjection } from '../lib/projection'
 import SectionCard from './SectionCard'
@@ -45,6 +45,7 @@ export default function DailyOpeningsTrend() {
               stroke="#334155"
               strokeDasharray="4 3"
             />
+            <ReferenceLine y={planDailyPace()} stroke="#15803d" strokeDasharray="2 3" />
             <ReferenceLine
               segment={[{ x: p.daysElapsed, y: p.requiredDailyRate }, { x: quarterDays + 0.5, y: p.requiredDailyRate }]}
               stroke="#b91c1c"
@@ -55,9 +56,10 @@ export default function DailyOpeningsTrend() {
         </ResponsiveContainer>
       </div>
       <p className="mt-1 text-xs text-slate-500">
-        Dashed line: average so far, {Math.round(p.currentDailyRate)}/day. Red line: {Math.round(p.requiredDailyRate)}/day
-        needed every remaining day from {shortDate(dayToIso(DAYS_WITH_DATA))} to reach {accounts(kpi.target)}. Branch dips
-        are Sundays and branch holidays (Jul 4, Sep 7).
+        Green dotted line: plan pace, {Math.round(planDailyPace())}/day ({accounts(kpi.target)} ÷ {quarterDays} days). Gray
+        dashed: average so far, {Math.round(p.currentDailyRate)}/day. Red: {Math.round(p.requiredDailyRate)}/day needed every
+        remaining day from {shortDate(dayToIso(DAYS_WITH_DATA))} to reach {accounts(kpi.target)}. Openings stepped down after
+        a summer promotion ended Jul 31 (illustrative). Branch dips are Sundays and branch holidays (Jul 4, Sep 7).
       </p>
 
       <h4 className="mt-6 text-sm font-medium text-slate-700">Cumulative openings and where the quarter lands</h4>

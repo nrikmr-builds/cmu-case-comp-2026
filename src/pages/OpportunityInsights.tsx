@@ -6,15 +6,18 @@ import AIInsightPanel from '../components/AIInsightPanel'
 import CheckingHealthSections from '../components/CheckingHealthSections'
 import CheckingSummaryAddendum from '../components/CheckingSummaryAddendum'
 import DailyOpeningsTrend from '../components/DailyOpeningsTrend'
+import PromotionBuilder from '../components/PromotionBuilder'
 import GapSummary from '../components/GapSummary'
 import PageHero from '../components/PageHero'
 import SegmentTable from '../components/SegmentTable'
 import SinceLastVisit from '../components/SinceLastVisit'
+import { presetForSource } from '../data/campaignPresets'
 import { getOpportunity } from '../data/opportunities'
 import { getKpi, reportingPeriod } from '../data/productMetrics'
 import { segmentHistory } from '../data/segmentHistory'
 import { PRODUCT_ICONS } from '../lib/productIcons'
 import { getRateReference } from '../lib/segmentHistory'
+import type { SavedCampaign } from '../lib/campaignStore'
 import type { ProductOpportunity } from '../types'
 
 export default function OpportunityInsights() {
@@ -42,6 +45,9 @@ function OpportunityDetail({ opportunity }: { opportunity: ProductOpportunity })
   )
   // The Product Owner's what-if conversion rates. Starts at the shared data; never written back to it.
   const [rates, setRates] = useState(baselineRates)
+  // Promotion Builder (checking only): a preset to start from, or a saved campaign to edit.
+  const [builder, setBuilder] = useState<{ presetId?: string; campaign?: SavedCampaign } | null>(null)
+  const isChecking = opportunity.productId === 'checking'
   const segments = opportunity.segments.map((s) => ({ ...s, estimatedConversionRate: rates[s.id] }))
 
   return (
@@ -76,6 +82,14 @@ function OpportunityDetail({ opportunity }: { opportunity: ProductOpportunity })
           history={segmentHistory}
           onRateChange={(id, rate) => setRates((prev) => ({ ...prev, [id]: rate }))}
           onReset={() => setRates(baselineRates)}
+          onDesignCampaign={
+            isChecking
+              ? (segmentId) => {
+                  const preset = presetForSource('segment', segmentId)
+                  if (preset) setBuilder({ presetId: preset.id })
+                }
+              : undefined
+          }
         />
         <AIInsightPanel
           kpi={kpi}
@@ -86,8 +100,22 @@ function OpportunityDetail({ opportunity }: { opportunity: ProductOpportunity })
           openQuestions={opportunity.openQuestions}
           addendum={opportunity.productId === 'checking' ? <CheckingSummaryAddendum /> : undefined}
         />
-        {opportunity.productId === 'checking' && <CheckingHealthSections quarter={quarter} />}
+        {isChecking && (
+          <CheckingHealthSections
+            quarter={quarter}
+            onDesign={(presetId) => setBuilder({ presetId })}
+            onEditCampaign={(campaign) => setBuilder({ campaign })}
+          />
+        )}
       </section>
+      {builder && (
+        <PromotionBuilder
+          key={builder.campaign?.id ?? builder.presetId}
+          presetId={builder.presetId}
+          campaign={builder.campaign}
+          onClose={() => setBuilder(null)}
+        />
+      )}
     </>
   )
 }

@@ -3,6 +3,7 @@ import type { FeeCohort } from '../data/checkingHealth'
 import { CHART_COLORS } from '../lib/chartColors'
 import { formatUsd, getFeeCohortClosureRate as getClosureRate, getExcessFeeClosures } from '../lib/checkingHealth'
 import { formatPercent, formatValue } from '../lib/metrics'
+import { campaignAssumptions } from '../data/campaignPresets'
 import SectionCard from './SectionCard'
 
 interface Props {
@@ -15,6 +16,9 @@ export default function FeeTriggerView({ feeGroup, baseline, monthlyFee }: Props
   const chartData = [feeGroup, baseline].map((c) => ({ label: c.label, rate: getClosureRate(c), id: c.id }))
   const excessClosures = getExcessFeeClosures(feeGroup, baseline)
   const firstFeeRevenue = feeGroup.accounts * monthlyFee
+  // Fee revenue earned per account the fee drives away, against the value of a primary account.
+  const revenuePerLostAccount = excessClosures > 0 ? firstFeeRevenue / excessClosures : 0
+  const valuePerAccount = campaignAssumptions.annualValuePerPrimary
 
   return (
     <SectionCard
@@ -59,6 +63,20 @@ export default function FeeTriggerView({ feeGroup, baseline, monthlyFee }: Props
               </li>
               <li>Whether the fee pays off depends on each closed account's longer-term value, which this view does not include.</li>
             </ul>
+          </div>
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+            <p className="font-semibold text-brand-ink">Break-even</p>
+            <p className="mt-1 text-slate-700">
+              Fee revenue ≈ <strong>{formatUsd(revenuePerLostAccount)}</strong> per extra closed account (
+              {formatUsd(firstFeeRevenue)} ÷ {formatValue(excessClosures, 'accounts')}). If a checking account is worth more
+              than this, the fee loses money.
+            </p>
+            <p className="mt-1 text-slate-700">
+              At the {formatUsd(valuePerAccount)} illustrative annual value per primary account,{' '}
+              {valuePerAccount > revenuePerLostAccount
+                ? 'each lost account costs more than the fee earns.'
+                : 'the fee earns more than each lost account is worth.'}
+            </p>
           </div>
         </div>
       </div>
