@@ -328,7 +328,7 @@ function testPlanNote(recs: NbaRecommendation[]) {
  * contacted), (c) holdout. Same per-customer economics and channels in every arm, so only offer matching differs.
  * matchUplift raises (b)'s save and take-up rates by that share (illustrative; the test must measure it).
  */
-export function compareArms(matchUplift = 0, recs = nbaRecommendations) {
+export function compareArms(matchUplift = 0, recs = nbaRecommendations, rateOverride: Partial<Record<OfferAction, number>> = {}) {
   const eligible = eligibleRecs(recs)
   const dd = offerUnit('dd')
   const ch = (r: NbaRecommendation) => dd.inputs.costPerMessage[r.customer.channel] * dd.inputs.messagesPerPerson
@@ -351,7 +351,8 @@ export function compareArms(matchUplift = 0, recs = nbaRecommendations) {
   for (const action of OFFER_ACTIONS) {
     const group = contacted.filter((r) => r.action === action)
     const u = offerUnit(action)
-    const results = group.length * u.rate
+    // Sensitivity runs can replace an offer's base rate; the contacted customers stay the same.
+    const results = group.length * (rateOverride[action] ?? u.rate)
     a += results * (u.valuePerResult - u.costPerResult)
     f += group.reduce((s, r) => s + (r.offer?.channelCost ?? 0), 0) + group.length * u.waiverPerPerson
     if (u.inputs.outcome === 'savings-accounts') accountsOpened += results
@@ -373,6 +374,17 @@ export function compareArms(matchUplift = 0, recs = nbaRecommendations) {
   // (b) equals (a) when A × (1 + m) − F = net(a)  →  m = (net(a) + F) ÷ A − 1.
   const breakEven = a > 0 ? (blanket.net + f) / a - 1 : Infinity
   return { eligible: eligible.length, blanket, personalised, holdout, margin: a, fixed: f, breakEven, plan: testPlan(recs) }
+}
+
+/**
+ * Sensitivity: break-even if First-Fee Forgiveness converted at the blanket offer's rate (10%) instead of the
+ * observed 6.1% fee-closure gap. Same contacted customers; only that base rate changes.
+ */
+export function feeAtBlanketRate(recs = nbaRecommendations) {
+  const rate = offerUnit('dd').rate
+  const c = compareArms(0, recs, { fee: rate })
+  const feeRows = eligibleRecs(recs).filter((r) => r.action === 'fee').length
+  return { rate, feeRows, margin: c.margin, breakEven: c.breakEven, net: c.personalised.net, blanketNet: c.blanket.net, fixed: c.fixed }
 }
 
 // --- Reconciliation with the page's tables ----------------------------------------------------------------

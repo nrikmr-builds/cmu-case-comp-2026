@@ -11,7 +11,9 @@ import {
   NBA_RULES,
   nbaReconciliation,
   compareArms,
+  feeAtBlanketRate,
   nbaRecommendations,
+  offerUnit,
   nbaRollup,
   OFFER_ACTIONS,
   RULE_CODES,
@@ -402,6 +404,7 @@ function Comparison() {
   const [upliftPct, setUpliftPct] = useState(0)
   const c = compareArms(upliftPct / 100)
   const base = compareArms(0)
+  const sens = feeAtBlanketRate()
   const arms = [c.blanket, c.personalised, c.holdout]
   const best = c.personalised.net > c.blanket.net ? 'personalised' : 'blanket'
   const one = (x: number) => x.toLocaleString('en-US', { maximumFractionDigits: 1, minimumFractionDigits: 1 })
@@ -464,12 +467,19 @@ function Comparison() {
           Personalisation beats the blanket offer only if matched offers convert at least {Number.isFinite(base.breakEven) ? `${Math.ceil(base.breakEven * 100)}%` : 'n/a'}{' '}
           better.
         </strong>{' '}
-        That's what the test must prove. Today every arm uses the same flat save rates, so matching has no modelled benefit yet.
+        That's what the test must prove. Base rates differ by offer: the blanket DD offer uses an illustrative{' '}
+        {pct(offerUnit('dd').rate)} for everyone; First-Fee Forgiveness uses the observed {pct(offerUnit('fee').rate)} fee-closure gap. Match
+        uplift applies on top.
       </p>
       <p className="mt-1 text-xs text-slate-600">
         Break-even = (net(a) + fixed contact costs of (b)) ÷ rate-driven margin of (b) − 1 = ({formatUsd(base.blanket.net)} + {formatUsd(base.fixed)}) ÷{' '}
         {formatUsd(base.margin)} − 1 = {Number.isFinite(base.breakEven) ? pct(base.breakEven) : 'n/a'}. Arms use each customer's preferred channel; (b) skips the{' '}
         {n(base.blanket.contacts - base.personalised.contacts)} R5 customers. Saves and savings accounts are expected values and aren't added together.
+      </p>
+      <p className="mt-1 text-xs text-slate-700">
+        <strong>Sensitivity:</strong> if First-Fee Forgiveness converted at the same {pct(sens.rate)} as the blanket offer, break-even would be{' '}
+        <strong>{pct(sens.breakEven)}</strong>: margin = {formatUsd(sens.margin)} (the {n(sens.feeRows)} fee-forgiveness customers at {pct(sens.rate)} ×
+        $250), so ({formatUsd(sens.blanketNet)} + {formatUsd(sens.fixed)}) ÷ {formatUsd(sens.margin)} − 1 = {pct(sens.breakEven)}.
       </p>
       <p className="mt-2 text-xs text-slate-700">
         <strong>Test plan:</strong> NBA / Blanket / Holdout at 45% / 45% / 10% of {n(c.plan.eligible)} eligible = {n(c.plan.nba)} / {n(c.plan.blanket)} /{' '}
