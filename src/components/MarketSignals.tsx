@@ -1,8 +1,10 @@
-import { ExternalLink, Link2 } from 'lucide-react'
+import { CalendarClock, ExternalLink, Link2 } from 'lucide-react'
 import { useState } from 'react'
 import { dropOffSignals, riskSegments, type PncComparisonRow } from '../data/checkingHealth'
 import type { MarketSignal, SignalCategory } from '../data/marketSignals'
+import { getOpportunity } from '../data/opportunities'
 import { formatExpiry, formatRetrieved, formatUsd } from '../lib/checkingHealth'
+import { daysUntil, expiryLabel } from '../lib/dailyTracking'
 import SourceBadge from './SourceBadge'
 
 const TABS: { id: SignalCategory; label: string }[] = [
@@ -11,12 +13,27 @@ const TABS: { id: SignalCategory; label: string }[] = [
   { id: 'market-context', label: 'Market Context' },
 ]
 
-/** Where a "Relates to" chip jumps: the matching signal row first, then the matching risk segment. */
+/** Where a "Relates to" chip jumps: the matching signal row, then a risk segment, then an opportunity segment. */
 function relatedAnchor(relevance: string): string | undefined {
   const signal = dropOffSignals.find((s) => s.name === relevance)
   if (signal) return `#signal-${signal.id}`
-  const segment = riskSegments.find((s) => s.name === relevance)
-  return segment ? `#risk-${segment.id}` : undefined
+  const risk = riskSegments.find((s) => s.name === relevance)
+  if (risk) return `#risk-${risk.id}`
+  const segment = getOpportunity('checking')?.segments.find((s) => s.name === relevance)
+  return segment ? `#segment-${segment.id}` : undefined
+}
+
+/** "N days left (as of Oct 22)", counted from the offer's own retrieval date; nothing for open-ended offers. */
+function ExpiryChip({ signal }: { signal: MarketSignal }) {
+  const left = daysUntil(signal.offer?.expires, signal.retrievedOn)
+  if (left === undefined) return null
+  const tone = left < 0 ? 'bg-slate-200 text-slate-700' : left <= 30 ? 'bg-red-50 text-red-800 ring-1 ring-red-200' : 'bg-slate-100 text-slate-700'
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${tone}`}>
+      <CalendarClock className="h-3.5 w-3.5" aria-hidden />
+      {expiryLabel(left, signal.retrievedOn)}
+    </span>
+  )
 }
 
 export function SourceLink({ signal }: { signal: Pick<MarketSignal, 'source' | 'sourceUrl'> }) {
@@ -96,6 +113,7 @@ export default function MarketSignals({ signals, pncRow }: Props) {
                 <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-slate-500">
                   <SourceLink signal={s} />
                   <span>Retrieved {formatRetrieved(s.retrievedOn)}</span>
+                  <ExpiryChip signal={s} />
                 </div>
                 <div className="mt-3">
                   {anchor ? (
@@ -151,7 +169,12 @@ export default function MarketSignals({ signals, pncRow }: Props) {
                     <td className="py-3 pr-4 text-right tabular-nums">{s.offer?.bonusUsd ? formatUsd(s.offer.bonusUsd) : '—'}</td>
                     <td className="py-3 pr-4 text-slate-700">{s.offer?.requirement ?? '—'}</td>
                     <td className="py-3 pr-4 text-slate-700">{s.offer?.monthlyFee ?? '—'}</td>
-                    <td className="py-3 pr-4 whitespace-nowrap text-slate-700">{formatExpiry(s.offer?.expires)}</td>
+                    <td className="py-3 pr-4 text-slate-700">
+                      <span className="whitespace-nowrap">{formatExpiry(s.offer?.expires)}</span>
+                      <span className="mt-1 block">
+                        <ExpiryChip signal={s} />
+                      </span>
+                    </td>
                     <td className="py-3 text-xs">
                       <SourceLink signal={s} />
                       <span className="mt-1 block text-slate-500">Retrieved {formatRetrieved(s.retrievedOn)}</span>

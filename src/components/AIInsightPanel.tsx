@@ -13,6 +13,8 @@ interface Props {
   segments: CustomerSegment[]
   /** Past quarters by segment id; the insight leads with last-quarter rates from here. */
   history: Record<string, SegmentQuarter[]>
+  /** True once any slider differs from its baseline; until then there is no separate scenario to show. */
+  scenarioAdjusted: boolean
   /** Product-specific caveats, without a trailing period. */
   openQuestions: string
   /** Extra prewritten sentences for products with more evidence on the page (checking retention). */
@@ -23,7 +25,7 @@ interface Props {
  * Prewritten summary (no live AI). It leads with what the segments converted at last quarter, not with
  * slider assumptions, and shows the slider total only as a secondary scenario.
  */
-export default function AIInsightPanel({ kpi, period, segments, history, openQuestions, addendum }: Props) {
+export default function AIInsightPanel({ kpi, period, segments, history, scenarioAdjusted, openQuestions, addendum }: Props) {
   const fmt = (n: number) => formatValue(n, kpi.unit)
   const { quarterElapsed } = period
   const paceGap = getPaceGap(kpi, quarterElapsed)
@@ -63,8 +65,14 @@ export default function AIInsightPanel({ kpi, period, segments, history, openQue
           )}
         </p>
         <div className="mt-3 rounded border border-slate-200 bg-white/70 px-3 py-2 text-sm text-slate-700">
-          <span className="font-semibold">Your scenario:</span> {fmt(scenario)} potential accounts with your current
-          slider settings.
+          {scenarioAdjusted ? (
+            <>
+              <span className="font-semibold">Your scenario:</span> {fmt(scenario)} potential accounts with your current
+              slider settings.
+            </>
+          ) : (
+            <span className="text-slate-500">Move a slider to test your own scenario.</span>
+          )}
           {historical.outsideHistory.length > 0 && (
             <span className="mt-1 flex items-start gap-1.5 font-medium text-amber-800">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />

@@ -5,9 +5,11 @@ import { Link, Navigate, useLocation, useParams } from 'react-router-dom'
 import AIInsightPanel from '../components/AIInsightPanel'
 import CheckingHealthSections from '../components/CheckingHealthSections'
 import CheckingSummaryAddendum from '../components/CheckingSummaryAddendum'
+import DailyOpeningsTrend from '../components/DailyOpeningsTrend'
 import GapSummary from '../components/GapSummary'
 import PageHero from '../components/PageHero'
 import SegmentTable from '../components/SegmentTable'
+import SinceLastVisit from '../components/SinceLastVisit'
 import { getOpportunity } from '../data/opportunities'
 import { getKpi, reportingPeriod } from '../data/productMetrics'
 import { segmentHistory } from '../data/segmentHistory'
@@ -64,7 +66,9 @@ function OpportunityDetail({ opportunity }: { opportunity: ProductOpportunity })
       </PageHero>
 
       <section className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6">
+        {opportunity.productId === 'checking' && <SinceLastVisit />}
         <GapSummary kpi={kpi} period={reportingPeriod} />
+        {opportunity.productId === 'checking' && <DailyOpeningsTrend />}
         <SegmentTable
           segments={segments}
           accountNoun={opportunity.accountNoun}
@@ -78,6 +82,7 @@ function OpportunityDetail({ opportunity }: { opportunity: ProductOpportunity })
           period={reportingPeriod}
           segments={segments}
           history={segmentHistory}
+          scenarioAdjusted={segments.some((s) => s.estimatedConversionRate !== baselineRates[s.id])}
           openQuestions={opportunity.openQuestions}
           addendum={opportunity.productId === 'checking' ? <CheckingSummaryAddendum /> : undefined}
         />

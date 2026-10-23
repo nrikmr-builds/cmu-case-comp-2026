@@ -114,28 +114,57 @@ A "Back to Portfolio" link returns to `/`.
 
 ## Shared Data
 
-Both pages read from the same data files so the numbers always match.
+Every page reads from the same data files so the numbers always match. The CD slice of each file looks like this (see the files for Checking and Savings):
 
 ```typescript
 // src/data/productMetrics.ts
-export const cdAcquisitionMetric = {
-  id: "cd-new-accounts",
-  label: "New CD Account Openings",
-  quarter: "Q3 2026",
-  target: 5000,
-  actual: 3100,
+export const reportingPeriod: ReportingPeriod = {
+  quarter: 'Q3 2026',
   quarterElapsed: 0.8,
-};
+  quarterDays: 92,             // Jul 1 – Sep 30
+  internalAsOf: '2026-09-12',  // ≈ day 74 of 92
+}
 
-// src/data/cdSegments.ts
-export const cdCustomerSegments = [
-  { id: "high-balance-savings", name: "High-Balance Savings", eligibleCustomers: 12000, estimatedConversionRate: 0.08 },
-  { id: "maturing-cds",         name: "Maturing CDs",         eligibleCustomers: 6000,  estimatedConversionRate: 0.10 },
-  { id: "surplus-checking",     name: "Surplus Checking",     eligibleCustomers: 15000, estimatedConversionRate: 0.05 },
-];
+export const products: Product[] = [
+  // …checking, savings…
+  {
+    id: 'cd',
+    name: 'Certificates of Deposit',
+    description: 'Time-bound deposits with defined maturity periods',
+    kpis: [
+      { id: 'cd-new-accounts', productId: 'cd', label: 'New CD Account Openings', kind: 'cumulative', unit: 'accounts', target: 5000, actual: 4100 },
+      { id: 'cd-renewal-rate', productId: 'cd', label: 'CD Renewal Rate', kind: 'rate', unit: 'percent', target: 0.65, actual: 0.67 },
+      { id: 'cd-net-deposits', productId: 'cd', label: 'Net New CD Deposits', kind: 'cumulative', unit: 'usd', target: 25_000_000, actual: 22_000_000 },
+    ],
+  },
+]
+
+// src/data/opportunities.ts: one ProductOpportunity per product
+{
+  productId: 'cd',
+  shortName: 'CD',
+  accountNoun: 'CD',
+  focusKpiId: 'cd-new-accounts',
+  openQuestions: 'how much savings would shift rather than grow, and how many maturing CDs would auto-renew',
+  segments: [
+    { id: 'high-balance-savings', name: 'High-Balance Savings', whyRelevant: '…', consideration: '…', eligibleCustomers: 12000, estimatedConversionRate: 0.08 },
+    { id: 'maturing-cds',         name: 'Maturing CDs',         whyRelevant: '…', consideration: '…', eligibleCustomers: 6000,  estimatedConversionRate: 0.1 },
+    { id: 'surplus-checking',     name: 'Surplus Checking',     whyRelevant: '…', consideration: '…', eligibleCustomers: 15000, estimatedConversionRate: 0.05 },
+  ],
+}
+
+// src/data/segmentHistory.ts: last 4 quarters per segment id; sliders start at the last-quarter rate
+'high-balance-savings': [
+  { quarter: 'Q3 2025', eligible: 11000, converted: 770 },
+  { quarter: 'Q4 2025', eligible: 11500, converted: 850 },
+  { quarter: 'Q1 2026', eligible: 12000, converted: 1010 },
+  { quarter: 'Q2 2026', eligible: 12200, converted: 950 },  // 7.8% → 12,000 × 7.8% = 936
+],
 ```
 
-Derive the expected value, gap, status, and potential accounts from these values.
+`estimatedConversionRate` in `opportunities.ts` is only a fallback for a segment with no history. Checking also has `checkingHealth.ts` (funnel, health mix, signals), `dailyOpenings.ts` (daily trend and weekly flags), and `marketSignals.ts` (sourced external facts).
+
+Derive the expected value, gap, projection, status, and potential accounts from these values with the helpers in `src/lib/`.
 
 ---
 

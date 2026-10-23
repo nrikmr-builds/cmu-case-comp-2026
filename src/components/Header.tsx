@@ -1,10 +1,11 @@
-import { UserRound } from 'lucide-react'
+import { Bell, UserRound } from 'lucide-react'
 import { Link, NavLink } from 'react-router-dom'
 import pncLogo from '../assets/pnc-logo-white.svg'
 import DataFreshness from './DataFreshness'
 import { opportunities } from '../data/opportunities'
 import { products, reportingPeriod } from '../data/productMetrics'
 import { getStatus } from '../lib/metrics'
+import { useTriggeredAlerts } from '../lib/trackingStore'
 
 const hasAtRiskKpi = (productId: string) =>
   products
@@ -12,16 +13,19 @@ const hasAtRiskKpi = (productId: string) =>
     ?.kpis.some((kpi) => getStatus(kpi, reportingPeriod.quarterElapsed) === 'at-risk')
 
 const NAV_ITEMS = [
-  { to: '/', label: 'Portfolio Overview', atRisk: false },
+  { to: '/', label: 'Portfolio Overview', atRisk: false, hasAlerts: false },
   ...opportunities.map((o) => ({
     to: `/opportunities/${o.productId}`,
     label: `${o.shortName} Insights`,
     atRisk: hasAtRiskKpi(o.productId),
+    // Alert rules only watch checking data today.
+    hasAlerts: o.productId === 'checking',
   })),
 ]
 
 /** Two-tier dark header modeled on pnc.com. */
 export default function Header() {
+  const alertCount = useTriggeredAlerts().length
   return (
     <header>
       <div className="bg-brand-slate">
@@ -49,7 +53,7 @@ export default function Header() {
 
       <nav aria-label="Main" className="bg-brand-charcoal">
         <ul className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 sm:px-6">
-          {NAV_ITEMS.map(({ to, label, atRisk }) => (
+          {NAV_ITEMS.map(({ to, label, atRisk, hasAlerts }) => (
             <li key={to} className="shrink-0">
               <NavLink
                 to={to}
@@ -63,6 +67,16 @@ export default function Header() {
                 {label}
                 {/* Label lives on the dot, so the tab's own name stays "Checking Insights". */}
                 {atRisk && <span role="img" aria-label="At risk" title="Has an at-risk KPI" className="h-2 w-2 rounded-full bg-red-500" />}
+                {hasAlerts && alertCount > 0 && (
+                  <span
+                    className="inline-flex items-center gap-0.5 rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] leading-none font-bold text-white"
+                    title={`${alertCount} alert${alertCount === 1 ? '' : 's'} triggered`}
+                  >
+                    <Bell className="h-3 w-3" aria-hidden />
+                    {alertCount}
+                    <span className="sr-only"> alert{alertCount === 1 ? '' : 's'} triggered</span>
+                  </span>
+                )}
               </NavLink>
             </li>
           ))}

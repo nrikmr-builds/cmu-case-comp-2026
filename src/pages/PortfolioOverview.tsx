@@ -6,11 +6,16 @@ import DashboardPromptBar from '../components/DashboardPromptBar'
 import PageHero from '../components/PageHero'
 import ProductCard from '../components/ProductCard'
 import SavedViewsNav from '../components/SavedViewsNav'
+import SinceLastVisit from '../components/SinceLastVisit'
 import StatusBadge from '../components/StatusBadge'
 import { products, reportingPeriod } from '../data/productMetrics'
 import { DEFAULT_VIEW } from '../lib/dashboardPrompt'
 import { formatPercent, formatTimestamp, formatValue, getExpected, getPaceRatio, getStatus } from '../lib/metrics'
 import { useSavedViews } from '../lib/useSavedViews'
+
+/** "2026-09-12" → "Sep 12". */
+const formatShortDate = (iso: string) =>
+  new Date(`${iso}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 import type { DashboardView, KpiStatus, ProductId } from '../types'
 
 const STATUS_ORDER: KpiStatus[] = ['on-track', 'watch', 'at-risk']
@@ -109,6 +114,8 @@ export default function PortfolioOverview() {
             </div>
           ))}
 
+          <SinceLastVisit compact />
+
           <DashboardPromptBar onGenerate={setDraft} />
 
           <ActiveViewHeader
@@ -168,6 +175,12 @@ function ActiveViewHeader({ view, isDraft, onSave, onReset }: ActiveViewHeaderPr
             `Default view · ${metricCount}`
           )}
         </p>
+        {/* A saved view keeps its metric list, but statuses are recomputed from the current snapshot. */}
+        {!isDefault && !isDraft && (
+          <p className="mt-1 text-xs text-slate-500">
+            KPI status shown as of today's data ({formatShortDate(reportingPeriod.internalAsOf)}).
+          </p>
+        )}
       </div>
       {!isDefault && (
         <div className="flex shrink-0 gap-2">
