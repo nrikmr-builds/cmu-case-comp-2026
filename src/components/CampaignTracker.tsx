@@ -5,7 +5,7 @@ import { summerMath } from '../data/campaignSeeds'
 import { dayToIso } from '../data/dailyOpenings'
 import { OUTCOME_LABELS } from '../lib/campaignEconomics'
 import { CAMPAIGN_STATUSES, useCampaigns, type CampaignStatus, type SavedCampaign } from '../lib/campaignStore'
-import { getTotals, getTrackedCampaigns, MIN_DAYS, MIN_HOLDOUT, type Lift, type TrackedCampaign } from '../lib/campaignTracking'
+import { getTotals, getTrackedCampaigns, MIN_DAYS, MIN_HOLDOUT, type Lift, type OverlapResult, type TrackedCampaign } from '../lib/campaignTracking'
 import { CHART_COLORS } from '../lib/chartColors'
 import { formatSignedCount, formatUsd } from '../lib/checkingHealth'
 import { shortDate } from '../lib/dailyTracking'
@@ -81,6 +81,7 @@ function Totals({ totals }: { totals: ReturnType<typeof getTotals> }) {
               next 90 days: <strong>+{accounts(totals.closure.next90)}</strong> ({totals.closure.count} planned)
             </p>
           )}
+          <OverlapNote o={totals.closure.overlap} format={accounts} unit="saves" />
         </TotalBox>
         <TotalBox title="Activation · primacy">
           {totals.activation.count === 0 ? (
@@ -99,6 +100,7 @@ function Totals({ totals }: { totals: ReturnType<typeof getTotals> }) {
               <strong>{formatUsd(totals.crossSell.deposits)}</strong> savings deposits captured ({totals.crossSell.count} planned)
             </p>
           )}
+          <OverlapNote o={totals.crossSell.overlap} format={formatUsd} unit="deposits" />
         </TotalBox>
       </div>
 
@@ -127,6 +129,18 @@ function Totals({ totals }: { totals: ReturnType<typeof getTotals> }) {
       </div>
       <p className="mt-2 text-xs text-slate-500">Campaign effects aren't additive. Audiences and baselines can overlap.</p>
     </section>
+  )
+}
+
+/** "Overlap removed": same segment and outcome reach the same customers, so only the larger counts (planner rule). */
+function OverlapNote({ o, format, unit }: { o: OverlapResult; format: (n: number) => string; unit: string }) {
+  if (o.overlaps.length === 0) return null
+  return (
+    <p className="mt-1 text-xs text-slate-600">
+      Overlap removed: {format(o.gross - o.counted)} {unit} = {format(o.gross)} − {format(o.counted)} counted (
+      {o.overlaps.map((x) => `${x.segmentLabel}: keep ${x.kept.name} ${format(x.kept.size)}, drop ${x.dropped.map((d) => `${d.name} ${format(d.size)}`).join(' + ')}`).join('; ')}
+      ). Same segment → only the larger counts.
+    </p>
   )
 }
 
@@ -160,6 +174,7 @@ function CampaignCard({ t, saved, onStatus, onDelete, onEdit }: CardProps) {
               {CAMPAIGN_STATUSES.find((s) => s.id === t.status)?.label}
             </span>
             {t.origin === 'seed' && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">Illustrative seed</span>}
+            {saved?.nba && <span className="rounded-full bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-800 ring-1 ring-orange-200">From next best action</span>}
           </h4>
           <p className="mt-1 text-xs text-slate-500">
             {t.actual ? `${t.actual.dates} · ` : ''}

@@ -210,13 +210,13 @@ export const riskSegments: RiskSegment[] = [
 
 /**
  * Illustrative: the early-warning signal that best describes each risk segment, so a segment can borrow that
- * signal's lift when ranking (size × lift). Synthetic mapping, not a model output.
+ * signal's lift when ranking closure risks (size × lift). Synthetic mapping, not a model output. Savings held
+ * elsewhere is a cross-sell opportunity, not a closure risk, so it has no lift here.
  */
 export const riskSegmentSignal: Record<string, string> = {
   'never-activated': 'activity-ratio',
   'direct-deposit-leaving': 'direct-deposit-leaving',
   'approaching-fee-threshold': 'balance-trend',
-  'savings-held-elsewhere': 'outbound-competitor-transfers',
 }
 
 export const feeCohorts: FeeCohort[] = [

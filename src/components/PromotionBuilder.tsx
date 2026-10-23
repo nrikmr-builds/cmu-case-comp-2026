@@ -12,6 +12,7 @@ import {
   primacyRateFor,
   rateBasis,
   type CampaignInputs,
+  channelCost,
 } from '../lib/campaignEconomics'
 import { formatSignedCount, formatUsd } from '../lib/checkingHealth'
 import { CAMPAIGN_STATUSES, useCampaigns, type CampaignStatus, type SavedCampaign } from '../lib/campaignStore'
@@ -408,7 +409,6 @@ export function EconomicsTable({ inputs }: { inputs: CampaignInputs }) {
   const e = computeEconomics(inputs)
   const isAcq = inputs.outcome === 'openings'
   const outcome = OUTCOME_LABELS[inputs.outcome]
-  const perPerson = inputs.offer.channels.reduce((s, c) => s + inputs.costPerMessage[c], 0) * inputs.messagesPerPerson
   const rows: [string, string, ReactNode, boolean?][] = []
 
   if (isAcq) {
@@ -431,7 +431,7 @@ export function EconomicsTable({ inputs }: { inputs: CampaignInputs }) {
   rows.push(
     ['Accounts earning the bonus', accounts(e.qualifying), e.qualifyingBasis],
     ['Bonus cost', formatUsd(e.costs.bonus), `$${inputs.offer.bonusUsd} × ${accounts(e.qualifying)}${isAcq ? ' (paid even on accounts that would have opened anyway)' : ''}`],
-    ['Channel cost', formatUsd(e.costs.channel), `${accounts(e.treated)} treated × $${perPerson.toFixed(2)} per person (${inputs.offer.channels.join(' + ') || 'none'} × ${inputs.messagesPerPerson})`],
+    ['Channel cost', formatUsd(e.costs.channel), channelCost(inputs, e.treated).basis],
   )
   if (e.costs.feeWaiver > 0) rows.push(['Fees waived (revenue given up)', formatUsd(e.costs.feeWaiver), `${accounts(e.treated)} treated × $12`])
   if (e.costs.perAccount > 0)

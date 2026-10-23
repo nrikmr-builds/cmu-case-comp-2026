@@ -15,6 +15,7 @@ import CampaignTracker from './CampaignTracker'
 import DailyOpeningsTrend from './DailyOpeningsTrend'
 import GapSummary from './GapSummary'
 import { EconomicsTable, KindBadge } from './PromotionBuilder'
+import NextBestAction from './NextBestAction'
 import ScenarioPlanner from './ScenarioPlanner'
 
 /** White-paper figures. File names are neutral (no team or school names). */
@@ -26,6 +27,7 @@ const FIGURES = [
   { file: 'fig5-campaign-totals-feasibility.png', title: 'Campaign Tracker · totals and feasibility', selector: '#totals-heading' },
   { file: 'fig6-report-decisions.png', title: 'Weekly report · decisions', selector: '#export-decisions' },
   { file: 'fig7-scenario-planner.png', title: 'Scenario planner', selector: '#planner-heading' },
+  { file: 'fig8-next-best-action.png', title: 'Next best action · rules and roll-up', selector: '#nba-figure' },
 ] as const
 
 const LABEL = `Illustrative · synthetic internal data as of ${formatDate(reportingPeriod.internalAsOf)} · PNC Product Intelligence Hub prototype`
@@ -37,7 +39,7 @@ const LABEL = `Illustrative · synthetic internal data as of ${formatDate(report
 async function capture(root: HTMLElement, selector: string): Promise<string> {
   const found = root.querySelector(selector)
   if (!found) throw new Error(`Not rendered: ${selector}`)
-  const node = (found.id.startsWith('export-') ? found : (found.closest('section') ?? found)) as HTMLElement
+  const node = (found.id.startsWith('export-') || found.id === 'nba-figure' ? found : (found.closest('section') ?? found)) as HTMLElement
   const label = document.createElement('p')
   label.textContent = LABEL
   label.setAttribute('style', 'margin:12px 0 0;font:500 11px system-ui,sans-serif;color:#475569;border-top:1px solid #e2e8f0;padding-top:6px')
@@ -58,7 +60,7 @@ function download(dataUrl: string, file: string) {
   a.remove()
 }
 
-/** "Export figures": renders off-screen copies of the figure cards, captures all seven, and offers each PNG for download. */
+/** "Export figures": renders off-screen copies of the figure cards, captures all eight, and offers each PNG for download. */
 export default function ExportFigures({ onClose }: { onClose: () => void }) {
   const [images, setImages] = useState<{ file: string; title: string; url?: string; error?: string }[]>([])
   const [busy, setBusy] = useState(true)
@@ -145,6 +147,7 @@ export default function ExportFigures({ onClose }: { onClose: () => void }) {
         />
         <CampaignTracker onEdit={() => {}} />
         <ScenarioPlanner />
+        <NextBestAction />
         <div id="export-economics" className="space-y-3 bg-white p-6 text-slate-800">
           <div className="flex items-center gap-2">
             <h3 className="text-lg font-semibold text-brand-ink">Promotion Builder · {primacy.name}</h3>

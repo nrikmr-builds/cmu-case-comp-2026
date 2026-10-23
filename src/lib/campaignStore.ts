@@ -18,6 +18,8 @@ export interface SavedCampaign {
   createdAt: string
   updatedAt: string
   inputs: CampaignInputs
+  /** Set on Drafts created by "Send to campaign" in the next-best-action table: one per action group. */
+  nba?: { action: 'bundle' | 'fee' | 'dd' }
 }
 
 // v2: inputs gained baseline rate, outcome type and cross-sell fields; v1 drafts are ignored.
@@ -68,5 +70,27 @@ export function useCampaigns() {
     setStatus: (id: string, status: CampaignStatus) =>
       save(campaigns.map((c) => (c.id === id ? { ...c, status, updatedAt: new Date().toISOString() } : c))),
     deleteCampaign: (id: string) => save(campaigns.filter((c) => c.id !== id)),
+    /**
+     * Next best action: one Draft per action group. A second click updates the existing NBA campaigns (keeping
+     * their status) instead of adding duplicates. Returns how many were created and updated.
+     */
+    upsertNbaDrafts: (groups: { action: 'bundle' | 'fee' | 'dd'; inputs: CampaignInputs }[]) => {
+      const now = new Date().toISOString()
+      let created = 0
+      let updated = 0
+      let next = [...campaigns]
+      groups.forEach((g, i) => {
+        const existing = next.find((c) => c.nba?.action === g.action)
+        if (existing) {
+          updated++
+          next = next.map((c) => (c.id === existing.id ? { ...c, inputs: g.inputs, updatedAt: now } : c))
+        } else {
+          created++
+          next.push({ id: `nba-${g.action}-${Date.now()}-${i}`, status: 'draft', createdAt: now, updatedAt: now, inputs: g.inputs, nba: { action: g.action } })
+        }
+      })
+      save(next)
+      return { created, updated }
+    },
   }
 }

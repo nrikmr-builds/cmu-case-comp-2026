@@ -1,4 +1,4 @@
-// Guided tour for judges: 8 steps across the home page and the Checking tabs (Today, Diagnose, Act, Report). Every number in a caption is read from
+// Guided tour for judges: 9 steps across the home page and the Checking tabs (Today, Diagnose, Act, Report). Every number in a caption is read from
 // the data/calculation layer when the step is shown, never typed in.
 import { useSyncExternalStore } from 'react'
 import { currentQuarterHealth, dropOffSignals, healthMixHistory } from '../data/checkingHealth'
@@ -13,6 +13,7 @@ import { buildWeeklyReport } from './weeklyReport'
 import { END_LABEL, getReforecast } from './reforecastStore'
 import { defaultPlanner } from './scenarioPlanner'
 import { tabPath } from './checkingTabs'
+import { nbaRollup } from './nextBestAction'
 import { DEFAULT_ALERT_RULES } from './dailyTracking'
 
 const n = (x: number) => formatValue(x, 'accounts')
@@ -108,6 +109,16 @@ export const TOUR_STEPS: TourStep[] = [
         ? `the accepted re-forecast of ${n(rf.target)} (${END_LABEL[rf.end]} of ${n(rf.range.low)}–${n(rf.range.high)})`
         : `a re-forecast range of ${n(pl.low)}–${n(pl.high)}, proposed ${n(pl.low)}`
       return `One click turns this into a leadership report with ${r.decisions.length} decisions, starting with ${target}.`
+    },
+  },
+  {
+    title: 'Next best action',
+    path: tabPath('act'),
+    target: '#nba-heading',
+    caption: () => {
+      const r = nbaRollup()
+      const c = r.counts
+      return `Each of the ${n(r.total)} direct-deposit-leaving customers gets one explained action: ${n(c.dd)} DD Retention, ${n(c.bundle)} Savings Bundle, ${n(c.fee)} Fee Forgiveness, ${n(c.service)} service outreach (hardship or complaint, no offer), ${n(c.wait)} wait for the 30-day contact cap, ${n(c.none)} do nothing (value below cost).`
     },
   },
 ]

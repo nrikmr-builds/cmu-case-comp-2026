@@ -18,6 +18,7 @@ import AccountHealthMix from './AccountHealthMix'
 import CampaignCenter from './CampaignCenter'
 import CampaignTracker from './CampaignTracker'
 import ScenarioPlanner from './ScenarioPlanner'
+import NextBestAction from './NextBestAction'
 import ActivationFunnel from './ActivationFunnel'
 import CrossProductSignal from './CrossProductSignal'
 import EarlyWarningSignals from './EarlyWarningSignals'
@@ -44,6 +45,7 @@ export default function CheckingHealthSections({ tab, quarter, onDesign, onEditC
         <CampaignCenter onDesign={onDesign} />
         <CampaignTracker onEdit={onEditCampaign} />
         <ScenarioPlanner />
+        <NextBestAction />
       </div>
     )
   }

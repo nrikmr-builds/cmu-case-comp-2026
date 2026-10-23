@@ -2,6 +2,7 @@ import { ArrowRight, Bell, Megaphone, ShieldAlert } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { seedCampaigns } from '../data/campaignSeeds'
+import { presetForSource } from '../data/campaignPresets'
 import { dropOffSignals, riskSegments, riskSegmentSignal } from '../data/checkingHealth'
 import { seedLift } from '../lib/campaignTracking'
 import { useCampaigns } from '../lib/campaignStore'
@@ -16,7 +17,11 @@ const linkClass = 'inline-flex items-center gap-1 text-xs font-medium text-brand
 /** Today tab: the three things that need a decision now, each linking to the tab where you act on it. */
 export default function ActNow() {
   const alerts = useTriggeredAlerts()
-  const top = rankRiskSegments(riskSegments, dropOffSignals, riskSegmentSignal)
+  // Cross-sell groups (e.g. Savings held elsewhere) are opportunities, not closure risks: they're listed separately
+  // and never ranked by a lift borrowed from a closure signal.
+  const isOpportunity = (id: string) => presetForSource('risk', id)?.kind === 'cross-sell'
+  const top = rankRiskSegments(riskSegments.filter((s) => !isOpportunity(s.id)), dropOffSignals, riskSegmentSignal)
+  const opportunities = riskSegments.filter((s) => isOpportunity(s.id))
   const liveSeeds = seedCampaigns.filter((c) => c.status === 'live').map((c) => ({ c, lift: seedLift(c) }))
   const liveSaved = useCampaigns().campaigns.filter((c) => c.status === 'live')
 
@@ -44,7 +49,7 @@ export default function ActNow() {
           </Link>
         </Box>
 
-        <Box icon={<ShieldAlert className="h-4 w-4" aria-hidden />} title="Top 3 risk segments (size × lift)">
+        <Box icon={<ShieldAlert className="h-4 w-4" aria-hidden />} title="Top closure risks (size × lift)">
           <ol className="list-decimal space-y-1.5 pl-4">
             {top.map(({ segment, signal, lift, score }) => (
               <li key={segment.id}>
@@ -57,6 +62,15 @@ export default function ActNow() {
               </li>
             ))}
           </ol>
+          {opportunities.map((o) => (
+            <p key={o.id} className="mt-2 border-t border-slate-100 pt-2">
+              <span className="font-medium">Top opportunity:</span>{' '}
+              <Link to={checkingHref(`risk-${o.id}`)} className="font-medium text-brand-blue hover:underline">
+                {o.name}
+              </Link>{' '}
+              ({accounts(o.eligibleCustomers)}, cross-sell)
+            </p>
+          ))}
           <p className="mt-2 text-xs text-slate-500">Lift borrowed from each segment's closest early-warning signal (illustrative mapping).</p>
         </Box>
 

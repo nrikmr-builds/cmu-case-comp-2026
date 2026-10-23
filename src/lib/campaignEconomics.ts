@@ -110,6 +110,31 @@ export interface CampaignInputs {
   /** Cross-sell only. */
   avgBalanceUsd: number
   depositSpread: number
+  /**
+   * Next-best-action drafts: treated people per preferred channel (each reached once on their own channel).
+   * Used only while it still adds up to the treated count; editing the audience falls back to the channel list.
+   */
+  channelMix?: Partial<Record<OutreachChannel, number>>
+}
+
+/** Channel cost, and how it was worked out: per-customer channels when a valid mix is attached, else the channel list. */
+export function channelCost(inputs: CampaignInputs, treated: number): { cost: number; basis: string; mixed: boolean } {
+  const mix = inputs.channelMix
+  const mixTotal = mix ? Object.values(mix).reduce((s, n) => s + (n ?? 0), 0) : 0
+  if (mix && mixTotal === treated) {
+    const parts = (Object.entries(mix) as [OutreachChannel, number][]).filter(([, n]) => n > 0)
+    return {
+      cost: parts.reduce((s, [c, n]) => s + n * inputs.costPerMessage[c] * inputs.messagesPerPerson, 0),
+      basis: parts.map(([c, n]) => `${n.toLocaleString('en-US')} ${c} × $${inputs.costPerMessage[c].toFixed(2)}`).join(' + ') + ' (each customer on their preferred channel)',
+      mixed: true,
+    }
+  }
+  const perPerson = inputs.offer.channels.reduce((s, c) => s + inputs.costPerMessage[c], 0) * inputs.messagesPerPerson
+  return {
+    cost: treated * perPerson,
+    basis: `${treated.toLocaleString('en-US')} treated × $${perPerson.toFixed(2)} per person (${inputs.offer.channels.join(' + ') || 'none'} × ${inputs.messagesPerPerson})`,
+    mixed: false,
+  }
 }
 
 /** Cross-sell default balance: the existing "Avg. PNC savings" of checking customers who have PNC savings. */
@@ -235,10 +260,9 @@ export function computeEconomics(inputs: CampaignInputs): CampaignEconomics {
     qualifyingBasis = `Activated accounts among ALL openings, as the proxy for meeting a debit-purchase requirement (${pctText(a.rate)})`
   }
 
-  const perPersonChannel = offer.channels.reduce((s, c) => s + inputs.costPerMessage[c], 0) * inputs.messagesPerPerson
   const costs = {
     bonus: offer.bonusUsd * qualifying,
-    channel: treated * perPersonChannel,
+    channel: channelCost(inputs, treated).cost,
     // Fee waiver goes to everyone treated; it's revenue given up, so it counts as cost.
     feeWaiver: inputs.kind === 'retention' && offer.waiveFirstFee ? treated * checkingTerms.monthlyMaintenanceFee : 0,
     perAccount: offer.perAccountCostUsd * total,

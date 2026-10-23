@@ -25,7 +25,7 @@ const ANCHORS: [CheckingTab, (id: string) => boolean][] = [
       ['segments-heading', 'insight-heading', 'activation-heading', 'health-heading', 'signals-heading', 'risk-segments-heading', 'fee-heading', 'cross-product-heading'].includes(id) ||
       /^(segment|history|signal|risk)-/.test(id),
   ],
-  ['act', (id) => ['campaigns-heading', 'tracker-heading', 'totals-heading', 'planner-heading'].includes(id)],
+  ['act', (id) => ['campaigns-heading', 'tracker-heading', 'totals-heading', 'planner-heading', 'nba-heading'].includes(id)],
   ['market', (id) => ['market-heading', 'offers-heading'].includes(id)],
   ['report', (id) => ['report-tab-heading', 'reports-history-heading'].includes(id)],
 ]

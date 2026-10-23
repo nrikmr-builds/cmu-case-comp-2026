@@ -1,6 +1,6 @@
 // Campaign Tracker math: lift vs. holdout with a 95% interval, a per-campaign funnel that separates
 // "still maturing" from failures, planned vs. actual, totals by type, and the gap feasibility roll-up.
-import { activationFunnel, type ActivationFunnel } from '../data/checkingHealth'
+import { activationFunnel, riskSegments, type ActivationFunnel } from '../data/checkingHealth'
 import { campaignPresets } from '../data/campaignPresets'
 import { seedCampaigns, type DailyByChannel, type SeedCampaign } from '../data/campaignSeeds'
 import { DAYS_WITH_DATA, dayToIso } from '../data/dailyOpenings'
@@ -295,6 +295,61 @@ export interface PlanItem {
   from: 'saved' | 'preset default'
 }
 
+/** One counted unit in an overlap group: a campaign, or all next-best-action Drafts together. */
+interface OverlapUnit {
+  name: string
+  /** What "larger" is judged on: saves (closure prevention) or deposits (cross-sell). */
+  size: number
+  q3: number
+  next90: number
+}
+
+export interface OverlapResult {
+  gross: number
+  counted: number
+  /** Q3 and next-90-day effect of the counted units (closure prevention). */
+  countedQ3: number
+  countedNext90: number
+  overlaps: { segmentLabel: string; kept: OverlapUnit; dropped: OverlapUnit[] }[]
+}
+
+/**
+ * The planner's overlap rule for closure-prevention and cross-sell totals: campaigns aimed at the same segment
+ * with the same outcome reach the same customers, so only the larger counts (by total saves or deposits, not by
+ * the Q3 slice, which a long lead time can push to zero). The next-best-action Drafts split one segment's
+ * customers into disjoint groups (one action per customer), so together they count as one unit.
+ */
+export function countWithoutOverlap(items: { c: SavedCampaign; e: CampaignEconomics }[], size: (e: CampaignEconomics) => number): OverlapResult {
+  const segmentOf = (c: SavedCampaign) =>
+    c.nba ? 'direct-deposit-leaving' : (campaignPresets.find((p) => p.id === c.inputs.presetId)?.source.id ?? c.inputs.presetId)
+  const next90Of = (e: CampaignEconomics) => (e.impact.kind === 'net-change' ? e.impact.next90 : 0)
+  const bySegment = new Map<string, OverlapUnit[]>()
+  const nba = new Map<string, OverlapUnit>()
+  for (const { c, e } of items) {
+    const seg = segmentOf(c)
+    if (c.nba) {
+      let unit = nba.get(seg)
+      if (!unit) {
+        unit = { name: 'Next best action drafts', size: 0, q3: 0, next90: 0 }
+        nba.set(seg, unit)
+        bySegment.set(seg, [...(bySegment.get(seg) ?? []), unit])
+      }
+      unit.size += size(e)
+      unit.q3 += e.timing.q3
+      unit.next90 += next90Of(e)
+    } else bySegment.set(seg, [...(bySegment.get(seg) ?? []), { name: c.inputs.name, size: size(e), q3: e.timing.q3, next90: next90Of(e) }])
+  }
+  const result: OverlapResult = { gross: items.reduce((s, { e }) => s + size(e), 0), counted: 0, countedQ3: 0, countedNext90: 0, overlaps: [] }
+  for (const [seg, units] of bySegment) {
+    const sorted = [...units].sort((a, b) => b.size - a.size)
+    result.counted += sorted[0].size
+    result.countedQ3 += sorted[0].q3
+    result.countedNext90 += sorted[0].next90
+    if (sorted.length > 1) result.overlaps.push({ segmentLabel: riskSegments.find((r) => r.id === seg)?.name ?? seg, kept: sorted[0], dropped: sorted.slice(1) })
+  }
+  return result
+}
+
 export function getTotals(saved: SavedCampaign[]) {
   const kpi = getKpi('checking-new-accounts')
   const { projection, average } = getHeadlineProjection(kpi)
@@ -317,6 +372,8 @@ export function getTotals(saved: SavedCampaign[]) {
   const closure = planned.filter(({ c }) => c.inputs.outcome === 'closures-avoided')
   const activation = planned.filter(({ c }) => c.inputs.outcome === 'activations')
   const crossSell = planned.filter(({ c }) => c.inputs.outcome === 'savings-accounts')
+  const closureCount = countWithoutOverlap(closure, (e) => e.results.total)
+  const crossSellCount = countWithoutOverlap(crossSell, (e) => (e.impact.kind === 'cross-sell' ? e.impact.deposits : 0))
 
   return {
     acquisition: {
@@ -331,9 +388,10 @@ export function getTotals(saved: SavedCampaign[]) {
     },
     closure: {
       count: closure.length,
-      q3: closure.reduce((s, { e }) => s + e.timing.q3, 0),
-      next90: closure.reduce((s, { e }) => s + (e.impact.kind === 'net-change' ? e.impact.next90 : 0), 0),
+      q3: closureCount.countedQ3,
+      next90: closureCount.countedNext90,
       netNow: closure[0]?.e.impact.kind === 'net-change' ? closure[0].e.impact.netNow : undefined,
+      overlap: closureCount,
     },
     activation: {
       count: activation.length,
@@ -342,7 +400,8 @@ export function getTotals(saved: SavedCampaign[]) {
     },
     crossSell: {
       count: crossSell.length,
-      deposits: crossSell.reduce((s, { e }) => s + (e.impact.kind === 'cross-sell' ? e.impact.deposits : 0), 0),
+      deposits: crossSellCount.counted,
+      overlap: crossSellCount,
     },
   }
 }
