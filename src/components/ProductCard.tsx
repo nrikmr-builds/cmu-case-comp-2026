@@ -1,7 +1,7 @@
 import { ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { formatPercent, formatValue, getAttainment, getExpected, getPaceRatio, getStatus } from '../lib/metrics'
-import { againstReforecast, useReforecast } from '../lib/reforecastStore'
+import { againstReforecast, proposalCaveat, useReforecast } from '../lib/reforecastStore'
 import { PRODUCT_ICONS } from '../lib/productIcons'
 import type { Kpi, KpiStatus, Product } from '../types'
 import KPIProgressBar from './KPIProgressBar'
@@ -106,15 +106,18 @@ function KpiRow({ kpi, quarterElapsed }: { kpi: Kpi; quarterElapsed: number }) {
         {kpi.kind === 'cumulative' && <> · {formatPercent(getPaceRatio(kpi, quarterElapsed))} of pace</>}
       </p>
       {rf && (
-        <p className="flex flex-wrap items-center gap-1 rounded bg-blue-50 px-2 py-1 text-xs text-slate-700">
-          <span className="font-medium">
-            Original target {formatValue(kpi.target, kpi.unit)} · Re-forecast {formatValue(rf.target, kpi.unit)}
-          </span>
-          <span>
-            (illustrative): {formatPercent(rf.shareOfTarget)} of re-forecast · {formatPercent(rf.paceRatio)} of its pace
-          </span>
-          <StatusBadge status={rf.status} />
-        </p>
+        <div className="rounded bg-blue-50 px-2 py-1 text-xs text-slate-700">
+          <p className="flex flex-wrap items-center gap-1">
+            <span className="font-medium">
+              Original target {formatValue(kpi.target, kpi.unit)} · Re-forecast {formatValue(rf.target, kpi.unit)} (illustrative proposal)
+            </span>
+          </p>
+          <p className="mt-0.5 flex flex-wrap items-center gap-1">
+            Re-forecast still needs {rf.multiple.toFixed(2)}× the recent pace ({rf.requiredPerDay.toFixed(1)} vs. {rf.recentPerDay.toFixed(1)}/day)
+            <StatusBadge status={rf.status} />
+          </p>
+          <p className="mt-0.5 text-slate-500">{proposalCaveat(rf.originalStatus)}</p>
+        </div>
       )}
       {kpi.related && (
         // Sits above the card's stretched link so it gets its own click.

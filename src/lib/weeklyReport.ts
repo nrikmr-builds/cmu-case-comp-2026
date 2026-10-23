@@ -35,7 +35,7 @@ import {
 } from './dailyTracking'
 import { formatPercent, formatValue, getStatus } from './metrics'
 import { formatDate } from './projection'
-import { againstReforecast, reforecastLabel, type Reforecast } from './reforecastStore'
+import { againstReforecast, END_LABEL, proposalCaveat, reforecastLabel, type Reforecast } from './reforecastStore'
 import { defaultPlanner } from './scenarioPlanner'
 
 const accounts = (n: number) => formatValue(n, 'accounts')
@@ -107,10 +107,11 @@ export function buildWeeklyReport(saved: SavedCampaign[], rules: AlertRule[], no
       label: `${openingsKpi.label} · vs. re-forecast`,
       target: accounts(rf.target),
       actual: accounts(openingsKpi.actual),
-      vsExpected: formatPercent(rf.paceRatio),
+      // Forward-looking: the daily pace still needed to reach the re-forecast vs. the recent pace (not actual vs. 80% of it).
+      vsExpected: `Needs ${rf.requiredPerDay.toFixed(1)}/day vs. ${rf.recentPerDay.toFixed(1)}/day recent (${rf.multiple.toFixed(2)}×)`,
       ofTarget: formatPercent(rf.shareOfTarget),
       status: STATUS_TEXT[rf.status],
-      change: `${reforecastLabel(reforecast)}; original ${accounts(openingsKpi.target)} unchanged`,
+      change: `${reforecastLabel(reforecast)}, ${END_LABEL[reforecast.end]} of ${accounts(reforecast.range.low)}–${accounts(reforecast.range.high)}. ${proposalCaveat(rf.originalStatus)}`,
     })
   }
   const planner = defaultPlanner(saved)
@@ -206,8 +207,8 @@ export function buildWeeklyReport(saved: SavedCampaign[], rules: AlertRule[], no
       text: 'Approve a re-forecast of Q3 new checking openings, or name the new levers expected to close the rest.',
       proposed:
         rf && reforecast
-          ? `${reforecastLabel(reforecast)}: ${accounts(reforecast.target)} (original ${accounts(openingsKpi.target)} stays on record). Basis: ${reforecast.basis}.`
-          : `Proposed Q3 re-forecast ≈ ${accounts(planner.landing)} = ${accounts(planner.headlineProjected)} (last-7-day pace) + ${accounts(planner.countedIncremental)} (scenario planner${planner.overlapRemoved ? `, overlap removed ${accounts(planner.overlapRemoved)}` : ''}). Range ${accounts(planner.low)}–${accounts(planner.high)}; campaign effects aren't additive, so treat this as an upper bound.`,
+          ? `Re-forecast range ${accounts(reforecast.range.low)}–${accounts(reforecast.range.high)}; accepted ${accounts(reforecast.target)} (${END_LABEL[reforecast.end]}). ${reforecastLabel(reforecast)}; original ${accounts(openingsKpi.target)} stays on record. Re-forecast still needs ${rf.multiple.toFixed(2)}× the recent pace (${rf.requiredPerDay.toFixed(1)} vs. ${rf.recentPerDay.toFixed(1)}/day). Basis: ${reforecast.basis}.`
+          : `Re-forecast range ${accounts(planner.low)}–${accounts(planner.high)}; proposed ${accounts(planner.low)} (low end: assumes 50% of planned uplift until the pilot is significant). Low = ${accounts(planner.headlineProjected)} (last-7-day pace) + 50% × ${accounts(planner.countedIncremental)} (scenario planner${planner.overlapRemoved ? `, overlap removed ${accounts(planner.overlapRemoved)}` : ''}); high adds 100%. Original ${accounts(openingsKpi.target)} stays on record.`,
     },
     {
       title: 'Application Rescue full rollout',

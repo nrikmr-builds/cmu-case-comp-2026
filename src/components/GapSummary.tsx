@@ -1,5 +1,5 @@
 import { getHeadlineProjection, getWeeklyPace } from '../lib/dailyTracking'
-import { againstReforecast, reforecastLabel, useReforecast } from '../lib/reforecastStore'
+import { againstReforecast, END_LABEL, proposalCaveat, reforecastLabel, useReforecast } from '../lib/reforecastStore'
 import { formatPercent, formatValue, getExpected, getPaceGap, getPaceRatio, getStatus } from '../lib/metrics'
 import type { PaceProjection } from '../lib/projection'
 import type { Kpi, ReportingPeriod } from '../types'
@@ -70,19 +70,25 @@ export default function GapSummary({ kpi, period }: Props) {
           </h3>
           <dl className="mt-2 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Stat label="Original target (unchanged)" value={fmt(kpi.target)} note={`${formatPercent(getPaceRatio(kpi, quarterElapsed))} of pace · ${STATUS_TEXT[getStatus(kpi, quarterElapsed)]}`} />
-            <Stat label="Re-forecast target" value={fmt(rf.target)} note={`Expected by now ${fmt(rf.expected)} (× ${formatPercent(quarterElapsed)})`} emphasis="target" />
             <Stat
-              label="Pace vs. re-forecast"
-              value={formatPercent(rf.paceRatio)}
-              note={`${fmt(kpi.actual)} ÷ ${fmt(rf.expected)} · ${STATUS_TEXT[rf.status]}`}
+              label="Re-forecast (proposal)"
+              value={fmt(rf.target)}
+              note={`${END_LABEL[reforecast.end]} of the planner range ${fmt(reforecast.range.low)}–${fmt(reforecast.range.high)}`}
+              emphasis="target"
+            />
+            <Stat
+              label="Required per day to reach it"
+              value={`${rf.requiredPerDay.toFixed(1)}/day`}
+              note={`(${fmt(rf.target)} − ${fmt(kpi.actual)}) ÷ ${days(rf.daysLeft)} days left = ${fmt(rf.stillNeeded)} ÷ ${days(rf.daysLeft)}`}
+            />
+            <Stat
+              label="Vs. the recent pace"
+              value={`${rf.multiple.toFixed(2)}×`}
+              note={`Needs ${rf.multiple.toFixed(2)}× the recent pace: ${rf.requiredPerDay.toFixed(1)} ÷ ${rf.recentPerDay.toFixed(1)}/day. Recent ÷ required = ${formatPercent(rf.recentVsRequired)} · ${STATUS_TEXT[rf.status]}`}
               emphasis={rf.status === 'on-track' ? 'ahead' : 'pace'}
             />
-            <Stat
-              label="Beyond last-7-day pace, vs. re-forecast"
-              value={fmt(Math.max(0, rf.target - headline.projected))}
-              note={`${fmt(rf.target)} − ${fmt(headline.projected)} (vs. ${fmt(headline.incrementalNeeded)} for the original)`}
-            />
           </dl>
+          <p className="mt-2 text-xs font-medium text-slate-700">{proposalCaveat(rf.originalStatus)}</p>
         </>
       )}
       <ProjectionRow

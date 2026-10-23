@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { getKpi } from '../data/productMetrics'
 import { useCampaigns } from '../lib/campaignStore'
 import { formatValue } from '../lib/metrics'
-import { againstReforecast, reforecastLabel, useReforecast } from '../lib/reforecastStore'
+import { againstReforecast, END_LABEL, proposalCaveat, reforecastLabel, useReforecast, type ReforecastEnd } from '../lib/reforecastStore'
 import { computePlanner, getPlannerCandidates } from '../lib/scenarioPlanner'
 import SectionCard from './SectionCard'
 import StatusBadge from './StatusBadge'
@@ -21,6 +21,9 @@ export default function ScenarioPlanner() {
   const { reforecast, accept, clear } = useReforecast()
   const [proposing, setProposing] = useState(false)
   const [reason, setReason] = useState('')
+  // Conservative by default: the low end assumes only half the planned uplift until the pilot is significant.
+  const [end, setEnd] = useState<ReforecastEnd>('low')
+  const [custom, setCustom] = useState(0)
   const kpi = getKpi('checking-new-accounts')
 
   const toggle = (id: string) =>
@@ -32,6 +35,17 @@ export default function ScenarioPlanner() {
     })
 
   const basis = `${n(p.headlineProjected)} (last-7-day pace) + ${n(p.countedIncremental)} incremental Q3 openings from ${p.included.length} campaign${p.included.length === 1 ? '' : 's'}${p.overlapRemoved ? `, overlap removed ${n(p.overlapRemoved)}` : ''}`
+  const proposedTarget = end === 'low' ? p.low : end === 'high' ? p.high : custom
+  const reasonFor = (e: ReforecastEnd) =>
+    e === 'low'
+      ? `Low end: assumes 50% of planned uplift until the pilot is significant. ${n(p.headlineProjected)} + 50% × ${n(p.countedIncremental)} = ${n(p.low)}.`
+      : e === 'high'
+        ? `High end: assumes 100% of planned uplift lands in Q3, which no campaign has proven yet. ${n(p.headlineProjected)} + ${n(p.countedIncremental)} = ${n(p.high)}.`
+        : `Custom value chosen by the product owner; planner range ${n(p.low)}–${n(p.high)}.`
+  const choose = (e: ReforecastEnd) => {
+    setEnd(e)
+    setReason(reasonFor(e))
+  }
 
   return (
     <SectionCard
@@ -93,7 +107,9 @@ export default function ScenarioPlanner() {
           <button
             type="button"
             onClick={() => {
-              setReason(`Recent pace has fallen to the last-7-day level after the summer promotion; the planned campaigns add about ${n(p.countedIncremental)} incremental openings. Basis: ${basis}.`)
+              setEnd('low')
+              setCustom(p.low)
+              setReason(reasonFor('low'))
               setProposing(true)
             }}
             className="rounded bg-brand-blue px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-blue-dark"
@@ -102,8 +118,31 @@ export default function ScenarioPlanner() {
           </button>
         ) : (
           <div className="space-y-2">
+            <fieldset>
+              <legend className="text-sm font-medium text-slate-700">
+                Which end of the range {n(p.low)}–{n(p.high)}?
+              </legend>
+              <div className="mt-1 flex flex-wrap gap-3 text-sm">
+                {(['low', 'high', 'custom'] as const).map((e) => (
+                  <label key={e} className="inline-flex items-center gap-1.5">
+                    <input type="radio" name="reforecast-end" checked={end === e} onChange={() => choose(e)} className="accent-brand-blue" />
+                    {e === 'low' ? `Low (default) · ${n(p.low)}` : e === 'high' ? `High · ${n(p.high)}` : 'Custom'}
+                  </label>
+                ))}
+                {end === 'custom' && (
+                  <input
+                    type="number"
+                    min={kpi.actual}
+                    value={custom}
+                    onChange={(ev) => setCustom(Math.max(0, Math.round(Number(ev.target.value) || 0)))}
+                    aria-label="Custom re-forecast target"
+                    className="w-28 rounded border border-slate-300 px-2 py-1 text-sm tabular-nums"
+                  />
+                )}
+              </div>
+            </fieldset>
             <p className="text-sm text-slate-700">
-              Proposed Q3 target: <strong>{n(p.landing)}</strong> (original {n(kpi.target)} stays on record). Illustrative.
+              Proposed Q3 target: <strong>{n(proposedTarget)}</strong> ({END_LABEL[end]}; original {n(kpi.target)} stays on record). Illustrative.
             </p>
             <label className="block text-sm">
               <span className="font-medium text-slate-700">Reason</span>
@@ -113,7 +152,7 @@ export default function ScenarioPlanner() {
               <button
                 type="button"
                 onClick={() => {
-                  accept({ kpiId: kpi.id, target: p.landing, reason, acceptedAt: new Date().toISOString(), basis })
+                  accept({ kpiId: kpi.id, target: proposedTarget, reason, acceptedAt: new Date().toISOString(), basis, end, range: { low: p.low, high: p.high } })
                   setProposing(false)
                 }}
                 className="inline-flex items-center gap-1 rounded bg-brand-blue px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-blue-dark"
@@ -139,11 +178,14 @@ function AcceptedReforecast({ onClear }: { onClear: () => void }) {
   return (
     <div className="space-y-1 text-sm text-slate-700">
       <p className="font-semibold text-brand-ink">
-        {reforecastLabel(reforecast)}: {n(reforecast.target)} · original target {n(kpi.target)}
+        Original target {n(kpi.target)} · {reforecastLabel(reforecast)}: {n(reforecast.target)} ({END_LABEL[reforecast.end]} of {n(reforecast.range.low)}–
+        {n(reforecast.range.high)})
       </p>
       <p className="flex flex-wrap items-center gap-1">
-        Against the re-forecast: {Math.round(r.paceRatio * 1000) / 10}% of pace <StatusBadge status={r.status} /> · still needed {n(r.stillNeeded)}
+        Re-forecast still needs {r.multiple.toFixed(2)}× the recent pace: ({n(reforecast.target)} − {n(kpi.actual)}) ÷{' '}
+        {r.daysLeft.toFixed(1)} = {r.requiredPerDay.toFixed(1)}/day vs. {r.recentPerDay.toFixed(1)}/day recent <StatusBadge status={r.status} />
       </p>
+      <p className="text-xs font-medium text-slate-700">{proposalCaveat(r.originalStatus)}</p>
       <p className="text-xs text-slate-500">Reason: {reforecast.reason}</p>
       <p className="text-xs text-slate-500">Basis: {reforecast.basis}</p>
       <button type="button" onClick={onClear} className="mt-1 inline-flex items-center gap-1 rounded border border-slate-300 bg-white px-2 py-1 text-xs">
