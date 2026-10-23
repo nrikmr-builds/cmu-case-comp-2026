@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronUp, History, LayoutDashboard, Trash2 } from 'lucide-react'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { formatTimestamp } from '../lib/metrics'
 import type { DashboardView } from '../types'
 
@@ -12,6 +12,8 @@ interface Props {
   onSelect: (id: string) => void
   onDelete: (id: string) => void
   isDeletable: (id: string) => boolean
+  /** Extra history lists below the views (e.g. saved weekly reports). */
+  footer?: ReactNode
 }
 
 interface MonthGroup {
@@ -42,7 +44,7 @@ function groupByMonth(views: DashboardView[]): MonthGroup[] {
   return groups
 }
 
-export default function SavedViewsNav({ defaultView, views, activeId, onSelect, onDelete, isDeletable }: Props) {
+export default function SavedViewsNav({ defaultView, views, activeId, onSelect, onDelete, isDeletable, footer }: Props) {
   const listRef = useRef<HTMLDivElement>(null)
   const groups = groupByMonth(views)
 
@@ -139,6 +141,7 @@ export default function SavedViewsNav({ defaultView, views, activeId, onSelect, 
           ))}
         </div>
       </div>
+      {footer}
     </nav>
   )
 }

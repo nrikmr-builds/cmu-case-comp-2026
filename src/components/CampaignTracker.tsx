@@ -207,11 +207,24 @@ function CampaignCard({ t, saved, onStatus, onDelete, onEdit }: CardProps) {
           <div>
             <h5 className="text-sm font-medium text-slate-700">Funnel for this campaign's treated openings</h5>
             <div className="mt-2">
-              <FunnelTable channels={t.actual.funnel.channels} maturing={{ activated: t.actual.funnel.maturingActivation, primary: t.actual.funnel.maturingPrimary }} />
+              <FunnelTable
+                channels={t.actual.funnel.channels}
+                maturing={{
+                  activated: t.actual.funnel.activation.maturing,
+                  primary: t.actual.funnel.primary.maturing,
+                  metBonus: t.seed.costs.bonusUsd > 0 ? t.actual.funnel.metBonus.maturing : undefined,
+                }}
+                bonusRow={
+                  t.seed.costs.bonusUsd > 0
+                    ? { label: 'Met bonus requirement (60 days)', byChannel: t.actual.funnel.metBonus.byChannel, total: t.actual.funnel.metBonus.soFar }
+                    : undefined
+                }
+              />
             </div>
             <p className="mt-1 text-xs text-slate-500">
-              Never activated after 30 days: {accounts(t.actual.funnel.neverActivated)}. Primary at maturity (all cohorts past 90 days):{' '}
-              {accounts(t.actual.funnel.primaryAtMaturity)}.
+              At maturity: activated {accounts(t.actual.funnel.activation.atMaturity)}
+              {t.seed.costs.bonusUsd > 0 && <>, met bonus requirement {accounts(t.actual.funnel.metBonus.atMaturity)}</>}, primary{' '}
+              {accounts(t.actual.funnel.primary.atMaturity)}. Never activated after 30 days: {accounts(t.actual.funnel.neverActivated)} (not maturing).
             </p>
           </div>
           <SpendAndPlan t={t} />
@@ -271,47 +284,70 @@ function Sparkline({ rows }: { rows: { day: number; branch: number; digital: num
 function SpendAndPlan({ t }: { t: TrackedCampaign }) {
   const a = t.actual
   if (!a) return null
-  const rows: [string, string, string, string][] = [
-    ['Incremental openings', t.plan ? accounts(t.plan.results.incremental) : '—', accounts(a.lift.incremental), `Actual = treated × uplift (${a.lift.daysRun} days so far)`],
+  const p = a.projection
+  const ended = p.factor === 1
+  const dash = '—'
+  // Columns: plan pro-rated to date | actual to date | full plan | projected full campaign (end + maturity).
+  const rows: [string, string, string, string, string, string][] = [
+    [
+      'Incremental openings',
+      a.planToDate ? accounts(a.planToDate.incremental) : dash,
+      accounts(a.lift.incremental),
+      t.plan ? accounts(t.plan.results.incremental) : dash,
+      accounts(p.incremental),
+      `Plan to date = full plan × ${a.lift.daysRun} ÷ ${p.campaignDays} days. Projected = actual × ${p.campaignDays} ÷ ${a.lift.daysRun}${ended ? ' (ended: same as actual)' : ''}.`,
+    ],
     [
       'Cost',
-      t.plan ? formatUsd(t.plan.costs.total) : '—',
-      `${formatUsd(a.spend.toDate)} to date · ${formatUsd(a.spend.atMaturity)} at maturity`,
-      `Channel ${formatUsd(a.spend.channel)} + bonuses ${formatUsd(a.spend.bonusToDate)} so far (${formatUsd(a.spend.bonusAtMaturity)} at maturity) + per-opening ${formatUsd(a.spend.perOpening)}`,
+      dash,
+      formatUsd(a.spend.toDate),
+      t.plan ? formatUsd(t.plan.costs.total) : dash,
+      formatUsd(a.spend.projected),
+      `To date: channel ${formatUsd(a.spend.channel)} + bonuses ${formatUsd(a.spend.bonusToDate)} (accounts that met the requirement so far) + per-opening ${formatUsd(a.spend.perOpeningToDate)}. Projected: channel + bonuses ${formatUsd(a.spend.bonusProjected)} + per-opening ${formatUsd(a.spend.perOpeningProjected)} (${accounts(p.openings)} openings).`,
     ],
     [
       'Cost per incremental primary',
-      t.plan?.costPerIncrementalPrimary !== undefined ? money(t.plan.costPerIncrementalPrimary) : '—',
+      dash,
+      dash,
+      t.plan?.costPerIncrementalPrimary !== undefined ? money(t.plan.costPerIncrementalPrimary) : dash,
       money(a.costPerIncrementalPrimary),
-      `${formatUsd(a.spend.atMaturity)} ÷ ${accounts(a.incrementalPrimary)} (incremental × ${pct(a.funnel.primaryAtMaturity / (a.lift.treatedOpenings || 1))} primary at maturity)`,
+      `Both at campaign end and account maturity. Projected = ${formatUsd(a.spend.projected)} ÷ ${accounts(p.incrementalPrimary)} (${accounts(p.incremental)} incremental × ${pct(a.lift.treatedOpenings ? a.funnel.primary.atMaturity / a.lift.treatedOpenings : 0)} primary at maturity).`,
     ],
   ]
   return (
     <div>
-      <h5 className="text-sm font-medium text-slate-700">{t.plan ? 'Planned vs. actual' : 'Actual (no builder plan: seeded before the builder existed)'}</h5>
+      <h5 className="text-sm font-medium text-slate-700">{t.plan ? 'Planned vs. actual (same time basis)' : 'Actual (no builder plan: seeded before the builder existed)'}</h5>
       <div className="mt-2 overflow-x-auto">
-        <table className="w-full min-w-[640px] text-left text-sm">
+        <table className="w-full min-w-[760px] text-left text-sm">
           <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
             <tr>
               <th scope="col" className="py-1.5 pr-3 font-medium">Measure</th>
-              <th scope="col" className="py-1.5 pr-3 text-right font-medium">Planned</th>
-              <th scope="col" className="py-1.5 pr-3 text-right font-medium">Actual</th>
+              <th scope="col" className="py-1.5 pr-3 text-right font-medium">Plan to date</th>
+              <th scope="col" className="py-1.5 pr-3 text-right font-medium">Actual to date</th>
+              <th scope="col" className="py-1.5 pr-3 text-right font-medium">Full plan</th>
+              <th scope="col" className="py-1.5 pr-3 text-right font-medium">Projected (end + maturity)</th>
               <th scope="col" className="py-1.5 font-medium">How</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {rows.map(([label, planned, actual, how]) => (
+            {rows.map(([label, planToDate, actual, plan, projected, how]) => (
               <tr key={label} className="align-top">
                 <th scope="row" className="py-1.5 pr-3 font-medium text-brand-ink">{label}</th>
-                <td className="py-1.5 pr-3 text-right tabular-nums">{planned}</td>
+                <td className="py-1.5 pr-3 text-right tabular-nums">{planToDate}</td>
                 <td className="py-1.5 pr-3 text-right font-semibold tabular-nums">{actual}</td>
+                <td className="py-1.5 pr-3 text-right tabular-nums">{plan}</td>
+                <td className="py-1.5 pr-3 text-right font-semibold tabular-nums">{projected}</td>
                 <td className="py-1.5 text-xs text-slate-500">{how}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      {t.status === 'live' && <p className="mt-1 text-xs text-slate-500">Live: results are still coming in, and most accounts are inside their 30/90-day windows.</p>}
+      {t.status === 'live' && (
+        <p className="mt-1 text-xs text-slate-500">
+          Live: {a.lift.daysRun} of {p.campaignDays} days run; most accounts are still inside their 30/60/90-day windows.
+        </p>
+      )}
     </div>
   )
 }

@@ -98,7 +98,11 @@ export default function DailyOpeningsTrend() {
         {Math.round(p.currentDailyRate)}/day; required {accounts(p.remainingToTarget)} ÷{' '}
         {p.daysRemaining.toLocaleString('en-US', { maximumFractionDigits: 1 })} = {Math.round(p.requiredDailyRate)}/day; projected{' '}
         {accounts(kpi.actual)} + {Math.round(p.currentDailyRate)}/day × {p.daysRemaining.toLocaleString('en-US', { maximumFractionDigits: 1 })} ≈{' '}
-        {accounts(p.projected)}. Day {DAYS_WITH_DATA} ({shortDate(dayToIso(DAYS_WITH_DATA))}) is the internal as-of date.
+        {accounts(p.projected)} at the quarter-average pace (reference). Headline, at the last-7-day pace:{' '}
+        {accounts(kpi.actual)} + ({accounts(getWeeklyPace().weekTotal)} ÷ 7 = {getWeeklyPace().weekPerDay.toFixed(1)}/day) ×{' '}
+        {p.daysRemaining.toLocaleString('en-US', { maximumFractionDigits: 1 })} ≈{' '}
+        <strong>{accounts(getPaceProjection(kpi, reportingPeriod, getWeeklyPace().weekPerDay).projected)}</strong>. Day {DAYS_WITH_DATA} (
+        {shortDate(dayToIso(DAYS_WITH_DATA))}) is the internal as-of date.
       </p>
     </SectionCard>
   )

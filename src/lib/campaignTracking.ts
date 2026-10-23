@@ -82,92 +82,134 @@ export function seedLift(seed: SeedCampaign, upToDay = DAYS_WITH_DATA): Lift {
 
 // --- Funnel with maturity ----------------------------------------------------------------------------
 
+/** Bonus requirement window: $500+ direct deposit within 60 days. */
+export const BONUS_WINDOW = 60
+
+export interface StageProgress {
+  /** Reached so far, by the as-of date. */
+  soFar: number
+  /** Reached once every cohort has passed the stage's window. */
+  atMaturity: number
+  /** atMaturity − soFar: still inside the window, so not failures. */
+  maturing: number
+}
+
 export interface CampaignFunnel {
-  /** Same shape as the quarter funnel, so the activation funnel component can render it. */
+  /** Same shape as the quarter funnel, so the funnel table can render it (counts reached so far). */
   channels: ActivationFunnel[]
-  /** Opened under 30 days ago and not activated yet: not failures. */
-  maturingActivation: number
-  /** Opened under 90 days ago and not primary yet: not failures. */
-  maturingPrimary: number
+  activation: StageProgress
+  /** "$500+ direct deposit within 60 days" (the bonus requirement). */
+  metBonus: StageProgress & { byChannel: number[] }
+  primary: StageProgress
   /** Opened 30+ days ago and never activated. */
   neverActivated: number
-  /** Expected primary accounts once every cohort passes 90 days (channel primacy rate × openings). */
-  primaryAtMaturity: number
 }
 
 /**
- * Each day's openings move through the funnel at the quarter funnel's channel rates, reached in proportion
- * to age: activated so far = openings × activation rate × min(1, age ÷ 30); primary so far = openings ×
- * primacy rate × min(1, age ÷ 90). Age = days from opening to the as-of date (day 74).
+ * Each day's openings move through the funnel at the quarter funnel's channel rates, reached in proportion to
+ * age ÷ window (age = days from opening to day 74): activation 30 days, bonus requirement 60, primacy 90.
+ * Still maturing = at maturity − so far, so accounts that will never get there are not counted as maturing.
  */
 export function campaignFunnel(rows: DailyByChannel[]): CampaignFunnel {
-  const acc = { maturingAct: 0, maturingPrim: 0, neverAct: 0, primaryAtMaturity: 0 }
+  const acc = { actSoFar: 0, actMature: 0, bonusSoFar: 0, bonusMature: 0, primSoFar: 0, primMature: 0, neverAct: 0 }
+  const bonusByChannel: number[] = []
   const channels = activationFunnel.map((ch) => {
-    const fundedRate = ch.funded / ch.opened
-    const actRate = ch.activated / ch.opened
-    const primRate = ch.primary / ch.opened
-    let opened = 0
-    let funded = 0
-    let activated = 0
-    let primary = 0
+    const rate = { funded: ch.funded / ch.opened, act: ch.activated / ch.opened, dd: ch.metDirectDeposit / ch.opened, prim: ch.primary / ch.opened }
+    const c = { opened: 0, funded: 0, activated: 0, dd: 0, primary: 0 }
     for (const r of rows) {
       const n = r[ch.channel]
       if (!n) continue
       const age = DAYS_WITH_DATA - r.day
-      const actShare = Math.min(1, age / ACTIVATION_WINDOW)
-      const primShare = Math.min(1, age / PRIMACY_WINDOW)
-      opened += n
-      funded += n * fundedRate
-      activated += n * actRate * actShare
-      primary += n * primRate * primShare
-      if (age < ACTIVATION_WINDOW) acc.maturingAct += n * (1 - actRate * actShare)
-      else acc.neverAct += n * (1 - actRate)
-      if (age < PRIMACY_WINDOW) acc.maturingPrim += n * (1 - primRate * primShare)
-      acc.primaryAtMaturity += n * primRate
+      const share = (window: number) => Math.min(1, age / window)
+      c.opened += n
+      c.funded += n * rate.funded
+      c.activated += n * rate.act * share(ACTIVATION_WINDOW)
+      c.dd += n * rate.dd * share(BONUS_WINDOW)
+      c.primary += n * rate.prim * share(PRIMACY_WINDOW)
+      acc.actMature += n * rate.act
+      acc.bonusMature += n * rate.dd
+      acc.primMature += n * rate.prim
+      if (age >= ACTIVATION_WINDOW) acc.neverAct += n * (1 - rate.act)
     }
-    return { channel: ch.channel, label: ch.label, opened, funded: Math.round(funded), activated: Math.round(activated), primary: Math.round(primary) }
+    acc.actSoFar += c.activated
+    acc.bonusSoFar += c.dd
+    acc.primSoFar += c.primary
+    bonusByChannel.push(Math.round(c.dd))
+    return {
+      channel: ch.channel,
+      label: ch.label,
+      opened: c.opened,
+      funded: Math.round(c.funded),
+      activated: Math.round(c.activated),
+      primary: Math.round(c.primary),
+      metDirectDeposit: Math.round(c.dd),
+    }
   })
+  const keep = channels.map((c) => c.opened > 0)
+  const progress = (soFar: number, mature: number): StageProgress => {
+    const s = Math.round(soFar)
+    const m = Math.round(mature)
+    return { soFar: s, atMaturity: m, maturing: m - s }
+  }
   return {
-    channels: channels.filter((c) => c.opened > 0),
-    maturingActivation: Math.round(acc.maturingAct),
-    maturingPrimary: Math.round(acc.maturingPrim),
+    channels: channels.filter((_, i) => keep[i]),
+    activation: progress(acc.actSoFar, acc.actMature),
+    metBonus: { ...progress(acc.bonusSoFar, acc.bonusMature), byChannel: bonusByChannel.filter((_, i) => keep[i]) },
+    primary: progress(acc.primSoFar, acc.primMature),
     neverActivated: Math.round(acc.neverAct),
-    primaryAtMaturity: Math.round(acc.primaryAtMaturity),
   }
 }
 
-// --- Spend -------------------------------------------------------------------------------------------
+// --- Spend and projection to campaign end -------------------------------------------------------------
+
+export interface SeedProjection {
+  /** Campaign length ÷ days of results so far (1 once the campaign has ended). */
+  factor: number
+  campaignDays: number
+  /** Treated openings and incremental openings, projected to the end of the campaign. */
+  openings: number
+  incremental: number
+  /** Incremental primary at maturity, for the full campaign. */
+  incrementalPrimary: number
+}
 
 export interface SeedSpend {
   channel: number
   bonusToDate: number
-  bonusAtMaturity: number
-  perOpening: number
+  perOpeningToDate: number
   toDate: number
-  atMaturity: number
+  /** Projected at campaign end and once every account has matured. */
+  bonusProjected: number
+  perOpeningProjected: number
+  projected: number
 }
 
-/** Bonuses are paid as accounts meet the requirement: primary accounts, reached in proportion to age ÷ window. */
-export function seedSpend(seed: SeedCampaign): SeedSpend {
+export function seedProjection(seed: SeedCampaign, lift: Lift, funnel: CampaignFunnel): SeedProjection {
+  const campaignDays = seed.endDay - seed.startDay + 1
+  const factor = lift.daysRun > 0 ? Math.max(1, campaignDays / lift.daysRun) : 1
+  const openings = Math.round(lift.treatedOpenings * factor)
+  const incremental = Math.round(lift.incremental * factor)
+  const primaryRate = lift.treatedOpenings ? funnel.primary.atMaturity / lift.treatedOpenings : 0
+  return { factor, campaignDays, openings, incremental, incrementalPrimary: Math.round(incremental * primaryRate) }
+}
+
+/** Channel cost is paid up front; per-opening cost and bonuses scale with openings (bonuses on accounts meeting the requirement). */
+export function seedSpend(seed: SeedCampaign, funnel: CampaignFunnel, proj: SeedProjection, treatedOpenings: number): SeedSpend {
   const treatedN = seed.audience - seed.holdout
   const channel = treatedN * seed.costs.channelPerPerson
-  const openings = total(seed.treatedDaily)
-  const perOpening = openings * seed.costs.perOpeningUsd
-  let bonusToDate = 0
-  let bonusAtMaturity = 0
-  if (seed.costs.bonusUsd > 0) {
-    for (const r of seed.treatedDaily) {
-      const age = DAYS_WITH_DATA - r.day
-      for (const ch of activationFunnel) {
-        const qualifying = r[ch.channel] * (seed.costs.bonusOnPrimary ? ch.primary / ch.opened : 1)
-        bonusToDate += qualifying * Math.min(1, age / seed.costs.bonusWindowDays)
-        bonusAtMaturity += qualifying
-      }
-    }
-    bonusToDate = Math.round(bonusToDate) * seed.costs.bonusUsd
-    bonusAtMaturity = Math.round(bonusAtMaturity) * seed.costs.bonusUsd
+  const bonusToDate = seed.costs.bonusUsd * funnel.metBonus.soFar
+  const perOpeningToDate = treatedOpenings * seed.costs.perOpeningUsd
+  const bonusProjected = seed.costs.bonusUsd * Math.round(funnel.metBonus.atMaturity * proj.factor)
+  const perOpeningProjected = proj.openings * seed.costs.perOpeningUsd
+  return {
+    channel,
+    bonusToDate,
+    perOpeningToDate,
+    toDate: channel + bonusToDate + perOpeningToDate,
+    bonusProjected,
+    perOpeningProjected,
+    projected: channel + bonusProjected + perOpeningProjected,
   }
-  return { channel, bonusToDate, bonusAtMaturity, perOpening, toDate: channel + bonusToDate + perOpening, atMaturity: channel + bonusAtMaturity + perOpening }
 }
 
 // --- Tracked campaigns (seeds + builder saves) -------------------------------------------------------
@@ -184,10 +226,12 @@ export interface TrackedCampaign {
   actual?: {
     lift: Lift
     funnel: CampaignFunnel
+    projection: SeedProjection
     spend: SeedSpend
-    /** round(incremental × primary at maturity ÷ treated openings). */
-    incrementalPrimary: number
+    /** Projected cost (campaign end + maturity) ÷ projected incremental primary. */
     costPerIncrementalPrimary: number
+    /** Plan pro-rated to the days of results so far (same time basis as the actual). */
+    planToDate?: { incremental: number }
     dates: string
   }
 }
@@ -207,24 +251,25 @@ export function seedPlanInputs(seed: SeedCampaign): CampaignInputs | undefined {
 export function trackSeed(seed: SeedCampaign): TrackedCampaign {
   const lift = seedLift(seed)
   const funnel = campaignFunnel(seed.treatedDaily)
-  const spend = seedSpend(seed)
-  const openings = lift.treatedOpenings
-  const incrementalPrimary = openings ? Math.round((lift.incremental * funnel.primaryAtMaturity) / openings) : 0
+  const projection = seedProjection(seed, lift, funnel)
+  const spend = seedSpend(seed, funnel, projection, lift.treatedOpenings)
   const inputs = seedPlanInputs(seed)
+  const plan = inputs ? computeEconomics(inputs) : undefined
   return {
     id: seed.id,
     name: seed.name,
     status: seed.status,
     origin: 'seed',
     inputs,
-    plan: inputs ? computeEconomics(inputs) : undefined,
+    plan,
     seed,
     actual: {
       lift,
       funnel,
+      projection,
       spend,
-      incrementalPrimary,
-      costPerIncrementalPrimary: incrementalPrimary > 0 ? spend.atMaturity / incrementalPrimary : Infinity,
+      costPerIncrementalPrimary: projection.incrementalPrimary > 0 ? spend.projected / projection.incrementalPrimary : Infinity,
+      planToDate: plan ? { incremental: Math.round((plan.results.incremental * lift.daysRun) / projection.campaignDays) } : undefined,
       dates: `${shortDate(dayToIso(seed.startDay))} – ${shortDate(dayToIso(seed.endDay))}`,
     },
   }

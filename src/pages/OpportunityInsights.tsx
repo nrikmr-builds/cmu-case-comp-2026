@@ -11,6 +11,8 @@ import GapSummary from '../components/GapSummary'
 import PageHero from '../components/PageHero'
 import SegmentTable from '../components/SegmentTable'
 import SinceLastVisit from '../components/SinceLastVisit'
+import WeeklyReport, { GenerateReportButton } from '../components/WeeklyReport'
+import type { ReportSnapshot } from '../lib/weeklyReport'
 import { presetForSource } from '../data/campaignPresets'
 import { getOpportunity } from '../data/opportunities'
 import { getKpi, reportingPeriod } from '../data/productMetrics'
@@ -48,6 +50,7 @@ function OpportunityDetail({ opportunity }: { opportunity: ProductOpportunity })
   // Promotion Builder (checking only): a preset to start from, or a saved campaign to edit.
   const [builder, setBuilder] = useState<{ presetId?: string; campaign?: SavedCampaign } | null>(null)
   const isChecking = opportunity.productId === 'checking'
+  const [report, setReport] = useState<ReportSnapshot | null>(null)
   const segments = opportunity.segments.map((s) => ({ ...s, estimatedConversionRate: rates[s.id] }))
 
   return (
@@ -69,6 +72,7 @@ function OpportunityDetail({ opportunity }: { opportunity: ProductOpportunity })
           Evidence, trade-offs, and open questions for {kpiName} in {quarter}. All figures
           are illustrative.
         </p>
+        {isChecking && <GenerateReportButton onOpen={setReport} className="mt-4" />}
       </PageHero>
 
       <section className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6">
@@ -108,6 +112,7 @@ function OpportunityDetail({ opportunity }: { opportunity: ProductOpportunity })
           />
         )}
       </section>
+      {report && <WeeklyReport key={report.id} report={report} onClose={() => setReport(null)} />}
       {builder && (
         <PromotionBuilder
           key={builder.campaign?.id ?? builder.presetId}

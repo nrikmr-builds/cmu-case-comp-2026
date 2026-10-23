@@ -1,3 +1,4 @@
+import { Fragment } from 'react'
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { PRIMACY_DEFINITION, type ActivationFunnel as Funnel } from '../data/checkingHealth'
 import { formatPercent1, FUNNEL_STAGES, getNeverActivated, getStageConversion, getTotalFunnel } from '../lib/checkingHealth'
@@ -84,12 +85,14 @@ export default function ActivationFunnel({ channels, quarter }: Props) {
 
 interface TableProps {
   channels: Funnel[]
-  /** Campaign view: accounts still inside the 30-day (activation) or 90-day (primacy) window. */
-  maturing?: { activated: number; primary: number }
+  /** Campaign view: reached at maturity − reached so far, per stage (still inside the window, not failures). */
+  maturing?: { activated: number; primary: number; metBonus?: number }
+  /** Campaign view: "Met bonus requirement (60 days)" row, shown after Activated. */
+  bonusRow?: { label: string; byChannel: number[]; total: number }
 }
 
 /** Stage-by-channel funnel table; also used per campaign in the Campaign Tracker. */
-export function FunnelTable({ channels, maturing }: TableProps) {
+export function FunnelTable({ channels, maturing, bonusRow }: TableProps) {
   const total = getTotalFunnel(channels)
   const maturingFor = (key: string) => (key === 'activated' ? maturing?.activated : key === 'primary' ? maturing?.primary : undefined)
   return (
@@ -107,26 +110,48 @@ export function FunnelTable({ channels, maturing }: TableProps) {
         </thead>
         <tbody className="divide-y divide-slate-100">
           {FUNNEL_STAGES.map(({ key, label }, i) => (
-            <tr key={key}>
-              <th scope="row" className="py-2 pr-4 font-medium text-brand-ink">{label}</th>
-              {[...channels, total].map((funnel, j) => (
-                <td key={j} className="py-2 pr-4 text-right tabular-nums">
-                  {accounts(funnel[key])}
-                  {i > 0 && <span className="ml-2 text-xs text-slate-500">{formatPercent1(getStageConversion(funnel, i))}</span>}
-                </td>
-              ))}
-              {maturing && (
-                <td className="py-2 text-right text-xs text-slate-600 tabular-nums">
-                  {maturingFor(key) !== undefined ? `${accounts(maturingFor(key) ?? 0)} (not failures)` : '—'}
-                </td>
+            <Fragment key={key}>
+              {key === 'primary' && bonusRow && (
+                <tr className="bg-slate-50">
+                  <th scope="row" className="py-2 pr-4 font-medium text-brand-ink">{bonusRow.label}</th>
+                  {[...bonusRow.byChannel, bonusRow.total].map((n, j) => {
+                    const opened = j < channels.length ? channels[j].opened : total.opened
+                    return (
+                      <td key={j} className="py-2 pr-4 text-right tabular-nums">
+                        {accounts(n)}
+                        <span className="ml-2 text-xs text-slate-500">{formatPercent1(opened ? n / opened : 0)} of opened</span>
+                      </td>
+                    )
+                  })}
+                  {maturing && (
+                    <td className="py-2 text-right text-xs text-slate-600 tabular-nums">
+                      {maturing.metBonus !== undefined ? `${accounts(maturing.metBonus)} (not failures)` : '—'}
+                    </td>
+                  )}
+                </tr>
               )}
-            </tr>
+              <tr>
+                <th scope="row" className="py-2 pr-4 font-medium text-brand-ink">{label}</th>
+                {[...channels, total].map((funnel, j) => (
+                  <td key={j} className="py-2 pr-4 text-right tabular-nums">
+                    {accounts(funnel[key])}
+                    {i > 0 && <span className="ml-2 text-xs text-slate-500">{formatPercent1(getStageConversion(funnel, i))}</span>}
+                  </td>
+                ))}
+                {maturing && (
+                  <td className="py-2 text-right text-xs text-slate-600 tabular-nums">
+                    {maturingFor(key) !== undefined ? `${accounts(maturingFor(key) ?? 0)} (not failures)` : '—'}
+                  </td>
+                )}
+              </tr>
+            </Fragment>
           ))}
         </tbody>
       </table>
       <p className="mt-2 text-xs text-slate-500">
         Small figures show the share of the previous stage that moved on.
-        {maturing && ' Still maturing = opened under 30 days ago and not activated yet, or under 90 days ago and not primary yet.'}
+        {maturing &&
+          ' Still maturing = expected at maturity − reached so far, for accounts still inside the stage window (activation 30 days, bonus requirement 60, primacy 90). Accounts that will never reach a stage are not counted.'}
       </p>
     </div>
   )

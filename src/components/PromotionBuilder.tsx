@@ -347,7 +347,7 @@ export default function PromotionBuilder({ presetId, campaign, onClose }: Props)
                 </button>
                 {saved && (
                   <span role="status" className="text-sm font-medium text-green-700">
-                    Saved as {CAMPAIGN_STATUSES.find((s) => s.id === saved.status)?.label}. It appears under Saved campaigns.
+                    Saved as {CAMPAIGN_STATUSES.find((s) => s.id === saved.status)?.label}. It appears in the Campaign Tracker.
                   </span>
                 )}
               </div>

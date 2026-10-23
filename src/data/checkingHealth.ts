@@ -19,6 +19,11 @@ export interface ActivationFunnel {
   activated: number
   /** Primary (direct deposit + 2 bill payments) within 90 days. */
   primary: number
+  /**
+   * $500+ direct deposit within 60 days: the usual bonus requirement. Looser than primacy (no bill-payment
+   * condition), so primary ≤ this ≤ funded.
+   */
+  metDirectDeposit: number
 }
 
 /** All open checking accounts at quarter end, by health tier. */
@@ -84,8 +89,8 @@ export const pncComparisonRow: PncComparisonRow = {
 }
 
 export const activationFunnel: ActivationFunnel[] = [
-  { channel: 'branch', label: 'Branch', opened: 4400, funded: 3960, activated: 2820, primary: 1230 },
-  { channel: 'digital', label: 'Digital', opened: 3200, funded: 2690, activated: 2360, primary: 1150 },
+  { channel: 'branch', label: 'Branch', opened: 4400, funded: 3960, activated: 2820, primary: 1230, metDirectDeposit: 1650 },
+  { channel: 'digital', label: 'Digital', opened: 3200, funded: 2690, activated: 2360, primary: 1150, metDirectDeposit: 1420 },
 ]
 
 /**

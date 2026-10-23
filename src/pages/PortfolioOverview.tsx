@@ -6,7 +6,10 @@ import DashboardPromptBar from '../components/DashboardPromptBar'
 import PageHero from '../components/PageHero'
 import ProductCard from '../components/ProductCard'
 import SavedViewsNav from '../components/SavedViewsNav'
+import ReportsHistory from '../components/ReportsHistory'
 import SinceLastVisit from '../components/SinceLastVisit'
+import WeeklyReport, { GenerateReportButton } from '../components/WeeklyReport'
+import type { ReportSnapshot } from '../lib/weeklyReport'
 import StatusBadge from '../components/StatusBadge'
 import { products, reportingPeriod } from '../data/productMetrics'
 import { DEFAULT_VIEW } from '../lib/dashboardPrompt'
@@ -28,6 +31,8 @@ export default function PortfolioOverview() {
   const [searchParams, setSearchParams] = useSearchParams()
   // A generated view the Product Owner hasn't saved yet. Saved views are addressed by ?view= instead.
   const [draft, setDraft] = useState<DashboardView | null>(null)
+  // The weekly report on screen: freshly generated, or reopened from Reports history.
+  const [report, setReport] = useState<ReportSnapshot | null>(null)
   const activeView = draft ?? views.find((v) => v.id === searchParams.get('view')) ?? DEFAULT_VIEW
 
   const kpis = products.flatMap((p) => p.kpis)
@@ -83,6 +88,7 @@ export default function PortfolioOverview() {
           onSelect={selectView}
           onDelete={handleDelete}
           isDeletable={isUserView}
+          footer={<ReportsHistory onOpen={setReport} />}
         />
 
         <section className="min-w-0 space-y-6">
@@ -114,6 +120,11 @@ export default function PortfolioOverview() {
             </div>
           ))}
 
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm text-slate-600">One page for leadership: KPIs, what changed, campaigns, risks, and decisions.</p>
+            <GenerateReportButton onOpen={setReport} />
+          </div>
+
           <SinceLastVisit compact />
 
           <DashboardPromptBar onGenerate={setDraft} />
@@ -143,6 +154,7 @@ export default function PortfolioOverview() {
           </p>
         </section>
       </div>
+      {report && <WeeklyReport key={report.id} report={report} onClose={() => setReport(null)} />}
     </>
   )
 }
