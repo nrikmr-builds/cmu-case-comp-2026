@@ -2,7 +2,7 @@ import { AlertTriangle, Sparkles } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { SegmentQuarter } from '../data/segmentHistory'
 import { formatValue, getExpected, getPaceGap, getPotentialAccounts } from '../lib/metrics'
-import { getPaceProjection } from '../lib/projection'
+import { getHeadlineProjection } from '../lib/dailyTracking'
 import { formatRate, getHistoricalOpportunity } from '../lib/segmentHistory'
 import type { CustomerSegment, Kpi, ReportingPeriod } from '../types'
 
@@ -33,7 +33,9 @@ export default function AIInsightPanel({ kpi, period, segments, history, scenari
     paceGap > 0
       ? `${fmt(paceGap)} behind the expected pace`
       : `${fmt(kpi.actual - getExpected(kpi, quarterElapsed))} ahead of the expected pace`
-  const p = getPaceProjection(kpi, period)
+  // Headline = last-7-day pace where daily data exists (conservative), else the quarter average.
+  const { basis, projection: p, average } = getHeadlineProjection(kpi)
+  const paceName = basis === 'last-7-day' ? `the last-7-day pace (${Math.round(p.paceDailyRate)}/day)` : `the quarter-average pace (${Math.round(p.paceDailyRate)}/day)`
   const historical = getHistoricalOpportunity(segments, history)
   const atHistory = historical.totalAtLastQuarter
   const scenario = segments.reduce((sum, s) => sum + getPotentialAccounts(s), 0)
@@ -51,16 +53,18 @@ export default function AIInsightPanel({ kpi, period, segments, history, scenari
         <p className="mt-2 text-slate-800">
           {p.incrementalNeeded > 0 ? (
             <>
-              Today's pace should add about {fmt(p.restOfQuarterAtPace)} more on its own, so the gap that new effort has
-              to close is <strong>{fmt(p.incrementalNeeded)}</strong> beyond current pace. The segment opportunity is{' '}
-              {atHistory >= p.incrementalNeeded ? 'larger' : 'smaller'} than that ({fmt(atHistory)} vs.{' '}
-              {fmt(p.incrementalNeeded)}), but some of these conversions may already be part of the current pace
-              (overlap), so the true addition is likely smaller.
+              At {paceName} the quarter lands at {fmt(p.projected)}, so new effort has to close{' '}
+              <strong>{fmt(p.incrementalNeeded)}</strong> beyond that pace
+              {basis === 'last-7-day' && (
+                <> ({fmt(average.incrementalNeeded)} at the quarter-average pace of {Math.round(average.paceDailyRate)}/day)</>
+              )}
+              . Last-quarter rates describe business as usual, so most of those {fmt(atHistory)} conversions are already
+              inside the pace. Only campaign uplift above these rates closes the gap.
             </>
           ) : (
             <>
-              At current pace the quarter lands at {fmt(p.projected)}, {fmt(p.projectedSurplus)} above target, so there is
-              no incremental gap; the segments are upside, and some may already be part of the current pace (overlap).
+              At {paceName} the quarter lands at {fmt(p.projected)}, {fmt(p.projectedSurplus)} above target, so there is
+              no incremental gap. Last-quarter rates describe business as usual, which is already inside the pace.
             </>
           )}
         </p>
@@ -97,8 +101,9 @@ export default function AIInsightPanel({ kpi, period, segments, history, scenari
           <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">Illustrative</span>
         </div>
         <blockquote className="mt-3 border-l-4 border-brand-blue/40 pl-4 text-slate-700">
-          {kpi.label} are {pace}, with {fmt(p.remainingToTarget)} still needed to reach target. At current pace the
-          quarter lands at {fmt(p.projected)}
+          {kpi.label} are {pace}, with {fmt(p.remainingToTarget)} still needed to reach target. At {paceName} the quarter
+          lands at {fmt(p.projected)}
+          {basis === 'last-7-day' && ` (${fmt(average.projected)} at the quarter-average pace)`}
           {p.incrementalNeeded > 0
             ? `, leaving ${fmt(p.incrementalNeeded)} to come from new effort.`
             : `, ${fmt(p.projectedSurplus)} above target.`}{' '}
@@ -109,7 +114,8 @@ export default function AIInsightPanel({ kpi, period, segments, history, scenari
               , and {historical.highestRate.segment.name} converted best last quarter ({formatRate(historical.highestRate.rate)})
             </>
           )}
-          . Some of these may already be counted in the current pace. Open questions: {openQuestions}. Validate these
+          . These are business-as-usual rates, largely inside the pace already; only a campaign's uplift above them adds
+          to it. Open questions: {openQuestions}. Validate these
           assumptions before estimating impact.
           {addendum && <p className="mt-3">{addendum}</p>}
         </blockquote>

@@ -3,7 +3,9 @@ import type { Kpi, ReportingPeriod } from '../types'
 import { getRemainingToTarget } from './metrics'
 
 export interface PaceProjection {
-  /** actual ÷ quarter elapsed. */
+  /** Daily rate the projection assumes for the rest of the quarter. */
+  paceDailyRate: number
+  /** actual + pace × days remaining (with the quarter-average pace this equals actual ÷ quarter elapsed). */
   projected: number
   /** projected ÷ target. */
   projectedShareOfTarget: number
@@ -21,18 +23,24 @@ export interface PaceProjection {
   currentDailyRate: number
   /** remaining to target ÷ days remaining. */
   requiredDailyRate: number
-  /** required ÷ current daily rate. */
+  /** required ÷ the pace this projection assumes. */
   requiredMultiple: number
 }
 
-export function getPaceProjection(kpi: Kpi, period: ReportingPeriod): PaceProjection {
-  const projected = kpi.actual / period.quarterElapsed
+/**
+ * Where the quarter lands if a daily pace holds for the days left. By default the pace is the quarter-to-date
+ * average (actual ÷ days elapsed); pass `paceDailyRate` to project at another pace, e.g. the last 7 days.
+ */
+export function getPaceProjection(kpi: Kpi, period: ReportingPeriod, paceDailyRate?: number): PaceProjection {
   const remainingToTarget = getRemainingToTarget(kpi)
   const daysElapsed = period.quarterDays * period.quarterElapsed
   const daysRemaining = period.quarterDays - daysElapsed
   const currentDailyRate = kpi.actual / daysElapsed
+  const pace = paceDailyRate ?? currentDailyRate
+  const projected = kpi.actual + pace * daysRemaining
   const requiredDailyRate = remainingToTarget / daysRemaining
   return {
+    paceDailyRate: pace,
     projected,
     projectedShareOfTarget: projected / kpi.target,
     restOfQuarterAtPace: projected - kpi.actual,
@@ -43,7 +51,7 @@ export function getPaceProjection(kpi: Kpi, period: ReportingPeriod): PaceProjec
     daysRemaining,
     currentDailyRate,
     requiredDailyRate,
-    requiredMultiple: requiredDailyRate / currentDailyRate,
+    requiredMultiple: requiredDailyRate / pace,
   }
 }
 

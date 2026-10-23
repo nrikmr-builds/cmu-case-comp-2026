@@ -3,10 +3,11 @@ import { activationFunnel, checkingTerms, feeCohorts, pncComparisonRow, riskSegm
 import { campaignPresets, TEMPLATE_IDS } from '../data/campaignPresets'
 import { marketSignals } from '../data/marketSignals'
 import { getKpi, reportingPeriod } from '../data/productMetrics'
-import { computeEconomics, feeClosureGap, getAudienceSource } from '../lib/campaignEconomics'
+import { computeEconomics, feeClosureGap, getAudienceSource, OUTCOME_LABELS } from '../lib/campaignEconomics'
 import { formatUsd, getExcessFeeClosures, getNeverActivated, getTotalFunnel } from '../lib/checkingHealth'
 import { CAMPAIGN_STATUSES, useCampaigns, type CampaignStatus, type SavedCampaign } from '../lib/campaignStore'
 import { formatValue, getStatus } from '../lib/metrics'
+import { KindBadge } from './PromotionBuilder'
 import SectionCard from './SectionCard'
 
 const accounts = (n: number) => formatValue(n, 'accounts')
@@ -63,7 +64,7 @@ export default function CampaignCenter({ onDesign, onEdit }: Props) {
       id="campaigns-heading"
       title="Design a Campaign"
       source="internal"
-      description="Start from a template, or use “Design campaign” on any segment row or risk card. Acquisition campaigns add new openings; retention campaigns save existing accounts."
+      description="Start from a template, or use “Design campaign” on any segment row or risk card. Acquisition adds new openings (only the uplift over business as usual counts), retention keeps or activates existing accounts, and cross-sell deepens existing customers."
     >
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {templates.map((t) => {
@@ -72,8 +73,8 @@ export default function CampaignCenter({ onDesign, onEdit }: Props) {
             <article key={t.id} className="flex flex-col rounded-lg border border-slate-200 p-4">
               <div className="flex items-start justify-between gap-2">
                 <h4 className="font-semibold text-brand-ink">{t.name}</h4>
-                <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${t.kind === 'acquisition' ? 'bg-blue-50 text-brand-blue' : 'bg-green-50 text-green-800'}`}>
-                  {t.kind === 'acquisition' ? 'Acquisition' : 'Retention'}
+                <span className="shrink-0">
+                  <KindBadge kind={t.kind} outcome={t.outcome} />
                 </span>
               </div>
               <p className="mt-1 text-xs text-slate-500">
@@ -95,6 +96,10 @@ export default function CampaignCenter({ onDesign, onEdit }: Props) {
           )
         })}
       </div>
+
+      <p className="mt-3 text-xs text-slate-500">
+        Campaign effects aren't additive. Audiences and baselines can overlap, so don't sum campaigns to close a gap.
+      </p>
 
       <h4 className="mt-6 text-sm font-semibold text-brand-ink">Saved campaigns ({campaigns.length})</h4>
       {campaigns.length === 0 ? (
@@ -122,11 +127,13 @@ export default function CampaignCenter({ onDesign, onEdit }: Props) {
                       {c.inputs.name}
                       <span className="block text-xs font-normal text-slate-500">{c.inputs.sourceLabel}</span>
                     </th>
-                    <td className="py-2 pr-3">{c.inputs.kind === 'acquisition' ? 'Acquisition' : 'Retention'}</td>
+                    <td className="py-2 pr-3">
+                      <KindBadge kind={c.inputs.kind} outcome={c.inputs.outcome} />
+                    </td>
                     <td className="py-2 pr-3 text-right tabular-nums">{accounts(e.treated)}</td>
                     <td className="py-2 pr-3 text-right tabular-nums">
-                      {accounts(e.outcomes)} {c.inputs.kind === 'acquisition' ? 'openings' : 'saved'}
-                      <span className="block text-xs text-slate-500">{accounts(e.timing.q3)} in Q3</span>
+                      {accounts(e.results.incremental)} {c.inputs.outcome === 'openings' ? 'incremental openings' : OUTCOME_LABELS[c.inputs.outcome].noun}
+                      <span className="block text-xs text-slate-500">{accounts(e.timing.q3)} counted in Q3</span>
                     </td>
                     <td className="py-2 pr-3 text-right tabular-nums">{formatUsd(e.costs.total)}</td>
                     <td className="py-2 pr-3">
@@ -156,6 +163,7 @@ export default function CampaignCenter({ onDesign, onEdit }: Props) {
               })}
             </tbody>
           </table>
+          <p className="mt-2 text-xs text-slate-500">Campaign effects aren't additive. Audiences and baselines can overlap.</p>
         </div>
       )}
     </SectionCard>

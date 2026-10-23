@@ -1,5 +1,6 @@
 import { activationFunnel, currentQuarterHealth, dropOffSignals } from '../data/checkingHealth'
 import { getKpi } from '../data/productMetrics'
+import { getWeeklyPace } from '../lib/dailyTracking'
 import { marketSignals, summaryCitations } from '../data/marketSignals'
 import {
   formatMultiple,
@@ -24,9 +25,12 @@ export default function CheckingSummaryAddendum() {
     return signal ? [{ signal, text }] : []
   })
 
+  const weekly = getWeeklyPace()
   return (
     <>
-      Beyond openings, {formatPercent(neverActivated.share)} of this quarter's new accounts have not activated yet, and
+      Openings stepped down after the illustrative summer promotion ended on Jul 31: the last 7 days averaged{' '}
+      {Math.round(weekly.weekPerDay)}/day ({formatValue(weekly.weekTotal, 'accounts')} ÷ 7) against{' '}
+      {Math.round(weekly.quarterPerDay)}/day for the quarter. Beyond openings, {formatPercent(neverActivated.share)} of this quarter's new accounts have not activated yet, and
       the strongest early-warning signal is <em>{strongest.name.toLowerCase()}</em> ({formatMultiple(strongest.lift)} lift,{' '}
       {formatValue(strongest.flaggedAccounts, 'accounts')} accounts flagged). Closures also outpaced openings, so open
       accounts changed by {formatSignedCount(netChange)} this quarter ({formatValue(opened, 'accounts')} opened −{' '}

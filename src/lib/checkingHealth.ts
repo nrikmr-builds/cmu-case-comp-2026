@@ -117,3 +117,8 @@ export function formatExpiry(expires: string | undefined): string {
   if (!expires) return 'Not listed'
   return /^\d{4}-\d{2}-\d{2}$/.test(expires) ? formatRetrieved(expires) : expires
 }
+
+/** [60, 90] → "60–90 days". */
+export function formatLeadTime([min, max]: [number, number]): string {
+  return `${min}–${max} days`
+}

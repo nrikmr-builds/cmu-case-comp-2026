@@ -2,10 +2,12 @@
 // from the segment they're built on (opportunities.ts / checkingHealth.ts), so they always match the page.
 
 /**
- * Acquisition campaigns bring in NEW openings (they count toward the incremental openings gap).
- * Retention campaigns SAVE existing accounts (they count toward net account change, never toward openings).
+ * Acquisition: NEW openings; only the uplift over business as usual counts toward the openings gap.
+ * Retention: keeps existing accounts. Closure prevention moves net account change; activation moves primacy.
+ * Cross-sell: deepens existing customers (new savings accounts and deposits); moves neither gap nor net change.
  */
-export type CampaignKind = 'acquisition' | 'retention'
+export type CampaignKind = 'acquisition' | 'retention' | 'cross-sell'
+export type CampaignOutcome = 'openings' | 'closures-avoided' | 'activations' | 'savings-accounts'
 export type OutreachChannel = 'email' | 'app' | 'sms' | 'branch'
 /** Where new accounts would be opened; picks the funnel's primacy rate. */
 export type OpeningChannel = 'digital' | 'branch' | 'blended'
@@ -21,8 +23,10 @@ export const OUTREACH_CHANNELS: { id: OutreachChannel; label: string }[] = [
 export const campaignAssumptions = {
   /** Share of the audience held back as a control group. */
   holdoutShare: 0.1,
-  /** Retention "save rate" when there's no history to default from. */
+  /** Retention save rate, activation rate, or cross-sell take-up when there's no history to default from. */
   defaultSaveRate: 0.1,
+  /** Cross-sell: annual net value per $1 of savings deposits captured (deposit spread). */
+  depositSpread: 0.015,
   /** Annual value of one primary checking account. */
   annualValuePerPrimary: 250,
   /** Cost to reach one person once, by channel. */
@@ -56,8 +60,13 @@ export interface CampaignPreset {
   /** Set for the 5 ready-made templates. */
   template: boolean
   kind: CampaignKind
+  outcome: CampaignOutcome
   /** The segment the audience is pre-filled from. */
   source: { type: 'segment' | 'risk'; id: string }
+  /** Acquisition: illustrative uplift (percentage points) of the campaign rate over the baseline rate. */
+  upliftPp?: number
+  /** Closure prevention: the early-warning signal whose lead time decides when an avoided closure would have happened. */
+  leadSignalId?: string
   /** Retention default rate: the general assumption, or the fee-trigger closure gap. */
   saveRateFrom?: 'default' | 'fee-trigger'
   offer: OfferDefaults
@@ -80,7 +89,9 @@ export const campaignPresets: CampaignPreset[] = [
     name: 'Primacy Bonus',
     template: true,
     kind: 'acquisition',
+    outcome: 'openings',
     source: { type: 'segment', id: 'savings-only' },
+    upliftPp: 2.0,
     offer: {
       ...base,
       bonusUsd: 300,
@@ -97,7 +108,9 @@ export const campaignPresets: CampaignPreset[] = [
     name: 'Application Rescue',
     template: true,
     kind: 'acquisition',
+    outcome: 'openings',
     source: { type: 'segment', id: 'abandoned-digital' },
+    upliftPp: 3.0,
     offer: {
       ...base,
       perAccountCostUsd: 15,
@@ -112,7 +125,9 @@ export const campaignPresets: CampaignPreset[] = [
     name: 'First Account Offer',
     template: false,
     kind: 'acquisition',
+    outcome: 'openings',
     source: { type: 'segment', id: 'young-adults' },
+    upliftPp: 1.5,
     offer: {
       ...base,
       bonusUsd: 100,
@@ -130,6 +145,7 @@ export const campaignPresets: CampaignPreset[] = [
     name: 'Activation Nudge',
     template: true,
     kind: 'retention',
+    outcome: 'activations',
     source: { type: 'risk', id: 'never-activated' },
     saveRateFrom: 'default',
     offer: {
@@ -148,7 +164,9 @@ export const campaignPresets: CampaignPreset[] = [
     name: 'Direct Deposit Retention',
     template: false,
     kind: 'retention',
+    outcome: 'closures-avoided',
     source: { type: 'risk', id: 'direct-deposit-leaving' },
+    leadSignalId: 'direct-deposit-leaving',
     saveRateFrom: 'default',
     offer: {
       ...base,
@@ -166,7 +184,9 @@ export const campaignPresets: CampaignPreset[] = [
     name: 'First-Fee Forgiveness',
     template: true,
     kind: 'retention',
+    outcome: 'closures-avoided',
     source: { type: 'risk', id: 'approaching-fee-threshold' },
+    leadSignalId: 'fee-events',
     saveRateFrom: 'fee-trigger',
     offer: {
       ...base,
@@ -181,7 +201,8 @@ export const campaignPresets: CampaignPreset[] = [
     id: 'savings-bundle',
     name: 'Checking + Savings Bundle',
     template: true,
-    kind: 'retention',
+    kind: 'cross-sell',
+    outcome: 'savings-accounts',
     source: { type: 'risk', id: 'savings-held-elsewhere' },
     saveRateFrom: 'default',
     offer: {

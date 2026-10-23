@@ -2,7 +2,7 @@
 import { dropOffSignals } from '../data/checkingHealth'
 import { dailyFlags, dailyOpenings, DAYS_WITH_DATA, dayToIso } from '../data/dailyOpenings'
 import { getKpi, reportingPeriod } from '../data/productMetrics'
-import type { KpiStatus } from '../types'
+import type { Kpi, KpiStatus } from '../types'
 import { getPaceProjection } from './projection'
 
 const openingsKpi = () => getKpi('checking-new-accounts')
@@ -21,6 +21,24 @@ export function planDailyPace(): number {
 export function sevenDayAverage(day: number): number | undefined {
   if (day < 7) return undefined
   return (cumulativeOpenings(day) - cumulativeOpenings(day - 7)) / 7
+}
+
+/** Last-7-day daily rate for KPIs that have daily data (checking openings); undefined otherwise. */
+export function getRecentDailyRate(kpiId: string): number | undefined {
+  return kpiId === 'checking-new-accounts' ? getWeeklyPace().weekPerDay : undefined
+}
+
+/**
+ * The projection used as the headline: last-7-day pace where daily data exists (conservative after the
+ * Jul 31 step down), otherwise the quarter-average pace.
+ */
+export function getHeadlineProjection(kpi: Kpi) {
+  const recent = getRecentDailyRate(kpi.id)
+  return {
+    basis: recent === undefined ? ('quarter-average' as const) : ('last-7-day' as const),
+    projection: getPaceProjection(kpi, reportingPeriod, recent),
+    average: getPaceProjection(kpi, reportingPeriod),
+  }
 }
 
 /** This week (last 7 days of data) vs. the quarter-to-date daily average. */
@@ -67,13 +85,14 @@ export function cumulativeChartData() {
   const p = getPaceProjection(kpi, reportingPeriod)
   const { quarterDays } = reportingPeriod
   const today = p.daysElapsed
-  const points: { x: number; actual?: number; projected?: number; required?: number }[] = dailyOpenings.map((d) => ({
+  const recent = getPaceProjection(kpi, reportingPeriod, getWeeklyPace().weekPerDay)
+  const points: { x: number; actual?: number; projected?: number; projectedRecent?: number; required?: number }[] = dailyOpenings.map((d) => ({
     x: Math.min(d.day, today),
     actual: cumulativeOpenings(d.day),
   }))
   // Both forward lines start at today's actual so they read as "from here".
-  points[points.length - 1] = { ...points[points.length - 1], projected: kpi.actual, required: kpi.actual }
-  points.push({ x: quarterDays, projected: p.projected, required: kpi.target })
+  points[points.length - 1] = { ...points[points.length - 1], projected: kpi.actual, projectedRecent: kpi.actual, required: kpi.actual }
+  points.push({ x: quarterDays, projected: p.projected, projectedRecent: recent.projected, required: kpi.target })
   return points
 }
 

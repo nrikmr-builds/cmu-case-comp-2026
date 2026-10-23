@@ -1,5 +1,6 @@
+import { getHeadlineProjection, getWeeklyPace } from '../lib/dailyTracking'
 import { formatPercent, formatValue, getExpected, getPaceGap, getPaceRatio, getStatus } from '../lib/metrics'
-import { getPaceProjection } from '../lib/projection'
+import type { PaceProjection } from '../lib/projection'
 import type { Kpi, ReportingPeriod } from '../types'
 import StatusBadge from './StatusBadge'
 
@@ -15,9 +16,9 @@ export default function GapSummary({ kpi, period }: Props) {
   const expected = getExpected(kpi, quarterElapsed)
   const paceGap = getPaceGap(kpi, quarterElapsed)
   const paceSurplus = Math.max(0, kpi.actual - expected)
-  const p = getPaceProjection(kpi, period)
+  const { basis, projection: headline, average } = getHeadlineProjection(kpi)
   const fmt = (n: number) => formatValue(n, kpi.unit)
-  const perDay = (n: number) => `${fmt(n)}/day`
+  const weekly = basis === 'last-7-day' ? getWeeklyPace() : undefined
 
   return (
     <section aria-labelledby="gap-heading" className="rounded-md border border-slate-200 bg-white p-6 shadow-sm">
@@ -43,47 +44,78 @@ export default function GapSummary({ kpi, period }: Props) {
         )}
         <Stat
           label="Still needed to hit target"
-          value={fmt(p.remainingToTarget)}
+          value={fmt(headline.remainingToTarget)}
           note={`${fmt(kpi.target)} − ${fmt(kpi.actual)}: openings left before quarter end`}
           emphasis="target"
         />
       </dl>
 
-      <h3 className="mt-6 text-xs font-semibold tracking-wide text-slate-500 uppercase">If today's pace continues to quarter end</h3>
-      <dl className="mt-2 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {weekly && (
+        <ProjectionRow
+          kpi={kpi}
+          p={headline}
+          title={`At last-7-day pace (${Math.round(headline.paceDailyRate)}/day) · conservative headline`}
+          paceFormula={`${fmt(weekly.weekTotal)} ÷ 7`}
+          headline
+        />
+      )}
+      <ProjectionRow
+        kpi={kpi}
+        p={average}
+        title={`At quarter-average pace (${Math.round(average.paceDailyRate)}/day)${weekly ? ' · reference' : ''}`}
+        paceFormula={`${fmt(kpi.actual)} ÷ ${days(average.daysElapsed)} days`}
+        headline={!weekly}
+      />
+    </section>
+  )
+}
+
+interface RowProps {
+  kpi: Kpi
+  p: PaceProjection
+  title: string
+  /** How the daily pace was computed, e.g. "487 ÷ 7". */
+  paceFormula: string
+  /** The headline row gets stronger emphasis; the reference row is muted. */
+  headline: boolean
+}
+
+function ProjectionRow({ kpi, p, title, paceFormula, headline }: RowProps) {
+  const fmt = (n: number) => formatValue(n, kpi.unit)
+  const perDay = (n: number) => `${fmt(n)}/day`
+  return (
+    <>
+      <h3 className={`mt-6 text-xs font-semibold tracking-wide uppercase ${headline ? 'text-brand-ink' : 'text-slate-500'}`}>{title}</h3>
+      <dl className={`mt-2 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 ${headline ? '' : 'opacity-80'}`}>
         <Stat
-          label="Projected at current pace"
+          label="Projected at quarter end"
           value={fmt(p.projected)}
-          note={`${fmt(kpi.actual)} ÷ ${formatPercent(quarterElapsed)} of quarter elapsed; ${formatPercent(p.projectedShareOfTarget)} of the ${fmt(kpi.target)} target`}
+          note={`${fmt(kpi.actual)} + (${paceFormula}) × ${days(p.daysRemaining)} days left; ${formatPercent(p.projectedShareOfTarget)} of the ${fmt(kpi.target)} target`}
         />
-        <Stat
-          label="Expected from current pace, rest of quarter"
-          value={fmt(p.restOfQuarterAtPace)}
-          note={`${fmt(p.projected)} − ${fmt(kpi.actual)}: what today's pace still adds`}
-        />
+        <Stat label="Added by this pace, rest of quarter" value={fmt(p.restOfQuarterAtPace)} note={`${fmt(p.projected)} − ${fmt(kpi.actual)}`} />
         {p.incrementalNeeded > 0 ? (
           <Stat
-            label="Incremental needed beyond current pace"
+            label="Incremental needed beyond this pace"
             value={fmt(p.incrementalNeeded)}
             note={`${fmt(kpi.target)} − ${fmt(p.projected)}: must come from new effort`}
-            emphasis="pace"
+            emphasis={headline ? 'pace' : undefined}
           />
         ) : (
           <Stat
             label="Projected above target"
             value={fmt(p.projectedSurplus)}
-            note={`${fmt(p.projected)} − ${fmt(kpi.target)}: no incremental gap at current pace`}
-            emphasis="ahead"
+            note={`${fmt(p.projected)} − ${fmt(kpi.target)}: no incremental gap at this pace`}
+            emphasis={headline ? 'ahead' : undefined}
           />
         )}
         <Stat
-          label="Required vs. current daily pace"
+          label="Required vs. this pace"
           value={`${p.requiredMultiple.toFixed(1)}×`}
-          note={`Need ${perDay(p.requiredDailyRate)} (${fmt(p.remainingToTarget)} ÷ ${days(p.daysRemaining)} days left) vs. ${perDay(p.currentDailyRate)} so far (${fmt(kpi.actual)} ÷ ${days(p.daysElapsed)} days)`}
-          emphasis={p.requiredMultiple > 1 ? 'target' : 'ahead'}
+          note={`Need ${perDay(p.requiredDailyRate)} (${fmt(p.remainingToTarget)} ÷ ${days(p.daysRemaining)} days left) vs. ${perDay(p.paceDailyRate)}`}
+          emphasis={headline ? (p.requiredMultiple > 1 ? 'target' : 'ahead') : undefined}
         />
       </dl>
-    </section>
+    </>
   )
 }
 

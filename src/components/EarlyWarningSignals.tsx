@@ -1,5 +1,5 @@
 import type { DropOffSignal } from '../data/checkingHealth'
-import { formatMultiple, getStrongestSignal } from '../lib/checkingHealth'
+import { formatLeadTime, formatMultiple, getStrongestSignal } from '../lib/checkingHealth'
 import { formatValue } from '../lib/metrics'
 import SectionCard from './SectionCard'
 
@@ -36,7 +36,7 @@ export default function EarlyWarningSignals({ signals }: { signals: DropOffSigna
                 </th>
                 <td className="py-3 pr-4 text-slate-700">{s.measure}</td>
                 <td className="py-3 pr-4 text-right tabular-nums">{formatValue(s.flaggedAccounts, 'accounts')}</td>
-                <td className="py-3 pr-4 whitespace-nowrap text-slate-700">{s.leadTime}</td>
+                <td className="py-3 pr-4 whitespace-nowrap text-slate-700">{formatLeadTime(s.leadDays)}</td>
                 <td className="py-3">
                   <div className="flex items-center gap-2">
                     <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100" aria-hidden>

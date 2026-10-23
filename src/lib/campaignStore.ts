@@ -20,7 +20,8 @@ export interface SavedCampaign {
   inputs: CampaignInputs
 }
 
-const KEY = 'pih.campaigns.v1'
+// v2: inputs gained baseline rate, outcome type and cross-sell fields; v1 drafts are ignored.
+const KEY = 'pih.campaigns.v2'
 const CHANGE_EVENT = 'pih:campaigns-changed'
 let cache: SavedCampaign[] | null = null
 

@@ -1,15 +1,16 @@
 import { AlertTriangle, ArrowLeft, ArrowRight, Check, X } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { pncComparisonRow } from '../data/checkingHealth'
-import { campaignPresets, OUTREACH_CHANNELS, type OpeningChannel } from '../data/campaignPresets'
+import { campaignPresets, OUTREACH_CHANNELS, type CampaignKind, type CampaignOutcome, type OpeningChannel } from '../data/campaignPresets'
 import { marketSignals } from '../data/marketSignals'
 import {
   computeEconomics,
-  defaultRate,
   feeForgivenessMaxima,
   getAudienceSource,
   inputsFromPreset,
+  OUTCOME_LABELS,
   primacyRateFor,
+  rateBasis,
   type CampaignInputs,
 } from '../lib/campaignEconomics'
 import { formatSignedCount, formatUsd } from '../lib/checkingHealth'
@@ -21,9 +22,11 @@ const STEPS = ['Audience', 'Offer', 'Economics', 'Review & save'] as const
 
 const accounts = (n: number) => formatValue(n, 'accounts')
 const pct = (x: number) => `${(x * 100).toFixed(1)}%`
-const money = (n: number) => (Math.abs(n) < 100 ? `$${n.toFixed(2)}` : formatUsd(n))
+const money = (n: number) => (!Number.isFinite(n) ? 'n/a (no incremental)' : Math.abs(n) < 100 ? `$${n.toFixed(2)}` : formatUsd(n))
+const months = (n: number) => (Number.isFinite(n) ? `${n.toFixed(1)} months` : 'Never')
 const input =
   'rounded border border-slate-300 px-2 py-1 text-sm tabular-nums focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-blue'
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
 interface Props {
   /** Start a new campaign from this preset… */
@@ -40,16 +43,34 @@ export default function PromotionBuilder({ presetId, campaign, onClose }: Props)
   const [step, setStep] = useState(0)
   const [saved, setSaved] = useState<SavedCampaign | null>(null)
   const { saveCampaign } = useCampaigns()
+  const dialogRef = useRef<HTMLDivElement>(null)
   const headingRef = useRef<HTMLHeadingElement>(null)
   const preset = campaignPresets.find((p) => p.id === inputs.presetId) ?? campaignPresets[0]
   const source = getAudienceSource(preset)
+  const basis = rateBasis(preset)
   const e = computeEconomics(inputs)
-  const isAcq = inputs.kind === 'acquisition'
-  const outcomeNoun = isAcq ? 'new openings' : 'accounts saved'
+  const isAcq = inputs.outcome === 'openings'
+  const outcome = OUTCOME_LABELS[inputs.outcome]
 
   useEffect(() => {
     headingRef.current?.focus()
-    const onKey = (ev: KeyboardEvent) => ev.key === 'Escape' && onClose()
+    const onKey = (ev: KeyboardEvent) => {
+      if (ev.key === 'Escape') onClose()
+      // Keep Tab inside the dialog.
+      if (ev.key !== 'Tab' || !dialogRef.current) return
+      const items = [...dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((el) => el.offsetParent !== null)
+      if (items.length === 0) return
+      const first = items[0]
+      const last = items[items.length - 1]
+      const active = document.activeElement
+      if (ev.shiftKey && (active === first || active === headingRef.current || !dialogRef.current.contains(active))) {
+        ev.preventDefault()
+        last.focus()
+      } else if (!ev.shiftKey && (active === last || !dialogRef.current.contains(active))) {
+        ev.preventDefault()
+        first.focus()
+      }
+    }
     window.addEventListener('keydown', onKey)
     document.body.style.overflow = 'hidden'
     return () => {
@@ -61,9 +82,23 @@ export default function PromotionBuilder({ presetId, campaign, onClose }: Props)
   const set = (patch: Partial<CampaignInputs>) => setInputs((prev) => ({ ...prev, ...patch }))
   const setOffer = (patch: Partial<CampaignInputs['offer']>) => setInputs((prev) => ({ ...prev, offer: { ...prev.offer, ...patch } }))
   const num = (v: string, min = 0) => Math.max(min, Number(v) || 0)
+  const rateInput = (value: number, onChange: (rate: number) => void) => (
+    <span className="flex items-center gap-1">
+      <input
+        type="number"
+        min={0}
+        max={100}
+        step={0.1}
+        value={Number((value * 100).toFixed(1))}
+        onChange={(ev) => onChange(Math.min(100, num(ev.target.value)) / 100)}
+        className={`${input} w-24`}
+      />
+      %
+    </span>
+  )
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="builder-heading" className="fixed inset-0 z-50 overflow-y-auto bg-surface">
+    <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="builder-heading" className="fixed inset-0 z-50 overflow-y-auto bg-surface">
       <div className="sticky top-0 z-10 border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <div>
@@ -72,8 +107,8 @@ export default function PromotionBuilder({ presetId, campaign, onClose }: Props)
               {inputs.name}
             </h2>
           </div>
-          <div className="flex items-center gap-2">
-            <KindBadge kind={inputs.kind} />
+          <div className="flex flex-wrap items-center gap-2">
+            <KindBadge kind={inputs.kind} outcome={inputs.outcome} />
             <SourceBadge kind="internal" />
             <button
               type="button"
@@ -110,12 +145,12 @@ export default function PromotionBuilder({ presetId, campaign, onClose }: Props)
               <p className="text-sm text-slate-700">
                 Pre-filled from <strong>{source.label}</strong> ({accounts(source.size)} {isAcq ? 'eligible customers' : 'customers'}).
               </p>
-              <KindExplainer kind={inputs.kind} />
+              <KindExplainer outcome={inputs.outcome} />
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Audience size" note={`Default ${accounts(source.size)} from the segment`}>
                   <input type="number" min={0} value={inputs.audience} onChange={(ev) => set({ audience: num(ev.target.value) })} className={`${input} w-32`} />
                 </Field>
-                <Field label="Holdout (control group)" note="Not contacted, so results can be compared against it">
+                <Field label="Holdout (control group)" note="Not contacted; the campaign's effect is measured against it">
                   <span className="flex items-center gap-1">
                     <input
                       type="number"
@@ -151,7 +186,7 @@ export default function PromotionBuilder({ presetId, campaign, onClose }: Props)
                 <Field label="Days to meet the requirement">
                   <input type="number" min={1} value={inputs.offer.requirementDays} onChange={(ev) => setOffer({ requirementDays: num(ev.target.value, 1) })} className={`${input} w-28`} />
                 </Field>
-                {!isAcq && (
+                {inputs.kind === 'retention' && (
                   <Field label="Fee waiver" note="Waive the next $12 monthly fee for everyone treated">
                     <label className="inline-flex items-center gap-2 text-sm">
                       <input type="checkbox" checked={inputs.offer.waiveFirstFee} onChange={(ev) => setOffer({ waiveFirstFee: ev.target.checked })} className="h-4 w-4 accent-brand-blue" />
@@ -159,7 +194,7 @@ export default function PromotionBuilder({ presetId, campaign, onClose }: Props)
                     </label>
                   </Field>
                 )}
-                <Field label={`Other cost per ${isAcq ? 'opened' : 'saved'} account ($/yr)`} note="e.g. a savings rate boost">
+                <Field label="Other cost per resulting account ($/yr)" note="e.g. a savings rate boost or staff time">
                   <input type="number" min={0} value={inputs.offer.perAccountCostUsd} onChange={(ev) => setOffer({ perAccountCostUsd: num(ev.target.value) })} className={`${input} w-28`} />
                 </Field>
                 <Field label="Campaign length (days)" note="Starts the day after the internal as-of date (Sep 13)">
@@ -168,14 +203,11 @@ export default function PromotionBuilder({ presetId, campaign, onClose }: Props)
                 {isAcq && (
                   <Field label="Where accounts get opened" note="Sets the funnel primacy rate">
                     <select value={inputs.offer.openingChannel} onChange={(ev) => setOffer({ openingChannel: ev.target.value as OpeningChannel })} className={input}>
-                      {(['digital', 'branch', 'blended'] as const).map((c) => {
-                        const r = primacyRateFor(c)
-                        return (
-                          <option key={c} value={c}>
-                            {c[0].toUpperCase() + c.slice(1)} · {pct(r.rate)} reach primary
-                          </option>
-                        )
-                      })}
+                      {(['digital', 'branch', 'blended'] as const).map((c) => (
+                        <option key={c} value={c}>
+                          {c[0].toUpperCase() + c.slice(1)} · {pct(primacyRateFor(c).rate)} reach primary
+                        </option>
+                      ))}
                     </select>
                   </Field>
                 )}
@@ -192,9 +224,7 @@ export default function PromotionBuilder({ presetId, campaign, onClose }: Props)
                         type="checkbox"
                         checked={inputs.offer.channels.includes(c.id)}
                         onChange={(ev) =>
-                          setOffer({
-                            channels: ev.target.checked ? [...inputs.offer.channels, c.id] : inputs.offer.channels.filter((x) => x !== c.id),
-                          })
+                          setOffer({ channels: ev.target.checked ? [...inputs.offer.channels, c.id] : inputs.offer.channels.filter((x) => x !== c.id) })
                         }
                         className="h-4 w-4 accent-brand-blue"
                       />
@@ -209,21 +239,18 @@ export default function PromotionBuilder({ presetId, campaign, onClose }: Props)
 
           {step === 2 && (
             <Panel title="3. Economics">
-              <KindExplainer kind={inputs.kind} />
+              <KindExplainer outcome={inputs.outcome} />
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label={isAcq ? 'Conversion rate' : 'Save rate'} note={defaultRate(preset).basis + ` · default ${pct(defaultRate(preset).rate)}`}>
-                  <span className="flex items-center gap-1">
-                    <input
-                      type="number"
-                      min={0}
-                      max={100}
-                      step={0.1}
-                      value={Number((inputs.rate * 100).toFixed(1))}
-                      onChange={(ev) => set({ rate: Math.min(100, num(ev.target.value)) / 100 })}
-                      className={`${input} w-24`}
-                    />
-                    %
-                  </span>
+                {isAcq && (
+                  <Field label="Baseline rate (no campaign)" note={`What the holdout is expected to do. Default ${pct(basis.baseline?.rate ?? 0)} = ${basis.baseline?.basis ?? ''}`}>
+                    {rateInput(inputs.baselineRate, (r) => set({ baselineRate: r }))}
+                  </Field>
+                )}
+                <Field
+                  label={isAcq ? 'Campaign rate' : inputs.outcome === 'savings-accounts' ? 'Take-up rate' : inputs.outcome === 'activations' ? 'Activation rate' : 'Save rate'}
+                  note={`Default ${pct(basis.rate)}. ${basis.basis}`}
+                >
+                  {rateInput(inputs.rate, (r) => set({ rate: r }))}
                   {source.history && isAcq && (
                     <span className="mt-1 block text-xs text-slate-500">
                       History: last qtr {pct(source.history.last.rate)} · range {pct(source.history.min)}–{pct(source.history.max)}
@@ -236,9 +263,23 @@ export default function PromotionBuilder({ presetId, campaign, onClose }: Props)
                     </span>
                   )}
                 </Field>
-                <Field label={`Annual value per ${isAcq ? 'primary' : 'saved'} account ($)`} note="Illustrative assumption">
-                  <input type="number" min={0} value={inputs.annualValuePerAccount} onChange={(ev) => set({ annualValuePerAccount: num(ev.target.value) })} className={`${input} w-28`} />
-                </Field>
+                {inputs.outcome === 'savings-accounts' ? (
+                  <>
+                    <Field label="Average savings balance ($)" note="Illustrative; default = existing Avg. PNC savings for customers who have it">
+                      <input type="number" min={0} value={inputs.avgBalanceUsd} onChange={(ev) => set({ avgBalanceUsd: num(ev.target.value) })} className={`${input} w-28`} />
+                    </Field>
+                    <Field label="Annual value per $1 of deposits" note="Illustrative deposit spread">
+                      {rateInput(inputs.depositSpread, (r) => set({ depositSpread: r }))}
+                    </Field>
+                  </>
+                ) : (
+                  <Field
+                    label={`Annual value per ${inputs.outcome === 'closures-avoided' ? 'saved' : 'primary'} account ($)`}
+                    note="Illustrative assumption"
+                  >
+                    <input type="number" min={0} value={inputs.annualValuePerAccount} onChange={(ev) => set({ annualValuePerAccount: num(ev.target.value) })} className={`${input} w-28`} />
+                  </Field>
+                )}
                 <Field label="Messages per person">
                   <input type="number" min={0} value={inputs.messagesPerPerson} onChange={(ev) => set({ messagesPerPerson: num(ev.target.value) })} className={`${input} w-20`} />
                 </Field>
@@ -282,18 +323,17 @@ export default function PromotionBuilder({ presetId, campaign, onClose }: Props)
               </Field>
               <ul className="space-y-1 text-sm text-slate-700">
                 <li>
-                  <strong>{inputs.kind === 'acquisition' ? 'Acquisition' : 'Retention'}</strong> · {inputs.sourceLabel} · {accounts(e.treated)} treated +{' '}
-                  {accounts(e.holdout)} holdout
+                  <strong>{KIND_LABEL[inputs.kind]}</strong> · {inputs.sourceLabel} · {accounts(e.treated)} treated + {accounts(e.holdout)} holdout
                 </li>
                 <li>Offer: {inputs.offer.extra || '—'}</li>
                 <li>
-                  Expected: <strong>{accounts(e.outcomes)}</strong> {outcomeNoun} ({accounts(e.timing.q3)} in Q3 · {accounts(e.timing.q4)} in Q4)
-                  {e.primary !== undefined && <> · {accounts(e.primary)} primary</>}
+                  Expected: <strong>{accounts(e.results.total)}</strong> {outcome.noun}
+                  {isAcq && <> (of which <strong>{accounts(e.results.incremental)}</strong> incremental)</>} · {accounts(e.timing.q3)} counted in Q3
                 </li>
                 <li>
-                  Cost {formatUsd(e.costs.total)} · {money(e.costPerOutcome)} per {isAcq ? 'account' : 'saved account'}
-                  {e.costPerPrimary !== undefined && <> · {money(e.costPerPrimary)} per primary account</>} · payback{' '}
-                  {Number.isFinite(e.paybackMonths) ? `${e.paybackMonths.toFixed(1)} months` : 'never'}
+                  Cost {formatUsd(e.costs.total)}
+                  {e.costPerIncrementalPrimary !== undefined && isAcq && <> · {money(e.costPerIncrementalPrimary)} per incremental primary account</>}
+                  {!isAcq && <> · {money(e.costPerResult)} per {outcome.noun.replace(/s$/, '')}</>} · payback {months(e.paybackMonths)}
                 </li>
               </ul>
               <div className="flex flex-wrap items-center gap-3">
@@ -328,21 +368,17 @@ export default function PromotionBuilder({ presetId, campaign, onClose }: Props)
 
         <aside aria-label="Live summary" className="h-fit space-y-2 rounded-md border border-slate-200 bg-white p-4 text-sm shadow-sm lg:sticky lg:top-32">
           <h3 className="font-semibold text-brand-ink">Live summary</h3>
-          <KindBadge kind={inputs.kind} />
-          <Summary label={isAcq ? 'New openings' : 'Accounts saved'} value={accounts(e.outcomes)} />
-          {e.primary !== undefined && <Summary label="Primary accounts" value={accounts(e.primary)} />}
+          <KindBadge kind={inputs.kind} outcome={inputs.outcome} />
+          <Summary label={outcome.title} value={accounts(e.results.total)} />
+          {isAcq && <Summary label="of which incremental" value={accounts(e.results.incremental)} />}
+          {e.primary && <Summary label={isAcq ? 'Incremental primary' : 'Expected primary'} value={accounts(e.primary.incremental)} />}
           <Summary label="Total cost" value={formatUsd(e.costs.total)} />
-          {e.costPerPrimary !== undefined ? (
-            <Summary label="Cost per primary account" value={money(e.costPerPrimary)} />
+          {isAcq && e.costPerIncrementalPrimary !== undefined ? (
+            <Summary label="Cost per incremental primary" value={money(e.costPerIncrementalPrimary)} strong />
           ) : (
-            <Summary label="Cost per saved account" value={money(e.costPerOutcome)} />
+            <Summary label={`Cost per ${outcome.noun.replace(/s$/, '')}`} value={money(e.costPerResult)} />
           )}
-          <Summary label="Lands in Q3 / Q4" value={`${accounts(e.timing.q3)} / ${accounts(e.timing.q4)}`} />
-          {e.impact.kind === 'acquisition' ? (
-            <Summary label={`Of the ${accounts(e.impact.incrementalGap)} openings gap`} value={pct(e.impact.closesShare)} />
-          ) : (
-            <Summary label="Net account change" value={`${formatSignedCount(e.impact.netChangeNow)} → ${formatSignedCount(Math.round(e.impact.netChangeAfter))}`} />
-          )}
+          <ImpactSummary e={e} />
           {e.rateWarning && <p className="text-xs font-medium text-amber-800">{e.rateWarning}</p>}
         </aside>
       </div>
@@ -350,51 +386,118 @@ export default function PromotionBuilder({ presetId, campaign, onClose }: Props)
   )
 }
 
+function ImpactSummary({ e }: { e: ReturnType<typeof computeEconomics> }) {
+  switch (e.impact.kind) {
+    case 'openings':
+      return <Summary label={`Of the ${accounts(e.impact.gap)} gap (Q3)`} value={pct(e.impact.closesShare)} />
+    case 'net-change':
+      return (
+        <Summary
+          label="Net account change"
+          value={`Q3 ${formatSignedCount(e.impact.netNow)} → ${formatSignedCount(e.impact.netQ3After)} · 90 days +${accounts(e.impact.next90)}`}
+        />
+      )
+    case 'activation':
+      return <Summary label="Primacy lift (Q3)" value={`+${e.impact.primacyLiftPts.toFixed(2)} pts`} />
+    case 'cross-sell':
+      return <Summary label="Savings deposits captured" value={formatUsd(e.impact.deposits)} />
+  }
+}
+
 function EconomicsTable({ inputs }: { inputs: CampaignInputs }) {
   const e = computeEconomics(inputs)
-  const isAcq = inputs.kind === 'acquisition'
+  const isAcq = inputs.outcome === 'openings'
+  const outcome = OUTCOME_LABELS[inputs.outcome]
   const perPerson = inputs.offer.channels.reduce((s, c) => s + inputs.costPerMessage[c], 0) * inputs.messagesPerPerson
-  const rows: [string, string, ReactNode][] = [
-    [isAcq ? 'Expected new openings' : 'Expected accounts saved', accounts(e.outcomes), `${accounts(e.treated)} treated × ${pct(inputs.rate)}`],
-  ]
-  if (isAcq && e.primary !== undefined && e.primacyRate !== undefined) {
-    rows.push(['Expected primary accounts', accounts(e.primary), `${accounts(e.outcomes)} × ${pct(e.primacyRate)} funnel primacy (${inputs.offer.openingChannel})`])
+  const rows: [string, string, ReactNode, boolean?][] = []
+
+  if (isAcq) {
+    rows.push(
+      ['Total openings (treated)', accounts(e.results.total), `${accounts(e.treated)} treated × ${pct(inputs.rate)} campaign rate`],
+      ['  of which would open anyway', accounts(e.results.baseline), `${accounts(e.treated)} × ${pct(inputs.baselineRate)} baseline (business as usual, already in the pace)`],
+      ['  of which incremental', accounts(e.results.incremental), `${accounts(e.results.total)} − ${accounts(e.results.baseline)}. Only these count toward the gap`, true],
+    )
+    if (e.primary)
+      rows.push(
+        ['Primary accounts (all openings)', accounts(e.primary.total), `${accounts(e.results.total)} × ${pct(e.primary.rate)} ${e.primary.basis}`],
+        ['Incremental primary accounts', accounts(e.primary.incremental), `${accounts(e.results.incremental)} × ${pct(e.primary.rate)}`, true],
+      )
+  } else {
+    rows.push([outcome.title, accounts(e.results.total), `${accounts(e.treated)} treated × ${pct(inputs.rate)} (measured against the holdout, so all of it is incremental)`, true])
+    if (e.primary)
+      rows.push(['Expected to become primary', accounts(e.primary.total), `${accounts(e.results.total)} × ${pct(e.primary.rate)} ${e.primary.basis}`])
   }
+
   rows.push(
     ['Accounts earning the bonus', accounts(e.qualifying), e.qualifyingBasis],
-    ['Bonus cost', formatUsd(e.costs.bonus), `$${inputs.offer.bonusUsd} × ${accounts(e.qualifying)}`],
+    ['Bonus cost', formatUsd(e.costs.bonus), `$${inputs.offer.bonusUsd} × ${accounts(e.qualifying)}${isAcq ? ' (paid even on accounts that would have opened anyway)' : ''}`],
     ['Channel cost', formatUsd(e.costs.channel), `${accounts(e.treated)} treated × $${perPerson.toFixed(2)} per person (${inputs.offer.channels.join(' + ') || 'none'} × ${inputs.messagesPerPerson})`],
   )
   if (e.costs.feeWaiver > 0) rows.push(['Fees waived (revenue given up)', formatUsd(e.costs.feeWaiver), `${accounts(e.treated)} treated × $12`])
   if (e.costs.perAccount > 0)
-    rows.push(['Other per-account cost', formatUsd(e.costs.perAccount), `${accounts(e.outcomes)} × $${inputs.offer.perAccountCostUsd}`])
+    rows.push(['Other per-account cost', formatUsd(e.costs.perAccount), `${accounts(e.results.total)} × $${inputs.offer.perAccountCostUsd}`])
+  rows.push(['Total cost', formatUsd(e.costs.total), 'Sum of the costs above'])
+
+  if (isAcq) {
+    rows.push(
+      ['Cost per opening (all)', money(e.costPerResult), `${formatUsd(e.costs.total)} ÷ ${accounts(e.results.total)}`],
+      ['Cost per incremental opening', money(e.costPerIncremental), `${formatUsd(e.costs.total)} ÷ ${accounts(e.results.incremental)}`],
+    )
+    if (e.costPerPrimary !== undefined && e.primary)
+      rows.push(['Cost per primary account (all)', money(e.costPerPrimary), `${formatUsd(e.costs.total)} ÷ ${accounts(e.primary.total)}`])
+    if (e.costPerIncrementalPrimary !== undefined && e.primary)
+      rows.push([
+        'Cost per INCREMENTAL primary account',
+        money(e.costPerIncrementalPrimary),
+        `${formatUsd(e.costs.total)} ÷ ${accounts(e.primary.incremental)}: the true price of the campaign's effect`,
+        true,
+      ])
+  } else {
+    rows.push([`Cost per ${outcome.noun.replace(/s$/, '')}`, money(e.costPerResult), `${formatUsd(e.costs.total)} ÷ ${accounts(e.results.total)}`])
+  }
+
   rows.push(
-    ['Total cost', formatUsd(e.costs.total), 'Sum of the costs above'],
-    [isAcq ? 'Cost per new account' : 'Cost per saved account', money(e.costPerOutcome), `${formatUsd(e.costs.total)} ÷ ${accounts(e.outcomes)}`],
-  )
-  if (e.costPerPrimary !== undefined && e.primary !== undefined)
-    rows.push(['Cost per primary account', money(e.costPerPrimary), `${formatUsd(e.costs.total)} ÷ ${accounts(e.primary)}`])
-  rows.push(
-    ['Annual value', formatUsd(e.annualValue), `${accounts(e.valueAccounts)} ${isAcq ? 'primary' : 'saved'} × $${inputs.annualValuePerAccount} (illustrative)`],
-    ['Payback', Number.isFinite(e.paybackMonths) ? `${e.paybackMonths.toFixed(1)} months` : 'Never', `${formatUsd(e.costs.total)} ÷ (${formatUsd(e.annualValue)} ÷ 12)`],
-    ['Break-even value per account', money(e.breakEvenValuePerAccount), `Annual value each ${isAcq ? 'primary' : 'saved'} account must reach to repay cost in a year`],
+    ['Annual value', formatUsd(e.annualValue), `${e.valueBasis} (illustrative)`],
+    ['Payback', months(e.paybackMonths), `${formatUsd(e.costs.total)} ÷ (${formatUsd(e.annualValue)} ÷ 12)`],
     [
       'Timing',
-      `${accounts(e.timing.q3)} Q3 · ${accounts(e.timing.q4)} Q4`,
-      `${inputs.offer.durationDays}-day campaign, ${e.timing.q3DaysAvailable.toFixed(1)} days left in Q3 → ${pct(e.timing.q3Share)} lands in Q3`,
+      `${accounts(e.timing.q3)} Q3 · ${accounts(e.timing.later)} later`,
+      `${e.timing.basis}${isAcq ? ' (incremental openings only)' : ''}`,
     ],
   )
-  if (e.impact.kind === 'acquisition') {
-    rows.push(['Closes of the incremental openings gap', pct(e.impact.closesShare), `${accounts(e.timing.q3)} Q3 openings ÷ ${accounts(e.impact.incrementalGap)} (Q3 part only)`])
-  } else {
-    rows.push(
-      [
-        'Net account change (Q3)',
-        `${formatSignedCount(e.impact.netChangeNow)} → ${formatSignedCount(Math.round(e.impact.netChangeAfter))}`,
-        `${formatSignedCount(e.impact.netChangeNow)} + ${accounts(e.timing.q3)} saved in Q3. Retention never counts toward the openings gap.`,
-      ],
-      ['Primacy rate lift (at most)', `+${e.impact.primacyLiftPts.toFixed(2)} pts`, `${accounts(e.timing.q3)} ÷ ${accounts(e.impact.openAccounts)} open accounts, if every saved account stays Primary`],
-    )
+  switch (e.impact.kind) {
+    case 'openings':
+      rows.push([
+        'Closes of the openings gap (Q3)',
+        pct(e.impact.closesShare),
+        `${accounts(e.timing.q3)} incremental Q3 openings ÷ ${accounts(e.impact.gap)} needed ${e.impact.gapBasis} (${accounts(e.impact.gapAverage)} at the quarter-average pace)`,
+        true,
+      ])
+      break
+    case 'net-change':
+      rows.push([
+        'Net account change',
+        `Q3 ${formatSignedCount(e.impact.netNow)} → ${formatSignedCount(e.impact.netQ3After)} · next 90 days: +${accounts(e.impact.next90)}`,
+        `Q3: ${formatSignedCount(e.impact.netNow)} + ${accounts(e.timing.q3)} closures avoided in Q3. Next 90 days: all saves whose closure would fall within 90 days.`,
+        true,
+      ])
+      break
+    case 'activation':
+      rows.push([
+        'Primacy lift (Q3)',
+        `+${e.impact.primacyLiftPts.toFixed(2)} pts`,
+        `${accounts(e.timing.q3)} activated in Q3 × ${pct(e.primary?.rate ?? 0)} → ${accounts(e.impact.primaryQ3)} primary ÷ ${accounts(e.impact.openAccounts)} open accounts. Doesn't change net account change.`,
+        true,
+      ])
+      break
+    case 'cross-sell':
+      rows.push([
+        'Savings deposits captured',
+        formatUsd(e.impact.deposits),
+        `${accounts(e.results.total)} accounts × $${inputs.avgBalanceUsd.toLocaleString('en-US')} (${formatUsd(e.impact.depositsQ3)} in Q3). Doesn't touch the openings gap or net account change.`,
+        true,
+      ])
+      break
   }
 
   return (
@@ -402,9 +505,9 @@ function EconomicsTable({ inputs }: { inputs: CampaignInputs }) {
       <table className="w-full min-w-[560px] text-left text-sm">
         <caption className="mb-2 text-left text-xs text-slate-500">Illustrative economics. Formula shown for every line.</caption>
         <tbody className="divide-y divide-slate-100">
-          {rows.map(([label, value, formula]) => (
-            <tr key={label} className="align-top">
-              <th scope="row" className="py-2 pr-4 font-medium text-brand-ink">{label}</th>
+          {rows.map(([label, value, formula, strong]) => (
+            <tr key={label} className={`align-top ${strong ? 'bg-orange-50/60' : ''}`}>
+              <th scope="row" className={`py-2 pr-4 font-medium whitespace-pre-wrap text-brand-ink ${strong ? 'font-semibold' : ''}`}>{label}</th>
               <td className="py-2 pr-4 text-right font-semibold whitespace-nowrap tabular-nums">{value}</td>
               <td className="py-2 text-xs text-slate-500">{formula}</td>
             </tr>
@@ -476,26 +579,32 @@ function OfferComparison({ bonus, directDeposit, days }: { bonus: number; direct
   )
 }
 
-function KindBadge({ kind }: { kind: CampaignInputs['kind'] }) {
-  return kind === 'acquisition' ? (
-    <span className="inline-flex rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold text-brand-blue ring-1 ring-brand-blue/30 ring-inset">
-      Acquisition · new openings
-    </span>
-  ) : (
-    <span className="inline-flex rounded-full bg-green-50 px-2 py-0.5 text-xs font-semibold text-green-800 ring-1 ring-green-300 ring-inset">
-      Retention · accounts saved
+const KIND_LABEL: Record<CampaignKind, string> = { acquisition: 'Acquisition', retention: 'Retention', 'cross-sell': 'Cross-sell · deepening' }
+
+export function KindBadge({ kind, outcome }: { kind: CampaignKind; outcome: CampaignOutcome }) {
+  const styles: Record<CampaignKind, string> = {
+    acquisition: 'bg-blue-50 text-brand-blue ring-brand-blue/30',
+    retention: 'bg-green-50 text-green-800 ring-green-300',
+    'cross-sell': 'bg-purple-50 text-purple-800 ring-purple-300',
+  }
+  return (
+    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${styles[kind]}`}>
+      {KIND_LABEL[kind]} · {OUTCOME_LABELS[outcome].noun}
     </span>
   )
 }
 
-function KindExplainer({ kind }: { kind: CampaignInputs['kind'] }) {
-  return (
-    <p className="rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
-      {kind === 'acquisition'
-        ? 'Acquisition campaign: results are NEW openings and count toward the incremental openings gap (beyond current pace).'
-        : 'Retention campaign: results are accounts SAVED. They improve net account change and primacy, and never count toward the openings gap.'}
-    </p>
-  )
+function KindExplainer({ outcome }: { outcome: CampaignOutcome }) {
+  const text: Record<CampaignOutcome, string> = {
+    openings:
+      'Acquisition: the baseline rate is what these customers do anyway (already inside the pace). Only incremental openings above it count toward the openings gap; the bonus is still paid on every qualifying opening.',
+    'closures-avoided':
+      "Retention · closure prevention: results are closures avoided. They count toward net account change in the quarter the closure would have happened (from the signal's lead time), never toward the openings gap.",
+    activations: 'Retention · activation: results are accounts activated. They lift activation and primacy, not net account change (these accounts are not closing).',
+    'savings-accounts':
+      'Cross-sell · deepening: results are new PNC savings accounts and deposits captured. They touch neither the openings gap nor net account change.',
+  }
+  return <p className="rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">{text[outcome]}</p>
 }
 
 function Panel({ title, children }: { title: string; children: ReactNode }) {
@@ -521,11 +630,11 @@ function Formula({ children }: { children: ReactNode }) {
   return <p className="rounded-md bg-slate-50 p-3 text-xs text-slate-600">{children}</p>
 }
 
-function Summary({ label, value }: { label: string; value: string }) {
+function Summary({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) {
   return (
-    <p className="flex justify-between gap-3">
+    <p className={`flex justify-between gap-3 ${strong ? 'rounded bg-orange-50 px-1 py-0.5' : ''}`}>
       <span className="text-slate-600">{label}</span>
-      <span className="font-semibold tabular-nums text-brand-ink">{value}</span>
+      <span className="text-right font-semibold tabular-nums text-brand-ink">{value}</span>
     </p>
   )
 }

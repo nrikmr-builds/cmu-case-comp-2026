@@ -36,8 +36,8 @@ export interface DropOffSignal {
   name: string
   measure: string
   flaggedAccounts: number
-  /** Typical time between the signal firing and the account closing or going dormant. */
-  leadTime: string
+  /** Typical days between the signal firing and the account closing or going dormant: [earliest, latest]. */
+  leadDays: [number, number]
   /** Churn rate of flagged accounts ÷ churn rate of unflagged accounts. */
   lift: number
 }
@@ -111,7 +111,7 @@ export const dropOffSignals: DropOffSignal[] = [
     name: 'Direct deposit leaving',
     measure: 'Direct deposit stopped, fell more than 30%, or is now split with another bank',
     flaggedAccounts: 6200,
-    leadTime: '60–90 days',
+    leadDays: [60, 90],
     lift: 4.2,
   },
   {
@@ -119,7 +119,7 @@ export const dropOffSignals: DropOffSignal[] = [
     name: 'Outbound transfers to competitors',
     measure: 'New or growing ACH / P2P transfers to known fintech and competitor banks',
     flaggedAccounts: 9800,
-    leadTime: '30–60 days',
+    leadDays: [30, 60],
     lift: 2.6,
   },
   {
@@ -127,7 +127,7 @@ export const dropOffSignals: DropOffSignal[] = [
     name: 'Bill payments moved away',
     measure: 'Recurring bill payments stopped here and not replaced',
     flaggedAccounts: 4100,
-    leadTime: '30–60 days',
+    leadDays: [30, 60],
     lift: 3.4,
   },
   {
@@ -135,7 +135,7 @@ export const dropOffSignals: DropOffSignal[] = [
     name: 'Activity ratio below 0.5',
     measure: 'Transactions in the last 30 days ÷ 6-month monthly average',
     flaggedAccounts: 11500,
-    leadTime: '30–45 days',
+    leadDays: [30, 45],
     lift: 2.9,
   },
   {
@@ -143,7 +143,7 @@ export const dropOffSignals: DropOffSignal[] = [
     name: 'Balance trending down',
     measure: '30-day average balance ÷ 6-month average, incl. accounts nearing the $500 fee threshold',
     flaggedAccounts: 14200,
-    leadTime: '45–75 days',
+    leadDays: [45, 75],
     lift: 1.8,
   },
   {
@@ -151,7 +151,7 @@ export const dropOffSignals: DropOffSignal[] = [
     name: 'Fee events',
     measure: 'First $12 maintenance fee, an overdraft, or a fee-reversal request',
     flaggedAccounts: 7900,
-    leadTime: '15–60 days',
+    leadDays: [15, 60],
     lift: 2.2,
   },
   {
@@ -159,7 +159,7 @@ export const dropOffSignals: DropOffSignal[] = [
     name: 'Digital disengagement',
     measure: 'Monthly logins down more than 50%',
     flaggedAccounts: 12600,
-    leadTime: '60–120 days',
+    leadDays: [60, 120],
     lift: 1.6,
   },
   {
@@ -167,7 +167,7 @@ export const dropOffSignals: DropOffSignal[] = [
     name: 'Service friction',
     measure: 'Complaint, dispute, or address change',
     flaggedAccounts: 3300,
-    leadTime: '15–45 days',
+    leadDays: [15, 45],
     lift: 2.4,
   },
 ]

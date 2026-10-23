@@ -2,7 +2,7 @@ import { Bar, CartesianGrid, ComposedChart, Legend, Line, ReferenceLine, Respons
 import { dailyOpenings, DAYS_WITH_DATA, dayToIso } from '../data/dailyOpenings'
 import { getKpi, reportingPeriod } from '../data/productMetrics'
 import { CHART_COLORS } from '../lib/chartColors'
-import { cumulativeChartData, planDailyPace, shortDate } from '../lib/dailyTracking'
+import { cumulativeChartData, getWeeklyPace, planDailyPace, shortDate } from '../lib/dailyTracking'
 import { formatValue } from '../lib/metrics'
 import { getPaceProjection } from '../lib/projection'
 import SectionCard from './SectionCard'
@@ -59,7 +59,7 @@ export default function DailyOpeningsTrend() {
         Green dotted line: plan pace, {Math.round(planDailyPace())}/day ({accounts(kpi.target)} ÷ {quarterDays} days). Gray
         dashed: average so far, {Math.round(p.currentDailyRate)}/day. Red: {Math.round(p.requiredDailyRate)}/day needed every
         remaining day from {shortDate(dayToIso(DAYS_WITH_DATA))} to reach {accounts(kpi.target)}. Openings stepped down after
-        a summer promotion ended Jul 31 (illustrative). Branch dips are Sundays and branch holidays (Jul 4, Sep 7).
+        an illustrative summer promotion ended on Jul 31, so the last 7 days averaged only {Math.round(getWeeklyPace().weekPerDay)}/day. Branch dips are Sundays and branch holidays (Jul 4, Sep 7).
       </p>
 
       <h4 className="mt-6 text-sm font-medium text-slate-700">Cumulative openings and where the quarter lands</h4>
@@ -73,7 +73,17 @@ export default function DailyOpeningsTrend() {
             <Legend itemSorter={null} />
             <ReferenceLine y={kpi.target} stroke="#94a3b8" strokeDasharray="2 4" label={{ value: `Target ${accounts(kpi.target)}`, position: 'insideTopLeft', fontSize: 11, fill: '#475569' }} />
             <Line dataKey="actual" name="Actual" stroke={CHART_COLORS.branch} strokeWidth={2} dot={false} connectNulls={false} isAnimationActive={false} />
-            <Line dataKey="projected" name={`Projected landing (${accounts(p.projected)})`} stroke="#334155" strokeDasharray="5 4" strokeWidth={2} dot={{ r: 3 }} connectNulls isAnimationActive={false} />
+            <Line
+              dataKey="projectedRecent"
+              name={`At last-7-day pace (${accounts(getPaceProjection(kpi, reportingPeriod, getWeeklyPace().weekPerDay).projected)})`}
+              stroke="#b45309"
+              strokeDasharray="5 4"
+              strokeWidth={2}
+              dot={{ r: 3 }}
+              connectNulls
+              isAnimationActive={false}
+            />
+            <Line dataKey="projected" name={`At quarter-average pace (${accounts(p.projected)})`} stroke="#334155" strokeDasharray="5 4" strokeWidth={2} dot={{ r: 3 }} connectNulls isAnimationActive={false} />
             <Line dataKey="required" name={`Required to hit target (${accounts(kpi.target)})`} stroke="#b91c1c" strokeWidth={2} dot={{ r: 3 }} connectNulls isAnimationActive={false} />
           </ComposedChart>
         </ResponsiveContainer>
