@@ -60,7 +60,7 @@ export default function Header() {
             <li key={to} className="shrink-0">
               <NavLink
                 to={to}
-                end
+                end={to === '/'}
                 className={({ isActive }) =>
                   `flex items-center gap-1.5 border-b-[3px] px-3 py-3 text-xs font-semibold tracking-wider whitespace-nowrap text-white uppercase focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-white ${
                     isActive ? 'border-brand-orange' : 'border-transparent hover:border-white/40'

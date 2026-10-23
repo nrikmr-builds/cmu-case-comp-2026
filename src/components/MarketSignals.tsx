@@ -1,5 +1,7 @@
 import { CalendarClock, ExternalLink, Link2 } from 'lucide-react'
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { checkingHref } from '../lib/checkingTabs'
 import { dropOffSignals, riskSegments, type PncComparisonRow } from '../data/checkingHealth'
 import type { MarketSignal, SignalCategory } from '../data/marketSignals'
 import { getOpportunity } from '../data/opportunities'
@@ -16,11 +18,11 @@ const TABS: { id: SignalCategory; label: string }[] = [
 /** Where a "Relates to" chip jumps: the matching signal row, then a risk segment, then an opportunity segment. */
 function relatedAnchor(relevance: string): string | undefined {
   const signal = dropOffSignals.find((s) => s.name === relevance)
-  if (signal) return `#signal-${signal.id}`
+  if (signal) return checkingHref(`signal-${signal.id}`)
   const risk = riskSegments.find((s) => s.name === relevance)
-  if (risk) return `#risk-${risk.id}`
+  if (risk) return checkingHref(`risk-${risk.id}`)
   const segment = getOpportunity('checking')?.segments.find((s) => s.name === relevance)
-  return segment ? `#segment-${segment.id}` : undefined
+  return segment ? checkingHref(`segment-${segment.id}`) : undefined
 }
 
 /** "N days left (as of Oct 22)", counted from the offer's own retrieval date; nothing for open-ended offers. */
@@ -117,13 +119,13 @@ export default function MarketSignals({ signals, pncRow }: Props) {
                 </div>
                 <div className="mt-3">
                   {anchor ? (
-                    <a
-                      href={anchor}
+                    <Link
+                      to={anchor}
                       className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-800 ring-1 ring-orange-200 ring-inset hover:bg-orange-100"
                     >
                       <Link2 className="h-3.5 w-3.5" aria-hidden />
                       Relates to: {s.relevance}
-                    </a>
+                    </Link>
                   ) : (
                     <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-800">
                       Relates to: {s.relevance}
@@ -138,7 +140,7 @@ export default function MarketSignals({ signals, pncRow }: Props) {
 
       {promos.length > 0 && (
         <div className="rounded-md border border-slate-200 bg-white p-6 shadow-sm">
-          <h3 className="heading-accent text-lg font-semibold text-brand-ink">Checking Offer Comparison</h3>
+          <h3 id="offers-heading" className="heading-accent scroll-mt-24 text-lg font-semibold text-brand-ink">Checking Offer Comparison</h3>
           <p className="mt-2 text-sm text-slate-600">
             Competitor rows are sourced from each linked page. The PNC row is our synthetic placeholder.
           </p>

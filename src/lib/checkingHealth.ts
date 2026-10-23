@@ -1,5 +1,5 @@
 // Derived checking activation, health, and drop-off figures. Pages read these instead of doing math inline.
-import type { ActivationFunnel, DropOffSignal, FeeCohort, HealthMix, SavingsLinkGroup } from '../data/checkingHealth'
+import type { ActivationFunnel, DropOffSignal, FeeCohort, HealthMix, RiskSegment, SavingsLinkGroup } from '../data/checkingHealth'
 
 export const FUNNEL_STAGES = [
   { key: 'opened', label: 'Opened' },
@@ -121,4 +121,16 @@ export function formatExpiry(expires: string | undefined): string {
 /** [60, 90] → "60–90 days". */
 export function formatLeadTime([min, max]: [number, number]): string {
   return `${min}–${max} days`
+}
+
+/** Risk segments ranked by size × the lift of their linked early-warning signal ("Act now" on the Today tab). */
+export function rankRiskSegments(segments: RiskSegment[], signals: DropOffSignal[], link: Record<string, string>, top = 3) {
+  return segments
+    .map((s) => {
+      const signal = signals.find((x) => x.id === link[s.id])
+      const lift = signal?.lift ?? 1
+      return { segment: s, signal, lift, score: s.eligibleCustomers * lift }
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, top)
 }

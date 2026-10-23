@@ -1,4 +1,4 @@
-// Guided tour for judges: 8 steps across the home and Checking pages. Every number in a caption is read from
+// Guided tour for judges: 8 steps across the home page and the Checking tabs (Today, Diagnose, Act, Report). Every number in a caption is read from
 // the data/calculation layer when the step is shown, never typed in.
 import { useSyncExternalStore } from 'react'
 import { currentQuarterHealth, dropOffSignals, healthMixHistory } from '../data/checkingHealth'
@@ -12,6 +12,7 @@ import { formatPercent, formatValue, getPaceRatio, getStatus } from './metrics'
 import { buildWeeklyReport } from './weeklyReport'
 import { END_LABEL, getReforecast } from './reforecastStore'
 import { defaultPlanner } from './scenarioPlanner'
+import { tabPath } from './checkingTabs'
 import { DEFAULT_ALERT_RULES } from './dailyTracking'
 
 const n = (x: number) => formatValue(x, 'accounts')
@@ -42,7 +43,7 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     title: 'Gap Summary',
-    path: '/opportunities/checking',
+    path: tabPath('today'),
     target: '#gap-heading',
     caption: () => {
       const { projection: p } = getHeadlineProjection(getKpi('checking-new-accounts'))
@@ -51,7 +52,7 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     title: 'Daily trend',
-    path: '/opportunities/checking',
+    path: tabPath('today'),
     target: '#daily-heading',
     caption: () => {
       const w = getWeeklyPace()
@@ -60,7 +61,7 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     title: 'Account health',
-    path: '/opportunities/checking',
+    path: tabPath('diagnose'),
     target: '#health-heading',
     caption: () => {
       const net = getNetAccountChange(getKpi('checking-new-accounts').actual, currentQuarterHealth.closedThisQuarter)
@@ -69,7 +70,7 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     title: 'Early-warning signals',
-    path: '/opportunities/checking',
+    path: tabPath('diagnose'),
     target: '#signals-heading',
     caption: () => {
       const s = getStrongestSignal(dropOffSignals)
@@ -78,7 +79,7 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     title: 'Promotion Builder',
-    path: '/opportunities/checking',
+    path: tabPath('act'),
     target: '#campaigns-heading',
     caption: () => {
       const e = computeEconomics(inputsFromPreset('primacy-bonus'))
@@ -87,7 +88,7 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     title: 'Campaign Tracker',
-    path: '/opportunities/checking',
+    path: tabPath('act'),
     target: '#tracker-heading',
     caption: () => {
       const [summer, pilot] = seedCampaigns.map(trackSeed)
@@ -97,8 +98,8 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     title: 'Weekly report',
-    path: '/opportunities/checking',
-    target: '[data-tour="report-button"]',
+    path: tabPath('report'),
+    target: '#report-tab-heading',
     caption: () => {
       const rf = getReforecast()
       const r = buildWeeklyReport([], DEFAULT_ALERT_RULES, new Date(), rf)

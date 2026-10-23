@@ -1,6 +1,7 @@
 import { ArrowRight, Bell, CheckCheck, ChevronDown, ChevronRight, History } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { checkingHref } from '../lib/checkingTabs'
 import { dropOffSignals } from '../data/checkingHealth'
 import { dailyOpenings } from '../data/dailyOpenings'
 import { getKpi, reportingPeriod } from '../data/productMetrics'
@@ -106,7 +107,7 @@ export default function SinceLastVisit({ compact = false }: Props) {
           </li>
         </ul>
         <Link
-          to="/opportunities/checking#since-heading"
+          to={checkingHref('since-heading')}
           className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-brand-blue hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue"
         >
           See details on Checking Insights
@@ -230,9 +231,9 @@ export default function SinceLastVisit({ compact = false }: Props) {
               ))}
             </ul>
           )}
-          <a href="#tracker-heading" className="mt-1 inline-block text-xs font-medium text-brand-blue hover:underline">
+          <Link to={checkingHref('tracker-heading')} className="mt-1 inline-block text-xs font-medium text-brand-blue hover:underline">
             Open the Campaign Tracker
-          </a>
+          </Link>
         </Item>
       </div>
 

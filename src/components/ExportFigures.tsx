@@ -2,14 +2,20 @@ import { toPng } from 'html-to-image'
 import { Download, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { reportingPeriod } from '../data/productMetrics'
+import { currentQuarterHealth, healthMixHistory } from '../data/checkingHealth'
+import { getKpi, reportingPeriod } from '../data/productMetrics'
 import { inputsFromPreset } from '../lib/campaignEconomics'
 import { useCampaigns } from '../lib/campaignStore'
 import { useAlertRules } from '../lib/trackingStore'
 import { formatDate } from '../lib/projection'
 import { buildWeeklyReport } from '../lib/weeklyReport'
 import { getReforecast } from '../lib/reforecastStore'
+import AccountHealthMix from './AccountHealthMix'
+import CampaignTracker from './CampaignTracker'
+import DailyOpeningsTrend from './DailyOpeningsTrend'
+import GapSummary from './GapSummary'
 import { EconomicsTable, KindBadge } from './PromotionBuilder'
+import ScenarioPlanner from './ScenarioPlanner'
 
 /** White-paper figures. File names are neutral (no team or school names). */
 const FIGURES = [
@@ -24,10 +30,13 @@ const FIGURES = [
 
 const LABEL = `Illustrative · synthetic internal data as of ${formatDate(reportingPeriod.internalAsOf)} · PNC Product Intelligence Hub prototype`
 
-/** Captures a section as a 2× PNG on white, with an "Illustrative" label added for the capture only. */
-async function capture(selector: string): Promise<string> {
-  const found = document.querySelector(selector)
-  if (!found) throw new Error(`Not on screen: ${selector}`)
+/**
+ * Captures a section as a 2× PNG on white, with an "Illustrative" label added for the capture only. Looks only
+ * inside the export panel's own off-screen copies, so it works from any Checking tab.
+ */
+async function capture(root: HTMLElement, selector: string): Promise<string> {
+  const found = root.querySelector(selector)
+  if (!found) throw new Error(`Not rendered: ${selector}`)
   const node = (found.id.startsWith('export-') ? found : (found.closest('section') ?? found)) as HTMLElement
   const label = document.createElement('p')
   label.textContent = LABEL
@@ -49,27 +58,30 @@ function download(dataUrl: string, file: string) {
   a.remove()
 }
 
-/** "Export figures": renders the off-screen figures, captures all six, and offers each PNG for download. */
+/** "Export figures": renders off-screen copies of the figure cards, captures all seven, and offers each PNG for download. */
 export default function ExportFigures({ onClose }: { onClose: () => void }) {
   const [images, setImages] = useState<{ file: string; title: string; url?: string; error?: string }[]>([])
   const [busy, setBusy] = useState(true)
   const started = useRef(false)
+  const sources = useRef<HTMLDivElement>(null)
   const { campaigns } = useCampaigns()
   const { rules } = useAlertRules()
   // Built once when the panel opens, from the same campaigns, rules and re-forecast the report uses.
   const [report] = useState(() => buildWeeklyReport(campaigns, rules, new Date(), getReforecast()))
   const primacy = inputsFromPreset('primacy-bonus')
+  const kpi = getKpi('checking-new-accounts')
 
   useEffect(() => {
     if (started.current) return
     started.current = true
     ;(async () => {
-      // Give lazy sections and the off-screen figures a moment to render.
-      await new Promise((r) => setTimeout(r, 400))
+      // Give the off-screen copies (charts measure their container first) a moment to render.
+      await new Promise((r) => setTimeout(r, 600))
       const out: typeof images = []
       for (const f of FIGURES) {
         try {
-          out.push({ file: f.file, title: f.title, url: await capture(f.selector) })
+          if (!sources.current) throw new Error('Export panel not ready')
+          out.push({ file: f.file, title: f.title, url: await capture(sources.current, f.selector) })
         } catch (e) {
           out.push({ file: f.file, title: f.title, error: (e as Error).message })
         }
@@ -120,8 +132,19 @@ export default function ExportFigures({ onClose }: { onClose: () => void }) {
         </ul>
       </div>
 
-      {/* Off-screen sources for figures that aren't on the page. */}
-      <div aria-hidden className="fixed top-0 -left-[10000px] w-[900px] bg-white">
+      {/* Off-screen copies of every figure's card, whichever Checking tab it lives on (Today, Diagnose or Act). */}
+      <div ref={sources} aria-hidden inert className="fixed top-0 -left-[10000px] w-[1100px] space-y-6 bg-white">
+        <GapSummary kpi={kpi} period={reportingPeriod} />
+        <DailyOpeningsTrend />
+        <AccountHealthMix
+          history={healthMixHistory}
+          accountsWithDirectDeposit={currentQuarterHealth.accountsWithDirectDeposit}
+          openedThisQuarter={kpi.actual}
+          closedThisQuarter={currentQuarterHealth.closedThisQuarter}
+          newlyDormantThisQuarter={currentQuarterHealth.newlyDormantThisQuarter}
+        />
+        <CampaignTracker onEdit={() => {}} />
+        <ScenarioPlanner />
         <div id="export-economics" className="space-y-3 bg-white p-6 text-slate-800">
           <div className="flex items-center gap-2">
             <h3 className="text-lg font-semibold text-brand-ink">Promotion Builder · {primacy.name}</h3>

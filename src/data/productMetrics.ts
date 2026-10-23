@@ -24,7 +24,7 @@ export const products: Product[] = [
       { id: 'checking-new-accounts', productId: 'checking', label: 'New Account Openings', kind: 'cumulative', unit: 'accounts', target: 12000, actual: 7600 },
       {
         id: 'checking-digital-completion', productId: 'checking', label: 'Digital Opening Completion Rate', kind: 'rate', unit: 'percent', target: 0.75, actual: 0.69,
-        related: { label: 'Linked segment: Abandoned Digital Applications', to: '/opportunities/checking#segment-abandoned-digital' },
+        related: { label: 'Linked segment: Abandoned Digital Applications', to: '/opportunities/checking/diagnose#segment-abandoned-digital' },
       },
       {
         id: 'checking-active-rate', productId: 'checking', label: 'Active Account Rate', kind: 'rate', unit: 'percent', target: 0.85,
@@ -36,7 +36,7 @@ export const products: Product[] = [
         introducedOn: '2026-09-12',
         actual: latestHealth.primary / latestHealthTotal,
         definition: `Open accounts with ${PRIMACY_DEFINITION}`,
-        related: { label: 'See account health mix', to: '/opportunities/checking#health-heading' },
+        related: { label: 'See account health mix', to: '/opportunities/checking/diagnose#health-heading' },
       },
     ],
   },

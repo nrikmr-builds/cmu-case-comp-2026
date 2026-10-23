@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+import { checkingHref } from '../lib/checkingTabs'
 import { Megaphone } from 'lucide-react'
 import { activationFunnel, checkingTerms, feeCohorts, pncComparisonRow, riskSegments, savingsLink } from '../data/checkingHealth'
 import { campaignPresets, TEMPLATE_IDS } from '../data/campaignPresets'
@@ -100,9 +102,9 @@ export default function CampaignCenter({ onDesign }: Props) {
 
       <p className="mt-2 text-sm text-slate-600">
         Saved campaigns ({campaigns.length}) appear in the{' '}
-        <a href="#tracker-heading" className="font-medium text-brand-blue hover:underline">
+        <Link to={checkingHref('tracker-heading')} className="font-medium text-brand-blue hover:underline">
           Campaign Tracker
-        </a>{' '}
+        </Link>{' '}
         below, with seeded examples.
       </p>
     </SectionCard>

@@ -15,7 +15,7 @@ const externalRetrieved = marketSignals.map((s) => s.retrievedOn).sort().at(-1)
 export default function DataFreshness() {
   const { pathname } = useLocation()
   const { quarter, quarterElapsed, quarterDays, internalAsOf } = reportingPeriod
-  const showExternal = externalRetrieved && PAGES_WITH_EXTERNAL.includes(pathname)
+  const showExternal = externalRetrieved && PAGES_WITH_EXTERNAL.some((p) => pathname === p || pathname.startsWith(`${p}/`))
 
   return (
     <div className="border-b border-slate-200 bg-white">

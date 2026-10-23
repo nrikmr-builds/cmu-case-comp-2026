@@ -13,6 +13,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<PortfolioOverview />} />
           <Route path="/opportunities/:productId" element={<OpportunityInsights />} />
+          <Route path="/opportunities/:productId/:tab" element={<OpportunityInsights />} />
           <Route path="/cd-opportunities" element={<Navigate to="/opportunities/cd" replace />} />
         </Routes>
       </main>
