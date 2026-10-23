@@ -1,6 +1,6 @@
 // Dashboards as first-class objects: one per question or project, each an ordered list of cards built from the
 // existing components. Kept in this browser under pih.dashboards.v1 (try/catch, so the page works with storage
-// empty or blocked). The built-in "Deposit Portfolio (default)" is the original home page and can't be deleted.
+// empty or blocked). The built-in "Portfolio Overview" is the original home page and can't be deleted.
 import { useSyncExternalStore } from 'react'
 import { opportunities } from '../data/opportunities'
 import { products } from '../data/productMetrics'
@@ -110,7 +110,7 @@ export function cardCatalogue(scope: ProductId[]): DashboardCard[] {
 export const BUILT_IN: Dashboard = {
   id: 'deposit-portfolio',
   slug: 'deposit-portfolio',
-  name: 'Deposit Portfolio (default)',
+  name: 'Portfolio Overview',
   icon: 'layout',
   color: 'blue',
   scope: ALL_PRODUCTS,
@@ -474,7 +474,7 @@ export const dashboardStore = {
     const src = findById(id)
     if (!src) return undefined
     return dashboardStore.create({
-      name: `${src.name.replace(/ \(default\)$/, '')} (copy)`,
+      name: `${src.name} (copy)`,
       icon: src.icon,
       color: src.color,
       scope: src.scope,

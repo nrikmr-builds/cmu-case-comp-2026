@@ -67,7 +67,7 @@ export default function DashboardPromptBar({ onGenerate }: { onGenerate: (view: 
           aria-describedby={error ? 'prompt-error' : undefined}
           className="field min-w-0 flex-1 placeholder:text-muted disabled:bg-surface"
         />
-        <button type="submit" disabled={isGenerating || !prompt.trim()} className="btn btn-primary">
+        <button type="submit" disabled={isGenerating || !prompt.trim()} className="btn btn-secondary">
           {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Search className="h-4 w-4" aria-hidden />}
           {isGenerating ? 'Filtering…' : 'Ask'}
         </button>

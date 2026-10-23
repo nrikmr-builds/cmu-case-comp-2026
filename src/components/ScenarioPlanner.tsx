@@ -112,7 +112,7 @@ export default function ScenarioPlanner() {
               setReason(reasonFor('low'))
               setProposing(true)
             }}
-            className="btn btn-primary"
+            className="btn btn-secondary"
           >
             Propose re-forecast
           </button>
@@ -155,7 +155,7 @@ export default function ScenarioPlanner() {
                   accept({ kpiId: kpi.id, target: proposedTarget, reason, acceptedAt: new Date().toISOString(), basis, end, range: { low: p.low, high: p.high } })
                   setProposing(false)
                 }}
-                className="btn btn-primary"
+                className="btn btn-secondary"
               >
                 <Check className="h-4 w-4" aria-hidden /> Accept re-forecast
               </button>

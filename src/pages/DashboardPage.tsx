@@ -129,7 +129,7 @@ function UserDashboard({ dashboard, notice }: { dashboard: Dashboard; notice: Re
                       setSearchParams({ view: draft.id })
                       setDraft(null)
                     }}
-                    className="btn btn-primary btn-sm"
+                    className="btn btn-secondary btn-sm"
                   >
                     Save view
                   </button>

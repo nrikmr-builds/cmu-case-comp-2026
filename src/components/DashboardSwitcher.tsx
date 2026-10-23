@@ -87,7 +87,10 @@ export function SwitcherPanel({ all, recentIds, currentId, landingId, query, onQ
                   >
                     <DashboardIconBadge d={d} />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate font-medium text-brand-ink">{d.name}</span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="truncate font-medium text-brand-ink">{d.name}</span>
+                        {d.builtIn && <span className="chip bg-surface text-muted">Default</span>}
+                      </span>
                       <span className="block truncate text-xs text-muted">
                         {scopeLabel(d.scope)} · {d.cards.length} cards
                         {d.example ? ' · Example · illustrative' : ''}

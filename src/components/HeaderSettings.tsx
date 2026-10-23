@@ -46,7 +46,7 @@ export default function HeaderSettings() {
           setOpen((v) => !v)
           setConfirming(false)
         }}
-        className="btn btn-secondary btn-sm btn-icon"
+        className="btn btn-tertiary btn-sm btn-icon"
       >
         <Settings className="h-4 w-4" aria-hidden />
       </button>

@@ -86,7 +86,7 @@ export default function CampaignCenter({ onDesign }: Props) {
               <button
                 type="button"
                 onClick={() => onDesign(t.id)}
-                className="btn btn-primary mt-3 self-start"
+                className="btn btn-secondary mt-3 self-start"
               >
                 <Megaphone className="h-4 w-4" aria-hidden />
                 Use template

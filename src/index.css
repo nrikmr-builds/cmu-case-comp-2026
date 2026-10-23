@@ -227,6 +227,17 @@ svg.lucide {
     background-color: transparent;
     text-decoration: underline;
   }
+  /* Tertiary on the dark header band: same variant, white for contrast (11.8:1 on slate). */
+  .on-dark .btn-tertiary {
+    color: var(--color-white);
+  }
+  .on-dark .btn-tertiary:hover:not(:disabled) {
+    background-color: rgb(255 255 255 / 0.14);
+    color: var(--color-white);
+  }
+  .on-dark :focus-visible {
+    outline-color: var(--color-white);
+  }
   .btn-destructive {
     background-color: var(--color-critical);
     color: var(--color-white);

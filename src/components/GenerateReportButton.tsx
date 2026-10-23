@@ -10,10 +10,12 @@ interface Props {
   className?: string
   /** On a dashboard, the report covers only that dashboard's cards and KPIs. */
   dashboard?: Dashboard
+  /** One primary per view: a repeat of the page's main action is secondary. */
+  variant?: 'primary' | 'secondary'
 }
 
 /** "Generate weekly report": builds a fresh snapshot from today's data and campaigns. */
-export default function GenerateReportButton({ onOpen, className = '', dashboard }: Props) {
+export default function GenerateReportButton({ onOpen, className = '', dashboard, variant = 'primary' }: Props) {
   const { campaigns } = useCampaigns()
   const { rules } = useAlertRules()
   const { reforecast } = useReforecast()
@@ -29,7 +31,7 @@ export default function GenerateReportButton({ onOpen, className = '', dashboard
             : report,
         )
       }}
-      className={`btn btn-primary ${className}`}
+      className={`btn btn-${variant} ${className}`}
     >
       <FileText className="h-4 w-4" aria-hidden />
       Generate weekly report

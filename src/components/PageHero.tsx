@@ -5,13 +5,15 @@ interface Props {
   title: string
   /** Small label above the title. */
   eyebrow?: ReactNode
+  /** "← Back to …": a quiet sentence-case link above the title (not an eyebrow). */
+  back?: ReactNode
   /** Shown in a white circle over the orange shapes on wide screens. */
   icon?: LucideIcon
   children?: ReactNode
 }
 
 /** Full-width gray band with PNC's pattern and orange circles, like the pnc.com hero. */
-export default function PageHero({ title, eyebrow, icon: Icon, children }: Props) {
+export default function PageHero({ title, eyebrow, back, icon: Icon, children }: Props) {
   return (
     <section className="relative overflow-hidden border-b border-line bg-surface-hero">
       <div aria-hidden className="pnc-pattern-light absolute inset-y-0 left-0 hidden w-40 2xl:block" />
@@ -26,6 +28,7 @@ export default function PageHero({ title, eyebrow, icon: Icon, children }: Props
         </div>
 
         <div className="relative max-w-4xl">
+          {back && <div className="mb-2">{back}</div>}
           {/* The one ALL-CAPS label on the page. */}
           {eyebrow && <div className="text-xs font-semibold tracking-wide text-muted uppercase">{eyebrow}</div>}
           <h1 className="heading-accent mt-2 text-xl font-semibold text-brand-ink sm:text-2xl">{title}</h1>

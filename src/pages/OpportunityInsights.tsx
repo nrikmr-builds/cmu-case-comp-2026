@@ -186,11 +186,8 @@ function OpportunityDetail({ opportunity, tab }: { opportunity: ProductOpportuni
     <>
       <PageHero
         title={`${opportunity.shortName} Opportunity Intelligence`}
-        eyebrow={
-          <Link
-            to={dashboardPath(backTo, state)}
-            className="inline-flex items-center gap-1 rounded-sm text-brand-blue hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue"
-          >
+        back={
+          <Link to={dashboardPath(backTo, state)} className="btn btn-tertiary btn-inline">
             <ArrowLeft className="h-4 w-4" aria-hidden />
             Back to {backTo.name}
           </Link>
@@ -286,7 +283,7 @@ function ReportTab({ onOpen }: { onOpen: (r: ReportSnapshot) => void }) {
           Every number comes from the same calculations as the other tabs. Save it to keep a frozen copy.
         </p>
         <div className="mt-4">
-          <GenerateReportButton onOpen={onOpen} />
+          <GenerateReportButton onOpen={onOpen} variant="secondary" />
         </div>
         <p className="mt-3 text-xs text-muted">Illustrative · synthetic internal data.</p>
       </section>

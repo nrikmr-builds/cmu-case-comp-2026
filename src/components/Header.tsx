@@ -38,7 +38,7 @@ export default function Header() {
   const onDashboard = pathname === '/' || pathname.startsWith('/d/')
   return (
     <header>
-      <div className="bg-brand-slate">
+      <div className="on-dark bg-brand-slate">
         <div className="mx-auto flex max-w-7xl items-stretch justify-between gap-4 px-4 sm:px-6">
           <div className="flex items-stretch gap-6">
             <Link to="/" className="flex items-center py-3" aria-label="PNC Product Intelligence Hub home">
@@ -57,7 +57,7 @@ export default function Header() {
                 onClick={() => createDialog.open()}
                 title="New dashboard"
                 aria-label="New dashboard"
-                className="btn btn-primary btn-sm btn-icon shrink-0"
+                className="btn btn-secondary btn-sm btn-icon shrink-0"
               >
                 <Plus className="h-4 w-4" aria-hidden />
               </button>

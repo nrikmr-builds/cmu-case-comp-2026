@@ -126,7 +126,7 @@ export default function NextBestAction() {
             <button
               type="button"
               onClick={() => setSent(upsertNbaDrafts(rollup.groups.map((g) => ({ action: g.action, inputs: g.inputs }))))}
-              className="btn btn-primary"
+              className="btn btn-secondary"
             >
               <Send className="h-4 w-4" aria-hidden /> Send to campaign
             </button>

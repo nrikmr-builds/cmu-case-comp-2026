@@ -100,7 +100,7 @@ export default function DashboardCardView({ card, filter, onlyKpiIds, onReport }
       return (
         <Shell card={card} source={INTERNAL}>
           <p className="text-sm text-body">One click builds a leadership report that covers only this dashboard’s cards and KPIs.</p>
-          <button type="button" onClick={onReport} className="btn btn-primary mt-3">
+          <button type="button" onClick={onReport} className="btn btn-secondary mt-3">
             Generate weekly report
           </button>
         </Shell>

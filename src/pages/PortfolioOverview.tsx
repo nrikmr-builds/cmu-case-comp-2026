@@ -33,7 +33,7 @@ const STATUS_ORDER: KpiStatus[] = ['on-track', 'watch', 'at-risk']
 
 const detailPath = (productId: ProductId) => `/opportunities/${productId}`
 
-/** The built-in "Deposit Portfolio (default)" dashboard: the original home page, content and numbers unchanged. */
+/** The built-in "Portfolio Overview" dashboard: the original home page, content and numbers unchanged. */
 export default function PortfolioOverview({ dashboard = BUILT_IN, notice }: { dashboard?: Dashboard; notice?: ReactNode }) {
   const { quarter, quarterElapsed } = reportingPeriod
   const { views, saveView, deleteView, isUserView } = useSavedViews(dashboard.id)
@@ -232,7 +232,7 @@ function ActiveViewHeader({ view, isDraft, onSave, onReset, onNewDashboard }: Ac
             <button
               type="button"
               onClick={onSave}
-              className="btn btn-primary"
+              className="btn btn-secondary"
             >
               <Bookmark className="h-4 w-4" aria-hidden />
               Save view
