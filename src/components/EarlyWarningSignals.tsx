@@ -14,7 +14,7 @@ export default function EarlyWarningSignals({ signals }: { signals: DropOffSigna
       source="internal"
       description="Behaviors that tend to show up before a checking account closes or goes dormant. Accounts can trigger more than one signal."
     >
-      <div className="overflow-x-auto">
+      <div className="relative overflow-x-auto">
         <table className="w-full min-w-[760px] text-left text-sm">
           <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
             <tr>

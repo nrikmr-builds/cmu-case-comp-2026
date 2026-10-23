@@ -317,7 +317,7 @@ function SpendAndPlan({ t }: { t: TrackedCampaign }) {
   return (
     <div>
       <h5 className="text-sm font-medium text-slate-700">{t.plan ? 'Planned vs. actual (same time basis)' : 'Actual (no builder plan: seeded before the builder existed)'}</h5>
-      <div className="mt-2 overflow-x-auto">
+      <div className="relative mt-2 overflow-x-auto">
         <table className="w-full min-w-[760px] text-left text-sm">
           <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
             <tr>
@@ -357,7 +357,7 @@ function PlanOnly({ t }: { t: TrackedCampaign }) {
   if (!e || !t.inputs) return null
   const outcome = OUTCOME_LABELS[t.inputs.outcome]
   return (
-    <div className="mt-3 overflow-x-auto">
+    <div className="relative mt-3 overflow-x-auto">
       <table className="w-full min-w-[560px] text-left text-sm">
         <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
           <tr>

@@ -2,6 +2,8 @@ import { Bell, UserRound } from 'lucide-react'
 import { Link, NavLink } from 'react-router-dom'
 import pncLogo from '../assets/pnc-logo-white.svg'
 import DataFreshness from './DataFreshness'
+import GuidedTour from './GuidedTour'
+import HeaderSettings from './HeaderSettings'
 import { opportunities } from '../data/opportunities'
 import { products, reportingPeriod } from '../data/productMetrics'
 import { getStatus } from '../lib/metrics'
@@ -47,12 +49,13 @@ export default function Header() {
               <UserRound className="h-3.5 w-3.5" aria-hidden />
               Product Owner
             </span>
+            <HeaderSettings />
           </div>
         </div>
       </div>
 
       <nav aria-label="Main" className="bg-brand-charcoal">
-        <ul className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 sm:px-6">
+        <ul className="relative mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 sm:px-6">
           {NAV_ITEMS.map(({ to, label, atRisk, hasAlerts }) => (
             <li key={to} className="shrink-0">
               <NavLink
@@ -83,6 +86,7 @@ export default function Header() {
         </ul>
       </nav>
       <DataFreshness />
+      <GuidedTour />
     </header>
   )
 }

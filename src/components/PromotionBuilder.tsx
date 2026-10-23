@@ -120,7 +120,7 @@ export default function PromotionBuilder({ presetId, campaign, onClose }: Props)
             </button>
           </div>
         </div>
-        <ol className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 pb-2 sm:px-6">
+        <ol className="relative mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 pb-2 sm:px-6">
           {STEPS.map((label, i) => (
             <li key={label} className="shrink-0">
               <button
@@ -404,7 +404,7 @@ function ImpactSummary({ e }: { e: ReturnType<typeof computeEconomics> }) {
   }
 }
 
-function EconomicsTable({ inputs }: { inputs: CampaignInputs }) {
+export function EconomicsTable({ inputs }: { inputs: CampaignInputs }) {
   const e = computeEconomics(inputs)
   const isAcq = inputs.outcome === 'openings'
   const outcome = OUTCOME_LABELS[inputs.outcome]
@@ -501,7 +501,7 @@ function EconomicsTable({ inputs }: { inputs: CampaignInputs }) {
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div className="relative overflow-x-auto">
       <table className="w-full min-w-[560px] text-left text-sm">
         <caption className="mb-2 text-left text-xs text-slate-500">Illustrative economics. Formula shown for every line.</caption>
         <tbody className="divide-y divide-slate-100">
@@ -545,7 +545,7 @@ function OfferComparison({ bonus, directDeposit, days }: { bonus: number; direct
       <h4 className="text-sm font-medium text-slate-700">
         Compared with competitor offers: your bonus ranks {rank} of {rows.length}
       </h4>
-      <div className="mt-2 max-h-72 overflow-auto rounded border border-slate-200">
+      <div className="relative mt-2 max-h-72 overflow-auto rounded border border-slate-200">
         <table className="w-full min-w-[520px] text-left text-xs">
           <thead className="sticky top-0 bg-slate-50 text-slate-500">
             <tr>

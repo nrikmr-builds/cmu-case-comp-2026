@@ -1,17 +1,14 @@
-// Owner: Kem (Developer 2). Shows evidence and trade-offs; the decision stays with the Product Owner.
-import { ArrowLeft } from 'lucide-react'
-import { useEffect, useState } from 'react'
+// Owner: Teammate B (Developer 2). Shows evidence and trade-offs; the decision stays with the Product Owner.
+import { ArrowLeft, ImageDown } from 'lucide-react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { Link, Navigate, useLocation, useParams } from 'react-router-dom'
 import AIInsightPanel from '../components/AIInsightPanel'
-import CheckingHealthSections from '../components/CheckingHealthSections'
 import CheckingSummaryAddendum from '../components/CheckingSummaryAddendum'
-import DailyOpeningsTrend from '../components/DailyOpeningsTrend'
-import PromotionBuilder from '../components/PromotionBuilder'
 import GapSummary from '../components/GapSummary'
 import PageHero from '../components/PageHero'
 import SegmentTable from '../components/SegmentTable'
 import SinceLastVisit from '../components/SinceLastVisit'
-import WeeklyReport, { GenerateReportButton } from '../components/WeeklyReport'
+import GenerateReportButton from '../components/GenerateReportButton'
 import type { ReportSnapshot } from '../lib/weeklyReport'
 import { presetForSource } from '../data/campaignPresets'
 import { getOpportunity } from '../data/opportunities'
@@ -21,6 +18,17 @@ import { PRODUCT_ICONS } from '../lib/productIcons'
 import { getRateReference } from '../lib/segmentHistory'
 import type { SavedCampaign } from '../lib/campaignStore'
 import type { ProductOpportunity } from '../types'
+
+// Charts (Recharts), the builder, and the report load on demand so the first download stays small.
+const CheckingHealthSections = lazy(() => import('../components/CheckingHealthSections'))
+const DailyOpeningsTrend = lazy(() => import('../components/DailyOpeningsTrend'))
+const PromotionBuilder = lazy(() => import('../components/PromotionBuilder'))
+const WeeklyReport = lazy(() => import('../components/WeeklyReport'))
+const ExportFigures = lazy(() => import('../components/ExportFigures'))
+
+function SectionLoading({ label }: { label: string }) {
+  return <p className="rounded-md border border-slate-200 bg-white p-6 text-sm text-slate-500">Loading {label}…</p>
+}
 
 export default function OpportunityInsights() {
   const { productId = '' } = useParams()
@@ -51,6 +59,7 @@ function OpportunityDetail({ opportunity }: { opportunity: ProductOpportunity })
   const [builder, setBuilder] = useState<{ presetId?: string; campaign?: SavedCampaign } | null>(null)
   const isChecking = opportunity.productId === 'checking'
   const [report, setReport] = useState<ReportSnapshot | null>(null)
+  const [exporting, setExporting] = useState(false)
   const segments = opportunity.segments.map((s) => ({ ...s, estimatedConversionRate: rates[s.id] }))
 
   return (
@@ -72,13 +81,29 @@ function OpportunityDetail({ opportunity }: { opportunity: ProductOpportunity })
           Evidence, trade-offs, and open questions for {kpiName} in {quarter}. All figures
           are illustrative.
         </p>
-        {isChecking && <GenerateReportButton onOpen={setReport} className="mt-4" />}
+        {isChecking && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            <GenerateReportButton onOpen={setReport} />
+            <button
+              type="button"
+              onClick={() => setExporting(true)}
+              className="inline-flex items-center gap-1.5 rounded border border-brand-ink bg-white px-3 py-1.5 text-sm font-medium text-brand-ink hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue"
+            >
+              <ImageDown className="h-4 w-4" aria-hidden />
+              Export figures
+            </button>
+          </div>
+        )}
       </PageHero>
 
       <section className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6">
         {opportunity.productId === 'checking' && <SinceLastVisit />}
         <GapSummary kpi={kpi} period={reportingPeriod} />
-        {opportunity.productId === 'checking' && <DailyOpeningsTrend />}
+        {opportunity.productId === 'checking' && (
+          <Suspense fallback={<SectionLoading label="daily openings" />}>
+            <DailyOpeningsTrend />
+          </Suspense>
+        )}
         <SegmentTable
           segments={segments}
           accountNoun={opportunity.accountNoun}
@@ -105,22 +130,27 @@ function OpportunityDetail({ opportunity }: { opportunity: ProductOpportunity })
           addendum={opportunity.productId === 'checking' ? <CheckingSummaryAddendum /> : undefined}
         />
         {isChecking && (
-          <CheckingHealthSections
+          <Suspense fallback={<SectionLoading label="retention, campaigns, and market signals" />}>
+            <CheckingHealthSections
             quarter={quarter}
             onDesign={(presetId) => setBuilder({ presetId })}
             onEditCampaign={(campaign) => setBuilder({ campaign })}
-          />
+            />
+          </Suspense>
         )}
       </section>
-      {report && <WeeklyReport key={report.id} report={report} onClose={() => setReport(null)} />}
-      {builder && (
-        <PromotionBuilder
+      <Suspense fallback={null}>
+        {report && <WeeklyReport key={report.id} report={report} onClose={() => setReport(null)} />}
+        {exporting && <ExportFigures onClose={() => setExporting(false)} />}
+        {builder && (
+          <PromotionBuilder
           key={builder.campaign?.id ?? builder.presetId}
           presetId={builder.presetId}
           campaign={builder.campaign}
           onClose={() => setBuilder(null)}
-        />
-      )}
+          />
+        )}
+      </Suspense>
     </>
   )
 }

@@ -83,7 +83,7 @@ export default function SegmentTable({ segments, accountNoun, baselineRates, his
         </button>
       </div>
 
-      <div className="mt-4 overflow-x-auto">
+      <div className="relative mt-4 overflow-x-auto">
         <table className="w-full min-w-[920px] text-left text-sm">
           <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
             <tr>

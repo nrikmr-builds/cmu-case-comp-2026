@@ -35,7 +35,7 @@ export default function FeeTriggerView({ feeGroup, baseline, monthlyFee }: Props
               <XAxis type="number" tickFormatter={(v: number) => formatPercent(v)} tick={{ fontSize: 12 }} />
               <YAxis type="category" dataKey="label" width={110} tick={{ fontSize: 12 }} />
               <Tooltip formatter={(value) => [formatPercent(Number(value)), 'Closed within 60 days']} />
-              <Bar dataKey="rate" maxBarSize={40} radius={[0, 3, 3, 0]}>
+              <Bar dataKey="rate" maxBarSize={40} radius={[0, 3, 3, 0]} isAnimationActive={false}>
                 {chartData.map((d) => (
                   <Cell key={d.id} fill={d.id === 'first-fee' ? CHART_COLORS.feeGroup : CHART_COLORS.baseline} />
                 ))}

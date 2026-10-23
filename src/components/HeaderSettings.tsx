@@ -1,0 +1,93 @@
+import { RotateCcw, Settings } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+
+/** Every key this prototype stores starts with this prefix (views, alerts, visits, campaigns, reports). */
+const STORAGE_PREFIX = 'pih.'
+
+/** Clears every stored hub key, so the next load is the clean first-visit state. */
+function resetDemoStorage(): number {
+  let removed = 0
+  try {
+    const keys = Object.keys(localStorage).filter((k) => k.startsWith(STORAGE_PREFIX))
+    keys.forEach((k) => localStorage.removeItem(k))
+    removed = keys.length
+  } catch {
+    // Storage unavailable: nothing was stored, so there's nothing to clear.
+  }
+  return removed
+}
+
+/** Small header menu with "Reset demo". Asks before deleting the viewer's saved items. */
+export default function HeaderSettings() {
+  const [open, setOpen] = useState(false)
+  const [confirming, setConfirming] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false)
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
+    document.addEventListener('mousedown', onDown)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label="Settings"
+        onClick={() => {
+          setOpen((v) => !v)
+          setConfirming(false)
+        }}
+        className="inline-flex items-center rounded-sm p-1.5 text-slate-200 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-white"
+      >
+        <Settings className="h-4 w-4" aria-hidden />
+      </button>
+      {open && (
+        <div role="menu" className="absolute right-0 z-40 mt-2 w-72 rounded-md border border-slate-200 bg-white p-3 text-sm text-slate-700 shadow-lg">
+          {!confirming ? (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => setConfirming(true)}
+              className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-brand-blue"
+            >
+              <RotateCcw className="h-4 w-4" aria-hidden />
+              Reset demo
+            </button>
+          ) : (
+            <div role="alertdialog" aria-label="Confirm reset">
+              <p className="font-medium text-brand-ink">Reset the demo?</p>
+              <p className="mt-1 text-xs text-slate-600">
+                This deletes everything saved in this browser: your campaigns, reports, saved views, alert rules, and last-visit
+                time. The hub reopens in its first-visit state with the two seeded campaigns.
+              </p>
+              <div className="mt-3 flex justify-end gap-2">
+                <button type="button" onClick={() => setConfirming(false)} className="rounded border border-slate-300 px-3 py-1 text-sm hover:bg-slate-50">
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetDemoStorage()
+                    window.location.assign('/')
+                  }}
+                  className="rounded bg-red-700 px-3 py-1 text-sm font-medium text-white hover:bg-red-800"
+                >
+                  Reset demo
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}

@@ -34,6 +34,7 @@ export default function ProductCard({ product, quarterElapsed, detailPath }: Pro
 
   return (
     <article
+      data-product-id={product.id}
       className={`relative flex flex-col rounded-md border border-t-4 border-slate-200 bg-white shadow-sm ${CARD_ACCENTS[status]} ${
         detailPath ? 'transition hover:-translate-y-0.5 hover:shadow-md focus-within:ring-2 focus-within:ring-brand-blue' : ''
       }`}

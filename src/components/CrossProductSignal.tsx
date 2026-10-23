@@ -21,7 +21,7 @@ export default function CrossProductSignal({ groups, openAccounts }: Props) {
       source="internal"
       description="Checking customers (people, not accounts) split by whether they also hold PNC savings. Recurring transfers to an outside savings account suggest their savings live at another institution."
     >
-      <div className="overflow-x-auto">
+      <div className="relative overflow-x-auto">
         <table className="w-full min-w-[640px] text-left text-sm">
           <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
             <tr>

@@ -142,7 +142,7 @@ export default function MarketSignals({ signals, pncRow }: Props) {
           <p className="mt-2 text-sm text-slate-600">
             Competitor rows are sourced from each linked page. The PNC row is our synthetic placeholder.
           </p>
-          <div className="mt-4 overflow-x-auto">
+          <div className="relative mt-4 overflow-x-auto">
             <table className="w-full min-w-[820px] text-left text-sm">
               <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
                 <tr>
@@ -170,7 +170,7 @@ export default function MarketSignals({ signals, pncRow }: Props) {
                     <td className="py-3 pr-4 text-slate-700">{s.offer?.requirement ?? '—'}</td>
                     <td className="py-3 pr-4 text-slate-700">{s.offer?.monthlyFee ?? '—'}</td>
                     <td className="py-3 pr-4 text-slate-700">
-                      <span className="whitespace-nowrap">{formatExpiry(s.offer?.expires)}</span>
+                      <span>{formatExpiry(s.offer?.expires)}</span>
                       <span className="mt-1 block">
                         <ExpiryChip signal={s} />
                       </span>

@@ -1,5 +1,5 @@
 # PNC Product Intelligence Hub
-**2026 Tepper Tech Innovation Challenge | Qualifying Round**
+**2026 Tech Innovation Challenge | Qualifying Round** · Team TAIlor Made
 
 An AI-powered dashboard that helps a **Product Owner** spot underperforming product metrics and understand where the opportunities are to fix them. The AI surfaces insights; the Product Owner makes the decision.
 
@@ -11,8 +11,8 @@ All data in the prototype is synthetic.
 
 | Developer | Page | Route | Branch |
 |---|---|---|---|
-| Nripesh Kumar | Portfolio Overview | `/` | `feature/portfolio-overview` |
-| Kem Hannarong | Opportunity Intelligence (Checking, Savings, CD) | `/opportunities/:productId` | `feature/cd-opportunity-intelligence` |
+| Teammate A | Portfolio Overview | `/` | `feature/portfolio-overview` |
+| Teammate B | Opportunity Intelligence (Checking, Savings, CD) | `/opportunities/:productId` | `feature/cd-opportunity-intelligence` |
 
 ---
 
@@ -26,7 +26,7 @@ All data in the prototype is synthetic.
 
 ---
 
-## Page 1: Portfolio Overview (Nripesh)
+## Page 1: Portfolio Overview (Teammate A)
 
 Three product cards with KPIs, progress bars, and status badges for Q3 2026, plus:
 
@@ -62,7 +62,7 @@ Every card links to its product's opportunity page (`/opportunities/checking`, `
 
 ---
 
-## Page 2: Opportunity Intelligence (Kem)
+## Page 2: Opportunity Intelligence (Teammate B)
 
 One page per product at `/opportunities/:productId`. The demo walks through **Checking**. Numbers below are the current synthetic values; the page computes every one of them from `src/data/` with the helpers in `src/lib/`.
 
@@ -171,8 +171,8 @@ Derive the expected value, gap, projection, status, and potential accounts from 
 ## Quick Start
 
 ```bash
-git clone https://github.com/nrikmr-builds/cmu-case-comp-2026.git
-cd cmu-case-comp-2026
+git clone <repo-url>
+cd <repo-folder>
 npm install
 npm run dev        # http://localhost:5173
 git checkout -b feature/cd-opportunity-intelligence   # or feature/portfolio-overview
@@ -198,8 +198,8 @@ src/
 │   ├── StatusBadge.tsx            On Track / Watch / At Risk badge (shared)
 │   └── KPIProgressBar.tsx         progress bar capped at 100% (shared)
 └── pages/
-    ├── PortfolioOverview.tsx      Nripesh — placeholder
-    └── CDOpportunityIntelligence.tsx  Kem — placeholder
+    ├── PortfolioOverview.tsx      Teammate A
+    └── OpportunityInsights.tsx    Teammate B
 ```
 
 Put page-specific components in `src/components/` with a clear name (for example `SegmentTable.tsx`).

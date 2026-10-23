@@ -62,7 +62,7 @@ export default function ActivationFunnel({ channels, quarter }: Props) {
             <Tooltip formatter={(value) => accounts(Number(value))} />
             <Legend itemSorter={null} />
             {channels.map((c) => (
-              <Bar key={c.channel} dataKey={c.label} fill={CHART_COLORS[c.channel]} radius={[0, 3, 3, 0]} />
+              <Bar key={c.channel} dataKey={c.label} fill={CHART_COLORS[c.channel]} radius={[0, 3, 3, 0]} isAnimationActive={false} />
             ))}
           </BarChart>
         </ResponsiveContainer>
@@ -96,7 +96,7 @@ export function FunnelTable({ channels, maturing, bonusRow }: TableProps) {
   const total = getTotalFunnel(channels)
   const maturingFor = (key: string) => (key === 'activated' ? maturing?.activated : key === 'primary' ? maturing?.primary : undefined)
   return (
-    <div className="overflow-x-auto">
+    <div className="relative overflow-x-auto">
       <table className="w-full min-w-[560px] text-left text-sm">
         <caption className="sr-only">Accounts and stage-to-stage conversion by channel</caption>
         <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">

@@ -1,12 +1,10 @@
-import { Check, ClipboardCopy, FileText, Printer, X } from 'lucide-react'
+import { Check, ClipboardCopy, Printer, X } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { useAlertRules } from '../lib/trackingStore'
-import { useCampaigns } from '../lib/campaignStore'
 import { formatTimestamp } from '../lib/metrics'
 import { formatDate } from '../lib/projection'
 import { useReports } from '../lib/reportStore'
-import { buildWeeklyReport, reportToMarkdown, type ReportSnapshot } from '../lib/weeklyReport'
+import { reportToMarkdown, type ReportSnapshot } from '../lib/weeklyReport'
 
 /** Print rules: only the report prints, at most 2 pages, no nav/buttons, no breaks inside tables. */
 const PRINT_CSS = `
@@ -25,22 +23,6 @@ const PRINT_CSS = `
   .report-footer { display: block !important; position: fixed; bottom: 4mm; left: 12mm; right: 12mm; font-size: 8px; color: #475569; border-top: 1px solid #cbd5e1; padding-top: 2px; }
 }
 `
-
-/** "Generate weekly report": builds a fresh snapshot from today's data and campaigns. */
-export function GenerateReportButton({ onOpen, className = '' }: { onOpen: (r: ReportSnapshot) => void; className?: string }) {
-  const { campaigns } = useCampaigns()
-  const { rules } = useAlertRules()
-  return (
-    <button
-      type="button"
-      onClick={() => onOpen(buildWeeklyReport(campaigns, rules))}
-      className={`inline-flex items-center gap-1.5 rounded bg-brand-ink px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-charcoal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue ${className}`}
-    >
-      <FileText className="h-4 w-4" aria-hidden />
-      Generate weekly report
-    </button>
-  )
-}
 
 interface Props {
   report: ReportSnapshot

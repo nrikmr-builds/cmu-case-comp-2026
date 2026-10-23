@@ -1,6 +1,6 @@
-// Owner: Nripesh (Developer 1). Landing page: portfolio KPIs and where they stand against pace.
+// Owner: Teammate A (Developer 1). Landing page: portfolio KPIs and where they stand against pace.
 import { AlertTriangle, ArrowRight, Bookmark, LayoutDashboard, X } from 'lucide-react'
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import DashboardPromptBar from '../components/DashboardPromptBar'
 import PageHero from '../components/PageHero'
@@ -8,7 +8,9 @@ import ProductCard from '../components/ProductCard'
 import SavedViewsNav from '../components/SavedViewsNav'
 import ReportsHistory from '../components/ReportsHistory'
 import SinceLastVisit from '../components/SinceLastVisit'
-import WeeklyReport, { GenerateReportButton } from '../components/WeeklyReport'
+import GenerateReportButton from '../components/GenerateReportButton'
+import { tourStore } from '../lib/tour'
+import { Compass } from 'lucide-react'
 import type { ReportSnapshot } from '../lib/weeklyReport'
 import StatusBadge from '../components/StatusBadge'
 import { products, reportingPeriod } from '../data/productMetrics'
@@ -20,6 +22,9 @@ import { useSavedViews } from '../lib/useSavedViews'
 const formatShortDate = (iso: string) =>
   new Date(`${iso}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 import type { DashboardView, KpiStatus, ProductId } from '../types'
+
+// Loaded on demand so the report code isn't in the first download.
+const WeeklyReport = lazy(() => import('../components/WeeklyReport'))
 
 const STATUS_ORDER: KpiStatus[] = ['on-track', 'watch', 'at-risk']
 
@@ -122,7 +127,17 @@ export default function PortfolioOverview() {
 
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm text-slate-600">One page for leadership: KPIs, what changed, campaigns, risks, and decisions.</p>
-            <GenerateReportButton onOpen={setReport} />
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => tourStore.start()}
+                className="inline-flex items-center gap-1.5 rounded border border-brand-blue bg-white px-3 py-1.5 text-sm font-medium text-brand-blue hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue"
+              >
+                <Compass className="h-4 w-4" aria-hidden />
+                Take the tour
+              </button>
+              <GenerateReportButton onOpen={setReport} />
+            </div>
           </div>
 
           <SinceLastVisit compact />
@@ -154,7 +169,11 @@ export default function PortfolioOverview() {
           </p>
         </section>
       </div>
-      {report && <WeeklyReport key={report.id} report={report} onClose={() => setReport(null)} />}
+      {report && (
+        <Suspense fallback={null}>
+          <WeeklyReport key={report.id} report={report} onClose={() => setReport(null)} />
+        </Suspense>
+      )}
     </>
   )
 }

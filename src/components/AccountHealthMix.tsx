@@ -119,7 +119,7 @@ export default function AccountHealthMix({
             />
             <Legend itemSorter={null} />
             {TIERS.map(({ key, label }) => (
-              <Bar key={key} dataKey={label} stackId="mix" fill={CHART_COLORS[key]} />
+              <Bar key={key} dataKey={label} stackId="mix" fill={CHART_COLORS[key]} isAnimationActive={false} />
             ))}
           </BarChart>
         </ResponsiveContainer>
