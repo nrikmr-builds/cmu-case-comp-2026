@@ -16,6 +16,7 @@ import { getHealthTotal } from '../lib/checkingHealth'
 import type { SavedCampaign } from '../lib/campaignStore'
 import AccountHealthMix from './AccountHealthMix'
 import CampaignCenter from './CampaignCenter'
+import CampaignTracker from './CampaignTracker'
 import ActivationFunnel from './ActivationFunnel'
 import CrossProductSignal from './CrossProductSignal'
 import EarlyWarningSignals from './EarlyWarningSignals'
@@ -60,7 +61,8 @@ export default function CheckingHealthSections({ quarter, onDesign, onEditCampai
           if (preset) onDesign(preset.id)
         }}
       />
-      <CampaignCenter onDesign={onDesign} onEdit={onEditCampaign} />
+      <CampaignCenter onDesign={onDesign} />
+      <CampaignTracker onEdit={onEditCampaign} />
       {feeGroup && baseline && (
         <FeeTriggerView feeGroup={feeGroup} baseline={baseline} monthlyFee={checkingTerms.monthlyMaintenanceFee} />
       )}

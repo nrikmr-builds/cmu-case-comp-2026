@@ -35,7 +35,7 @@ function seeded(seed: number) {
 }
 
 /** Splits a total across days in proportion to weights, rounding so the parts sum exactly to the total. */
-function distribute(total: number, weights: number[]): number[] {
+export function distribute(total: number, weights: number[]): number[] {
   const sum = weights.reduce((a, b) => a + b, 0)
   const raw = weights.map((w) => (w / sum) * total)
   const floors = raw.map(Math.floor)

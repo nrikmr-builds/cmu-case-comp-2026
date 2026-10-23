@@ -1,11 +1,11 @@
-import { Megaphone, Pencil, Trash2 } from 'lucide-react'
+import { Megaphone } from 'lucide-react'
 import { activationFunnel, checkingTerms, feeCohorts, pncComparisonRow, riskSegments, savingsLink } from '../data/checkingHealth'
 import { campaignPresets, TEMPLATE_IDS } from '../data/campaignPresets'
 import { marketSignals } from '../data/marketSignals'
 import { getKpi, reportingPeriod } from '../data/productMetrics'
-import { computeEconomics, feeClosureGap, getAudienceSource, OUTCOME_LABELS } from '../lib/campaignEconomics'
+import { feeClosureGap, getAudienceSource } from '../lib/campaignEconomics'
 import { formatUsd, getExcessFeeClosures, getNeverActivated, getTotalFunnel } from '../lib/checkingHealth'
-import { CAMPAIGN_STATUSES, useCampaigns, type CampaignStatus, type SavedCampaign } from '../lib/campaignStore'
+import { useCampaigns } from '../lib/campaignStore'
 import { formatValue, getStatus } from '../lib/metrics'
 import { KindBadge } from './PromotionBuilder'
 import SectionCard from './SectionCard'
@@ -52,11 +52,10 @@ function templateRationale(id: string): string {
 
 interface Props {
   onDesign: (presetId: string) => void
-  onEdit: (campaign: SavedCampaign) => void
 }
 
-export default function CampaignCenter({ onDesign, onEdit }: Props) {
-  const { campaigns, setStatus, deleteCampaign } = useCampaigns()
+export default function CampaignCenter({ onDesign }: Props) {
+  const { campaigns } = useCampaigns()
   const templates = TEMPLATE_IDS.map((id) => campaignPresets.find((p) => p.id === id)).filter((p) => p !== undefined)
 
   return (
@@ -101,71 +100,13 @@ export default function CampaignCenter({ onDesign, onEdit }: Props) {
         Campaign effects aren't additive. Audiences and baselines can overlap, so don't sum campaigns to close a gap.
       </p>
 
-      <h4 className="mt-6 text-sm font-semibold text-brand-ink">Saved campaigns ({campaigns.length})</h4>
-      {campaigns.length === 0 ? (
-        <p className="mt-1 text-sm text-slate-500">None yet. Saved campaigns appear here and in the Campaign Tracker.</p>
-      ) : (
-        <div className="mt-2 overflow-x-auto">
-          <table className="w-full min-w-[720px] text-left text-sm">
-            <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
-              <tr>
-                <th scope="col" className="py-2 pr-3 font-medium">Campaign</th>
-                <th scope="col" className="py-2 pr-3 font-medium">Type</th>
-                <th scope="col" className="py-2 pr-3 text-right font-medium">Treated</th>
-                <th scope="col" className="py-2 pr-3 text-right font-medium">Expected</th>
-                <th scope="col" className="py-2 pr-3 text-right font-medium">Cost</th>
-                <th scope="col" className="py-2 pr-3 font-medium">Status</th>
-                <th scope="col" className="py-2 font-medium"><span className="sr-only">Actions</span></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {campaigns.map((c) => {
-                const e = computeEconomics(c.inputs)
-                return (
-                  <tr key={c.id} className="align-top">
-                    <th scope="row" className="py-2 pr-3 font-medium text-brand-ink">
-                      {c.inputs.name}
-                      <span className="block text-xs font-normal text-slate-500">{c.inputs.sourceLabel}</span>
-                    </th>
-                    <td className="py-2 pr-3">
-                      <KindBadge kind={c.inputs.kind} outcome={c.inputs.outcome} />
-                    </td>
-                    <td className="py-2 pr-3 text-right tabular-nums">{accounts(e.treated)}</td>
-                    <td className="py-2 pr-3 text-right tabular-nums">
-                      {accounts(e.results.incremental)} {c.inputs.outcome === 'openings' ? 'incremental openings' : OUTCOME_LABELS[c.inputs.outcome].noun}
-                      <span className="block text-xs text-slate-500">{accounts(e.timing.q3)} counted in Q3</span>
-                    </td>
-                    <td className="py-2 pr-3 text-right tabular-nums">{formatUsd(e.costs.total)}</td>
-                    <td className="py-2 pr-3">
-                      <select
-                        value={c.status}
-                        onChange={(ev) => setStatus(c.id, ev.target.value as CampaignStatus)}
-                        aria-label={`Status of ${c.inputs.name}`}
-                        className="rounded border border-slate-300 px-2 py-1 text-sm"
-                      >
-                        {CAMPAIGN_STATUSES.map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {s.label}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="py-2 whitespace-nowrap">
-                      <button type="button" onClick={() => onEdit(c)} className="mr-1 inline-flex items-center gap-1 rounded border border-slate-300 px-2 py-1 text-xs text-brand-blue hover:bg-slate-50" aria-label={`Edit ${c.inputs.name}`}>
-                        <Pencil className="h-3.5 w-3.5" aria-hidden /> Edit
-                      </button>
-                      <button type="button" onClick={() => deleteCampaign(c.id)} className="inline-flex items-center gap-1 rounded border border-slate-300 px-2 py-1 text-xs text-brand-blue hover:bg-slate-50" aria-label={`Delete ${c.inputs.name}`}>
-                        <Trash2 className="h-3.5 w-3.5" aria-hidden /> Delete
-                      </button>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-          <p className="mt-2 text-xs text-slate-500">Campaign effects aren't additive. Audiences and baselines can overlap.</p>
-        </div>
-      )}
+      <p className="mt-2 text-sm text-slate-600">
+        Saved campaigns ({campaigns.length}) appear in the{' '}
+        <a href="#tracker-heading" className="font-medium text-brand-blue hover:underline">
+          Campaign Tracker
+        </a>{' '}
+        below, with seeded examples.
+      </p>
     </SectionCard>
   )
 }

@@ -22,6 +22,9 @@ import { formatPercent, formatTimestamp, formatValue } from '../lib/metrics'
 import { getPaceProjection } from '../lib/projection'
 import { getStrongestSignal } from '../lib/checkingHealth'
 import { markVisitSeen, useLastVisit, useTriggeredAlerts } from '../lib/trackingStore'
+import { seedCampaigns } from '../data/campaignSeeds'
+import { liveWindowChange } from '../lib/campaignTracking'
+import { useCampaigns } from '../lib/campaignStore'
 import AlertRulesEditor from './AlertRulesEditor'
 import StatusBadge from './StatusBadge'
 
@@ -62,6 +65,8 @@ export default function SinceLastVisit({ compact = false }: Props) {
       .slice(0, OTHER_SIGNALS),
   ]
   const weekly = getWeeklyPace()
+  const liveSeeds = seedCampaigns.filter((c) => c.status === 'live').map((c) => ({ c, ...liveWindowChange(c, w) }))
+  const liveSaved = useCampaigns().campaigns.filter((c) => c.status === 'live')
   const required = getPaceProjection(getKpi('checking-new-accounts'), reportingPeriod).requiredDailyRate
   const expiring = marketSignals
     .map((s) => ({ s, left: daysUntil(s.offer?.expires, s.retrievedOn) }))
@@ -205,7 +210,29 @@ export default function SinceLastVisit({ compact = false }: Props) {
               ))}
             </ul>
           )}
-          <p className="mt-2 text-xs text-slate-500">Campaign results will appear here once campaigns are tracked.</p>
+          <h4 className="mt-2 text-xs font-semibold text-slate-500">Live campaigns</h4>
+          {liveSeeds.length + liveSaved.length === 0 ? (
+            <p className="text-xs text-slate-500">No live campaigns.</p>
+          ) : (
+            <ul className="mt-1 space-y-1">
+              {liveSeeds.map(({ c, newTreatedOpenings, lift }) => (
+                <li key={c.id}>
+                  <strong>{c.name}</strong>: +{accounts(newTreatedOpenings)} treated openings in this window; uplift so far{' '}
+                  {lift.uplift >= 0 ? '+' : '−'}
+                  {Math.abs(lift.uplift * 100).toFixed(1)} pp ({lift.daysRun} days) ·{' '}
+                  <span className="font-medium">{lift.label}</span>
+                </li>
+              ))}
+              {liveSaved.map((c) => (
+                <li key={c.id} className="text-xs text-slate-500">
+                  {c.inputs.name}: Live, no results feed yet
+                </li>
+              ))}
+            </ul>
+          )}
+          <a href="#tracker-heading" className="mt-1 inline-block text-xs font-medium text-brand-blue hover:underline">
+            Open the Campaign Tracker
+          </a>
         </Item>
       </div>
 
