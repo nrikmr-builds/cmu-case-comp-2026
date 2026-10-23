@@ -35,6 +35,8 @@ import {
 } from './dailyTracking'
 import { formatPercent, formatValue, getStatus } from './metrics'
 import { formatDate } from './projection'
+import { againstReforecast, reforecastLabel, type Reforecast } from './reforecastStore'
+import { defaultPlanner } from './scenarioPlanner'
 
 const accounts = (n: number) => formatValue(n, 'accounts')
 const money = (n: number) => (!Number.isFinite(n) ? 'n/a' : formatUsd(n))
@@ -66,7 +68,7 @@ export interface ReportSnapshot {
   decisions: ReportDecision[]
 }
 
-export function buildWeeklyReport(saved: SavedCampaign[], rules: AlertRule[], now = new Date()): ReportSnapshot {
+export function buildWeeklyReport(saved: SavedCampaign[], rules: AlertRule[], now = new Date(), reforecast: Reforecast | null = null): ReportSnapshot {
   const openingsKpi = getKpi('checking-new-accounts')
   const { projection: head, average } = getHeadlineProjection(openingsKpi)
   const weekly = getWeeklyPace()
@@ -96,6 +98,22 @@ export function buildWeeklyReport(saved: SavedCampaign[], rules: AlertRule[], no
       }
     }),
   )
+
+  // Re-forecast row: shown next to the original target, never instead of it.
+  const rf = reforecast && reforecast.kpiId === openingsKpi.id ? againstReforecast(openingsKpi, reforecast) : null
+  if (rf && reforecast) {
+    kpis.splice(1, 0, {
+      product: 'Checking',
+      label: `${openingsKpi.label} · vs. re-forecast`,
+      target: accounts(rf.target),
+      actual: accounts(openingsKpi.actual),
+      vsExpected: formatPercent(rf.paceRatio),
+      ofTarget: formatPercent(rf.shareOfTarget),
+      status: STATUS_TEXT[rf.status],
+      change: `${reforecastLabel(reforecast)}; original ${accounts(openingsKpi.target)} unchanged`,
+    })
+  }
+  const planner = defaultPlanner(saved)
 
   // 2. Top 3 changes (same logic as the AI summary: conservative headline, business-as-usual caveat).
   const flags = getFlagChanges(week)
@@ -186,7 +204,10 @@ export function buildWeeklyReport(saved: SavedCampaign[], rules: AlertRule[], no
       title: 'Re-forecast the Q3 openings target',
       evidence: `Plan covers about ${accounts(a.planQ3)} of ${accounts(a.gap)} incremental openings needed (${formatPercent(a.share)}).`,
       text: 'Approve a re-forecast of Q3 new checking openings, or name the new levers expected to close the rest.',
-      proposed: `Proposed Q3 re-forecast ≈ ${accounts(Math.round(head.projected) + a.planQ3)} = ${accounts(head.projected)} (last-7-day pace) + ${accounts(a.planQ3)} (plan). Campaign effects aren't additive, so treat this as an upper bound.`,
+      proposed:
+        rf && reforecast
+          ? `${reforecastLabel(reforecast)}: ${accounts(reforecast.target)} (original ${accounts(openingsKpi.target)} stays on record). Basis: ${reforecast.basis}.`
+          : `Proposed Q3 re-forecast ≈ ${accounts(planner.landing)} = ${accounts(planner.headlineProjected)} (last-7-day pace) + ${accounts(planner.countedIncremental)} (scenario planner${planner.overlapRemoved ? `, overlap removed ${accounts(planner.overlapRemoved)}` : ''}). Range ${accounts(planner.low)}–${accounts(planner.high)}; campaign effects aren't additive, so treat this as an upper bound.`,
     },
     {
       title: 'Application Rescue full rollout',

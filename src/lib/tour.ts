@@ -10,6 +10,8 @@ import { formatPercent1, formatSignedCount, getNetAccountChange, getPrimacyRate,
 import { getHeadlineProjection, getWeeklyPace } from './dailyTracking'
 import { formatPercent, formatValue, getPaceRatio, getStatus } from './metrics'
 import { buildWeeklyReport } from './weeklyReport'
+import { getReforecast } from './reforecastStore'
+import { defaultPlanner } from './scenarioPlanner'
 import { DEFAULT_ALERT_RULES } from './dailyTracking'
 
 const n = (x: number) => formatValue(x, 'accounts')
@@ -98,10 +100,10 @@ export const TOUR_STEPS: TourStep[] = [
     path: '/opportunities/checking',
     target: '[data-tour="report-button"]',
     caption: () => {
-      const r = buildWeeklyReport([], DEFAULT_ALERT_RULES)
-      const head = getHeadlineProjection(getKpi('checking-new-accounts')).projection
-      const plan = getTotals([]).acquisition.planQ3
-      return `One click turns this into a leadership report with ${r.decisions.length} decisions, starting with a Q3 re-forecast of about ${n(Math.round(head.projected) + plan)}.`
+      const rf = getReforecast()
+      const r = buildWeeklyReport([], DEFAULT_ALERT_RULES, new Date(), rf)
+      const target = rf ? `the accepted re-forecast of ${n(rf.target)}` : `a Q3 re-forecast of about ${n(defaultPlanner([]).landing)}`
+      return `One click turns this into a leadership report with ${r.decisions.length} decisions, starting with ${target}.`
     },
   },
 ]

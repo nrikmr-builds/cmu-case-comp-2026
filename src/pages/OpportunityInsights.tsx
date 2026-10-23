@@ -7,6 +7,7 @@ import CheckingSummaryAddendum from '../components/CheckingSummaryAddendum'
 import GapSummary from '../components/GapSummary'
 import PageHero from '../components/PageHero'
 import SegmentTable from '../components/SegmentTable'
+import ProductStatusStrip from '../components/ProductStatusStrip'
 import SinceLastVisit from '../components/SinceLastVisit'
 import GenerateReportButton from '../components/GenerateReportButton'
 import type { ReportSnapshot } from '../lib/weeklyReport'
@@ -97,7 +98,7 @@ function OpportunityDetail({ opportunity }: { opportunity: ProductOpportunity })
       </PageHero>
 
       <section className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6">
-        {opportunity.productId === 'checking' && <SinceLastVisit />}
+        {opportunity.productId === 'checking' ? <SinceLastVisit /> : <ProductStatusStrip productId={opportunity.productId} />}
         <GapSummary kpi={kpi} period={reportingPeriod} />
         {opportunity.productId === 'checking' && (
           <Suspense fallback={<SectionLoading label="daily openings" />}>

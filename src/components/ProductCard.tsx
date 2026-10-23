@@ -1,6 +1,7 @@
 import { ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { formatPercent, formatValue, getAttainment, getExpected, getPaceRatio, getStatus } from '../lib/metrics'
+import { againstReforecast, useReforecast } from '../lib/reforecastStore'
 import { PRODUCT_ICONS } from '../lib/productIcons'
 import type { Kpi, KpiStatus, Product } from '../types'
 import KPIProgressBar from './KPIProgressBar'
@@ -75,6 +76,8 @@ export default function ProductCard({ product, quarterElapsed, detailPath }: Pro
 function KpiRow({ kpi, quarterElapsed }: { kpi: Kpi; quarterElapsed: number }) {
   const status = getStatus(kpi, quarterElapsed)
   const expected = getExpected(kpi, quarterElapsed)
+  const { reforecast } = useReforecast()
+  const rf = reforecast && reforecast.kpiId === kpi.id ? againstReforecast(kpi, reforecast) : null
 
   return (
     <li className={`space-y-2 py-3 ${status === 'at-risk' ? '-mx-2 rounded-lg bg-red-50/60 px-2' : ''}`}>
@@ -102,6 +105,17 @@ function KpiRow({ kpi, quarterElapsed }: { kpi: Kpi; quarterElapsed: number }) {
         {formatPercent(getAttainment(kpi))} of target
         {kpi.kind === 'cumulative' && <> · {formatPercent(getPaceRatio(kpi, quarterElapsed))} of pace</>}
       </p>
+      {rf && (
+        <p className="flex flex-wrap items-center gap-1 rounded bg-blue-50 px-2 py-1 text-xs text-slate-700">
+          <span className="font-medium">
+            Original target {formatValue(kpi.target, kpi.unit)} · Re-forecast {formatValue(rf.target, kpi.unit)}
+          </span>
+          <span>
+            (illustrative): {formatPercent(rf.shareOfTarget)} of re-forecast · {formatPercent(rf.paceRatio)} of its pace
+          </span>
+          <StatusBadge status={rf.status} />
+        </p>
+      )}
       {kpi.related && (
         // Sits above the card's stretched link so it gets its own click.
         <Link

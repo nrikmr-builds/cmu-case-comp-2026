@@ -4,9 +4,11 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { reportingPeriod } from '../data/productMetrics'
 import { inputsFromPreset } from '../lib/campaignEconomics'
-import { DEFAULT_ALERT_RULES } from '../lib/dailyTracking'
+import { useCampaigns } from '../lib/campaignStore'
+import { useAlertRules } from '../lib/trackingStore'
 import { formatDate } from '../lib/projection'
 import { buildWeeklyReport } from '../lib/weeklyReport'
+import { getReforecast } from '../lib/reforecastStore'
 import { EconomicsTable, KindBadge } from './PromotionBuilder'
 
 /** White-paper figures. File names are neutral (no team or school names). */
@@ -17,6 +19,7 @@ const FIGURES = [
   { file: 'fig4-primacy-bonus-economics.png', title: 'Promotion Builder · Primacy Bonus economics', selector: '#export-economics' },
   { file: 'fig5-campaign-totals-feasibility.png', title: 'Campaign Tracker · totals and feasibility', selector: '#totals-heading' },
   { file: 'fig6-report-decisions.png', title: 'Weekly report · decisions', selector: '#export-decisions' },
+  { file: 'fig7-scenario-planner.png', title: 'Scenario planner', selector: '#planner-heading' },
 ] as const
 
 const LABEL = `Illustrative · synthetic internal data as of ${formatDate(reportingPeriod.internalAsOf)} · PNC Product Intelligence Hub prototype`
@@ -51,7 +54,10 @@ export default function ExportFigures({ onClose }: { onClose: () => void }) {
   const [images, setImages] = useState<{ file: string; title: string; url?: string; error?: string }[]>([])
   const [busy, setBusy] = useState(true)
   const started = useRef(false)
-  const report = buildWeeklyReport([], DEFAULT_ALERT_RULES)
+  const { campaigns } = useCampaigns()
+  const { rules } = useAlertRules()
+  // Built once when the panel opens, from the same campaigns, rules and re-forecast the report uses.
+  const [report] = useState(() => buildWeeklyReport(campaigns, rules, new Date(), getReforecast()))
   const primacy = inputsFromPreset('primacy-bonus')
 
   useEffect(() => {

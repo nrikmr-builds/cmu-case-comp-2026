@@ -1,4 +1,5 @@
 import { getHeadlineProjection, getWeeklyPace } from '../lib/dailyTracking'
+import { againstReforecast, reforecastLabel, useReforecast } from '../lib/reforecastStore'
 import { formatPercent, formatValue, getExpected, getPaceGap, getPaceRatio, getStatus } from '../lib/metrics'
 import type { PaceProjection } from '../lib/projection'
 import type { Kpi, ReportingPeriod } from '../types'
@@ -10,6 +11,7 @@ interface Props {
 }
 
 const days = (n: number) => n.toLocaleString('en-US', { maximumFractionDigits: 1 })
+const STATUS_TEXT = { 'on-track': 'On Track', watch: 'Watch', 'at-risk': 'At Risk' } as const
 
 export default function GapSummary({ kpi, period }: Props) {
   const { quarter, quarterElapsed } = period
@@ -19,6 +21,8 @@ export default function GapSummary({ kpi, period }: Props) {
   const { basis, projection: headline, average } = getHeadlineProjection(kpi)
   const fmt = (n: number) => formatValue(n, kpi.unit)
   const weekly = basis === 'last-7-day' ? getWeeklyPace() : undefined
+  const { reforecast } = useReforecast()
+  const rf = reforecast && reforecast.kpiId === kpi.id ? againstReforecast(kpi, reforecast) : null
 
   return (
     <section aria-labelledby="gap-heading" className="rounded-md border border-slate-200 bg-white p-6 shadow-sm">
@@ -58,6 +62,28 @@ export default function GapSummary({ kpi, period }: Props) {
           paceFormula={`${fmt(weekly.weekTotal)} ÷ 7`}
           headline
         />
+      )}
+      {rf && reforecast && (
+        <>
+          <h3 className="mt-6 text-xs font-semibold tracking-wide text-brand-ink uppercase">
+            Original target vs. {reforecastLabel(reforecast)}
+          </h3>
+          <dl className="mt-2 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Stat label="Original target (unchanged)" value={fmt(kpi.target)} note={`${formatPercent(getPaceRatio(kpi, quarterElapsed))} of pace · ${STATUS_TEXT[getStatus(kpi, quarterElapsed)]}`} />
+            <Stat label="Re-forecast target" value={fmt(rf.target)} note={`Expected by now ${fmt(rf.expected)} (× ${formatPercent(quarterElapsed)})`} emphasis="target" />
+            <Stat
+              label="Pace vs. re-forecast"
+              value={formatPercent(rf.paceRatio)}
+              note={`${fmt(kpi.actual)} ÷ ${fmt(rf.expected)} · ${STATUS_TEXT[rf.status]}`}
+              emphasis={rf.status === 'on-track' ? 'ahead' : 'pace'}
+            />
+            <Stat
+              label="Beyond last-7-day pace, vs. re-forecast"
+              value={fmt(Math.max(0, rf.target - headline.projected))}
+              note={`${fmt(rf.target)} − ${fmt(headline.projected)} (vs. ${fmt(headline.incrementalNeeded)} for the original)`}
+            />
+          </dl>
+        </>
       )}
       <ProjectionRow
         kpi={kpi}
