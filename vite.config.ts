@@ -4,5 +4,7 @@ import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
 export default defineConfig({
+  // Served from https://nrikmr-builds.github.io/cmu-case-comp-2026/ on GitHub Pages
+  base: '/cmu-case-comp-2026/',
   plugins: [react(), tailwindcss()],
 })
