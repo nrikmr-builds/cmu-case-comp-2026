@@ -2,7 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import pncLogo from './assets/pnc-logo-white.svg'
 import Header from './components/Header'
 import OpportunityInsights from './pages/OpportunityInsights'
-import PortfolioOverview from './pages/PortfolioOverview'
+import DashboardPage from './pages/DashboardPage'
 
 export default function App() {
   return (
@@ -11,7 +11,8 @@ export default function App() {
       {/* Pages own their width so their hero band can span the screen. */}
       <main className="flex-1">
         <Routes>
-          <Route path="/" element={<PortfolioOverview />} />
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/d/:slug" element={<DashboardPage />} />
           <Route path="/opportunities/:productId" element={<OpportunityInsights />} />
           <Route path="/opportunities/:productId/:tab" element={<OpportunityInsights />} />
           <Route path="/cd-opportunities" element={<Navigate to="/opportunities/cd" replace />} />

@@ -8,12 +8,14 @@ import StatusBadge from './StatusBadge'
 interface Props {
   kpi: Kpi
   period: ReportingPeriod
+  /** A dashboard can show several Gap Summaries; each needs its own heading id. */
+  headingId?: string
 }
 
 const days = (n: number) => n.toLocaleString('en-US', { maximumFractionDigits: 1 })
 const STATUS_TEXT = { 'on-track': 'On Track', watch: 'Watch', 'at-risk': 'At Risk' } as const
 
-export default function GapSummary({ kpi, period }: Props) {
+export default function GapSummary({ kpi, period, headingId = 'gap-heading' }: Props) {
   const { quarter, quarterElapsed } = period
   const expected = getExpected(kpi, quarterElapsed)
   const paceGap = getPaceGap(kpi, quarterElapsed)
@@ -25,9 +27,9 @@ export default function GapSummary({ kpi, period }: Props) {
   const rf = reforecast && reforecast.kpiId === kpi.id ? againstReforecast(kpi, reforecast) : null
 
   return (
-    <section aria-labelledby="gap-heading" className="rounded-md border border-slate-200 bg-white p-6 shadow-sm">
+    <section aria-labelledby={headingId} className="rounded-md border border-slate-200 bg-white p-6 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <h2 id="gap-heading" className="heading-accent text-lg font-semibold text-brand-ink">
+        <h2 id={headingId} className="heading-accent text-lg font-semibold text-brand-ink">
           Gap Summary · {kpi.label}
         </h2>
         <StatusBadge status={getStatus(kpi, quarterElapsed)} />

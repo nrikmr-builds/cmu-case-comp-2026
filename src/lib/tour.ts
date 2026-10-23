@@ -1,4 +1,4 @@
-// Guided tour for judges: 9 steps across the home page and the Checking tabs (Today, Diagnose, Act, Report). Every number in a caption is read from
+// Guided tour for judges: 10 steps across the home page, the dashboard switcher and the Checking tabs. Every number in a caption is read from
 // the data/calculation layer when the step is shown, never typed in.
 import { useSyncExternalStore } from 'react'
 import { currentQuarterHealth, dropOffSignals, healthMixHistory } from '../data/checkingHealth'
@@ -14,6 +14,7 @@ import { END_LABEL, getReforecast } from './reforecastStore'
 import { defaultPlanner } from './scenarioPlanner'
 import { tabPath } from './checkingTabs'
 import { compareArms, feeAtBlanketRate, nbaRollup } from './nextBestAction'
+import { allDashboards } from './dashboards'
 import { DEFAULT_ALERT_RULES } from './dailyTracking'
 
 const n = (x: number) => formatValue(x, 'accounts')
@@ -40,6 +41,16 @@ export const TOUR_STEPS: TourStep[] = [
       const prim = getKpi('checking-primacy-rate')
       const active = getKpi('checking-active-rate')
       return `Checking is ${STATUS[getStatus(open, q)]} (openings at ${formatPercent(getPaceRatio(open, q))} of pace), and Primacy is ${STATUS[getStatus(prim, q)]} at ${formatPercent(prim.actual)}, while Active Account Rate looks fine at ${formatPercent(active.actual)}.`
+    },
+  },
+  {
+    title: 'Dashboards',
+    path: '/',
+    target: '[data-tour="dashboard-switcher"]',
+    caption: () => {
+      const all = allDashboards()
+      const examples = all.filter((d) => d.example).length
+      return `Create a dashboard for any question; switch in one click. ${all.length} dashboards here (the default, ${examples} examples${all.length > examples + 1 ? ` and ${all.length - examples - 1} of yours` : ''}); ⌘K / Ctrl+K opens the switcher from any page.`
     },
   },
   {

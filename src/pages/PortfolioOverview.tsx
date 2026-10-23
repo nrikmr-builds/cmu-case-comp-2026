@@ -1,7 +1,8 @@
 // Owner: Teammate A (Developer 1). Landing page: portfolio KPIs and where they stand against pace.
 import { AlertTriangle, ArrowRight, Bookmark, LayoutDashboard, X } from 'lucide-react'
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import DashboardActions from '../components/DashboardActions'
 import DashboardPromptBar from '../components/DashboardPromptBar'
 import PageHero from '../components/PageHero'
 import ProductCard from '../components/ProductCard'
@@ -17,6 +18,7 @@ import { products, reportingPeriod } from '../data/productMetrics'
 import { DEFAULT_VIEW } from '../lib/dashboardPrompt'
 import { formatPercent, formatTimestamp, formatValue, getExpected, getPaceRatio, getStatus } from '../lib/metrics'
 import { useSavedViews } from '../lib/useSavedViews'
+import { BUILT_IN, createDialog, type Dashboard } from '../lib/dashboards'
 
 /** "2026-09-12" → "Sep 12". */
 const formatShortDate = (iso: string) =>
@@ -30,9 +32,10 @@ const STATUS_ORDER: KpiStatus[] = ['on-track', 'watch', 'at-risk']
 
 const detailPath = (productId: ProductId) => `/opportunities/${productId}`
 
-export default function PortfolioOverview() {
+/** The built-in "Deposit Portfolio (default)" dashboard: the original home page, content and numbers unchanged. */
+export default function PortfolioOverview({ dashboard = BUILT_IN, notice }: { dashboard?: Dashboard; notice?: ReactNode }) {
   const { quarter, quarterElapsed } = reportingPeriod
-  const { views, saveView, deleteView, isUserView } = useSavedViews()
+  const { views, saveView, deleteView, isUserView } = useSavedViews(dashboard.id)
   const [searchParams, setSearchParams] = useSearchParams()
   // A generated view the Product Owner hasn't saved yet. Saved views are addressed by ?view= instead.
   const [draft, setDraft] = useState<DashboardView | null>(null)
@@ -84,6 +87,7 @@ export default function PortfolioOverview() {
           ))}
         </dl>
       </PageHero>
+      {notice}
 
       <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[15rem_minmax(0,1fr)]">
         <SavedViewsNav
@@ -93,7 +97,7 @@ export default function PortfolioOverview() {
           onSelect={selectView}
           onDelete={handleDelete}
           isDeletable={isUserView}
-          footer={<ReportsHistory onOpen={setReport} />}
+          footer={<ReportsHistory onOpen={setReport} dashboardId={dashboard.id} />}
         />
 
         <section className="min-w-0 space-y-6">
@@ -136,7 +140,8 @@ export default function PortfolioOverview() {
                 <Compass className="h-4 w-4" aria-hidden />
                 Take the tour
               </button>
-              <GenerateReportButton onOpen={setReport} />
+              <GenerateReportButton onOpen={setReport} dashboard={dashboard} />
+              <DashboardActions dashboard={dashboard} />
             </div>
           </div>
 
@@ -149,6 +154,7 @@ export default function PortfolioOverview() {
             isDraft={draft !== null}
             onSave={saveDraft}
             onReset={() => selectView(DEFAULT_VIEW.id)}
+            onNewDashboard={draft?.prompt ? () => createDialog.open({ mode: 'describe', prompt: draft.prompt ?? '' }) : undefined}
           />
 
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
@@ -183,9 +189,11 @@ interface ActiveViewHeaderProps {
   isDraft: boolean
   onSave: () => void
   onReset: () => void
+  /** Turn an unsaved generated view into its own dashboard. */
+  onNewDashboard?: () => void
 }
 
-function ActiveViewHeader({ view, isDraft, onSave, onReset }: ActiveViewHeaderProps) {
+function ActiveViewHeader({ view, isDraft, onSave, onReset, onNewDashboard }: ActiveViewHeaderProps) {
   const isDefault = view.id === DEFAULT_VIEW.id
   const metricCount = `${view.kpiIds.length} ${view.kpiIds.length === 1 ? 'metric' : 'metrics'}`
 
@@ -223,6 +231,15 @@ function ActiveViewHeader({ view, isDraft, onSave, onReset }: ActiveViewHeaderPr
             >
               <Bookmark className="h-4 w-4" aria-hidden />
               Save view
+            </button>
+          )}
+          {isDraft && onNewDashboard && (
+            <button
+              type="button"
+              onClick={onNewDashboard}
+              className="inline-flex items-center gap-1.5 rounded border border-brand-blue bg-white px-3 py-1.5 text-sm font-medium text-brand-blue hover:bg-slate-50"
+            >
+              New dashboard from this
             </button>
           )}
           <button

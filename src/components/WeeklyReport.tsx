@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom'
 import { formatTimestamp } from '../lib/metrics'
 import { formatDate } from '../lib/projection'
 import { useReports } from '../lib/reportStore'
-import { reportToMarkdown, type ReportSnapshot } from '../lib/weeklyReport'
+import { NOT_ON_DASHBOARD, reportToMarkdown, type ReportSnapshot } from '../lib/weeklyReport'
 
 /** Print rules: only the report prints, at most 2 pages, no nav/buttons, no breaks inside tables. */
 const PRINT_CSS = `
@@ -103,10 +103,18 @@ export default function WeeklyReport({ report, onClose }: Props) {
 
       <article className="report-page mx-auto my-6 max-w-4xl space-y-4 rounded-md border border-slate-200 bg-white p-6 text-sm text-slate-800 shadow-sm">
         <header className="border-b border-slate-200 pb-3">
-          <p className="text-xs font-semibold tracking-wider text-slate-500 uppercase">PNC Product Intelligence Hub · Checking</p>
+          <p className="text-xs font-semibold tracking-wider text-slate-500 uppercase">
+            PNC Product Intelligence Hub · {report.dashboard ? `Dashboard: ${report.dashboard.name}` : 'Checking'}
+          </p>
           <h1 id="report-heading" ref={headingRef} tabIndex={-1} className="text-xl font-semibold text-brand-ink outline-none">
-            Weekly report · {report.quarter}
+            Weekly report{report.dashboard ? ` · ${report.dashboard.name}` : ''} · {report.quarter}
           </h1>
+          {report.dashboard && (
+            <p className="text-xs text-slate-600">
+              Covers only this dashboard&apos;s cards: {report.dashboard.kpiCount} KPI{report.dashboard.kpiCount === 1 ? '' : 's'}
+              {report.dashboard.checkingSections ? ', plus the Checking campaigns, risks and decisions.' : '.'}
+            </p>
+          )}
           <p className="text-xs text-slate-600">
             Generated {formatTimestamp(report.generatedAt)} · <strong>Internal data as of {formatDate(report.internalAsOf)}</strong> · Illustrative
           </p>
@@ -145,6 +153,12 @@ export default function WeeklyReport({ report, onClose }: Props) {
           </p>
         </Section>
 
+        {report.dashboard && !report.dashboard.checkingSections ? (
+          <Section title="2–5. Changes, campaigns, risks and decisions">
+            <p className="text-slate-500">{NOT_ON_DASHBOARD}</p>
+          </Section>
+        ) : (
+          <>
         <Section title="2. Top 3 things that changed and why">
           <ol className="list-decimal space-y-1 pl-5">
             {report.changes.map((c) => (
@@ -233,6 +247,9 @@ export default function WeeklyReport({ report, onClose }: Props) {
             ))}
           </ol>
         </Section>
+
+          </>
+        )}
 
         <footer className="border-t border-slate-200 pt-2 text-xs text-slate-500">
           Internal figures are synthetic and illustrative (data as of {formatDate(report.internalAsOf)}). External facts are sourced and linked

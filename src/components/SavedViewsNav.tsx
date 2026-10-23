@@ -194,7 +194,10 @@ function ViewButton({ view, active, onSelect, isDefault }: ViewButtonProps) {
       {view.prompt ? (
         <span className="mt-0.5 line-clamp-2 block text-xs text-slate-500 italic">“{view.prompt}”</span>
       ) : (
-        <span className="mt-0.5 block text-xs text-slate-500">All KPIs across every product</span>
+        <span className="mt-0.5 block text-xs text-slate-500">
+          {/* The built-in dashboard's default view vs. a user dashboard's "All cards". */}
+          {view.label === 'Full portfolio' ? 'All KPIs across every product' : 'Every card on this dashboard'}
+        </span>
       )}
       {view.prompt && (
         <span className="mt-1 block text-[11px] tabular-nums text-slate-400">

@@ -79,4 +79,6 @@ export interface DashboardView {
   /** ISO timestamp. */
   createdAt: string
   kpiIds: string[]
+  /** The dashboard it was saved in; missing = the default dashboard (incl. the illustrative samples). */
+  dashboardId?: string
 }

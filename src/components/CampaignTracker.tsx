@@ -38,7 +38,7 @@ export default function CampaignTracker({ onEdit }: { onEdit: (campaign: SavedCa
       source="internal"
       description="Every campaign with its status, lift against the holdout, funnel, and spend. Seeded campaigns are illustrative and carved out of the existing 7,600 openings; campaigns you save in the builder show their plan until results arrive."
     >
-      <Totals totals={totals} />
+      <TrackerTotals totals={totals} />
 
       <ul className="mt-6 space-y-4">
         {[...tracked].sort((a, b) => order[a.status] - order[b.status]).map((t) => (
@@ -64,7 +64,8 @@ export default function CampaignTracker({ onEdit }: { onEdit: (campaign: SavedCa
   )
 }
 
-function Totals({ totals }: { totals: ReturnType<typeof getTotals> }) {
+/** Totals by type, overlap and feasibility; also the dashboard "Campaign Tracker summary" card. */
+export function TrackerTotals({ totals }: { totals: ReturnType<typeof getTotals> }) {
   const a = totals.acquisition
   return (
     <section aria-labelledby="totals-heading" className="rounded-md border border-slate-200 bg-slate-50 p-4">

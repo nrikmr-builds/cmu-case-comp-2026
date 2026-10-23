@@ -17,6 +17,8 @@ import GapSummary from './GapSummary'
 import { EconomicsTable, KindBadge } from './PromotionBuilder'
 import NextBestAction from './NextBestAction'
 import ScenarioPlanner from './ScenarioPlanner'
+import { SwitcherPanel } from './DashboardSwitcher'
+import { useDashboards } from '../lib/dashboards'
 
 /** White-paper figures. File names are neutral (no team or school names). */
 const FIGURES = [
@@ -28,6 +30,7 @@ const FIGURES = [
   { file: 'fig6-report-decisions.png', title: 'Weekly report · decisions', selector: '#export-decisions' },
   { file: 'fig7-scenario-planner.png', title: 'Scenario planner', selector: '#planner-heading' },
   { file: 'fig8-next-best-action.png', title: 'Next best action · rules and roll-up', selector: '#nba-figure' },
+  { file: 'fig9-dashboard-switcher.png', title: 'Dashboard switcher · pinned, recent, grouped', selector: '#export-switcher' },
 ] as const
 
 const LABEL = `Illustrative · synthetic internal data as of ${formatDate(reportingPeriod.internalAsOf)} · PNC Product Intelligence Hub prototype`
@@ -60,7 +63,7 @@ function download(dataUrl: string, file: string) {
   a.remove()
 }
 
-/** "Export figures": renders off-screen copies of the figure cards, captures all eight, and offers each PNG for download. */
+/** "Export figures": renders off-screen copies of the figure cards, captures all nine, and offers each PNG for download. */
 export default function ExportFigures({ onClose }: { onClose: () => void }) {
   const [images, setImages] = useState<{ file: string; title: string; url?: string; error?: string }[]>([])
   const [busy, setBusy] = useState(true)
@@ -72,6 +75,7 @@ export default function ExportFigures({ onClose }: { onClose: () => void }) {
   const [report] = useState(() => buildWeeklyReport(campaigns, rules, new Date(), getReforecast()))
   const primacy = inputsFromPreset('primacy-bonus')
   const kpi = getKpi('checking-new-accounts')
+  const dashboards = useDashboards()
 
   useEffect(() => {
     if (started.current) return
@@ -148,6 +152,21 @@ export default function ExportFigures({ onClose }: { onClose: () => void }) {
         <CampaignTracker onEdit={() => {}} />
         <ScenarioPlanner />
         <NextBestAction />
+        <div id="export-switcher" className="w-[26rem] rounded-md border border-slate-200 bg-white text-slate-800">
+          <p className="border-b border-slate-200 bg-brand-slate px-3 py-2 text-xs font-semibold text-white">Switch dashboard · ⌘K / Ctrl+K</p>
+          <SwitcherPanel
+            staticCopy
+            all={dashboards.all}
+            recentIds={dashboards.state.recent}
+            currentId={dashboards.state.recent[0] ?? dashboards.landing.id}
+            landingId={dashboards.state.landingId}
+            query=""
+            onQuery={() => {}}
+            activeIndex={-1}
+            onPick={() => {}}
+            onNew={() => {}}
+          />
+        </div>
         <div id="export-economics" className="space-y-3 bg-white p-6 text-slate-800">
           <div className="flex items-center gap-2">
             <h3 className="text-lg font-semibold text-brand-ink">Promotion Builder · {primacy.name}</h3>

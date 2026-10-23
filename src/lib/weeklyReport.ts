@@ -59,13 +59,15 @@ export interface ReportSnapshot {
   quarter: string
   headline: { text: string; reference: string }
   /** vsExpected: counts/deposits = actual ÷ expected by now; rates = actual ÷ target. ofTarget: actual ÷ full target (counts/deposits only). */
-  kpis: { product: string; label: string; target: string; actual: string; vsExpected: string; ofTarget: string; status: string; change: string }[]
+  kpis: { kpiId?: string; product: string; label: string; target: string; actual: string; vsExpected: string; ofTarget: string; status: string; change: string }[]
   changes: string[]
   campaigns: { name: string; status: string; type: string; result: string; liftLabel: string; costPerIncrementalPrimary: string; note: string }[]
   totals: { label: string; value: string }[]
   feasibility: { text: string; unlikely: boolean }
   risks: string[]
   decisions: ReportDecision[]
+  /** The dashboard the report was generated from; its cards and KPIs decide what's included. */
+  dashboard?: { id: string; name: string; kpiCount: number; checkingSections: boolean }
 }
 
 export function buildWeeklyReport(saved: SavedCampaign[], rules: AlertRule[], now = new Date(), reforecast: Reforecast | null = null): ReportSnapshot {
@@ -87,6 +89,7 @@ export function buildWeeklyReport(saved: SavedCampaign[], rules: AlertRule[], no
         vsExpected = formatPercent(paceRatioAt(DAYS_WITH_DATA))
       }
       return {
+        kpiId: k.id,
         product: p.name,
         label: k.label,
         target: formatValue(k.target, k.unit),
@@ -103,6 +106,7 @@ export function buildWeeklyReport(saved: SavedCampaign[], rules: AlertRule[], no
   const rf = reforecast && reforecast.kpiId === openingsKpi.id ? againstReforecast(openingsKpi, reforecast) : null
   if (rf && reforecast) {
     kpis.splice(1, 0, {
+      kpiId: openingsKpi.id,
       product: 'Checking',
       label: `${openingsKpi.label} · vs. re-forecast`,
       target: accounts(rf.target),
@@ -254,14 +258,38 @@ export function buildWeeklyReport(saved: SavedCampaign[], rules: AlertRule[], no
   }
 }
 
+/**
+ * A dashboard's report covers only its own KPIs. The Checking narrative (changes, campaigns, risks, decisions)
+ * stays only when the dashboard has Checking cards; otherwise those sections say they're not on this dashboard.
+ */
+export function scopeReport(r: ReportSnapshot, d: { id: string; name: string; kpiIds: string[]; checkingSections: boolean }): ReportSnapshot {
+  const kpis = r.kpis.filter((k) => k.kpiId && d.kpiIds.includes(k.kpiId))
+  const dashboard = { id: d.id, name: d.name, kpiCount: d.kpiIds.length, checkingSections: d.checkingSections }
+  const coversOpenings = d.kpiIds.includes('checking-new-accounts')
+  const counts = (['At Risk', 'Watch', 'On Track'] as const).map((st) => `${kpis.filter((k) => k.status === st && !k.label.includes('re-forecast')).length} ${st}`)
+  return {
+    ...r,
+    dashboard,
+    headline: coversOpenings
+      ? r.headline
+      : { text: `${d.kpiIds.length} KPI${d.kpiIds.length === 1 ? '' : 's'} on this dashboard: ${counts.join(', ')}.`, reference: 'Checking openings pace is not on this dashboard.' },
+    kpis,
+    ...(d.checkingSections
+      ? {}
+      : { changes: [], campaigns: [], totals: [], feasibility: { text: '', unlikely: false }, risks: [], decisions: [] }),
+  }
+}
+
+export const NOT_ON_DASHBOARD = 'Not on this dashboard (no Checking cards).'
+
 export function reportTitle(r: ReportSnapshot): string {
-  return `Weekly report · ${r.quarter} · data as of ${shortDate(r.internalAsOf)}`
+  return `Weekly report${r.dashboard ? ` · ${r.dashboard.name}` : ''} · ${r.quarter} · data as of ${shortDate(r.internalAsOf)}`
 }
 
 /** Plain Markdown for the clipboard. */
 export function reportToMarkdown(r: ReportSnapshot): string {
   const lines: string[] = [
-    `# Checking weekly report (${r.quarter})`,
+    `# ${r.dashboard ? `${r.dashboard.name} · weekly report` : 'Checking weekly report'} (${r.quarter})`,
     `Generated ${new Date(r.generatedAt).toLocaleString('en-US')} · Internal data as of ${formatDate(r.internalAsOf)} · Illustrative`,
     '',
     `**Headline:** ${r.headline.text}`,
@@ -273,22 +301,26 @@ export function reportToMarkdown(r: ReportSnapshot): string {
     ...r.kpis.map((k) => `| ${k.product} | ${k.label} | ${k.target} | ${k.actual} | ${k.vsExpected} | ${k.ofTarget} | ${k.status} | ${k.change} |`),
     '_vs. expected: counts and deposits = actual ÷ expected by now; rates = actual ÷ target._',
     '',
-    '## 2. Top 3 things that changed',
-    ...r.changes.map((c, i) => `${i + 1}. ${c}`),
-    '',
-    '## 3. Campaign results',
-    ...(r.campaigns.length
-      ? r.campaigns.map((c) => `- **${c.name}** (${c.status}, ${c.type}): ${c.result}. ${c.liftLabel}. Cost per incremental primary ${c.costPerIncrementalPrimary} (${c.note}).`)
-      : ['- No Live or Completed campaigns.']),
-    ...r.totals.map((t) => `- ${t.label}: ${t.value}`),
-    `- ${r.feasibility.text}`,
-    '- Campaign effects aren\'t additive; audiences and baselines can overlap.',
-    '',
-    '## 4. Risks and early-warning signals',
-    ...r.risks.map((x) => `- ${x}`),
-    '',
-    '## 5. Decisions needed from leadership',
-    ...r.decisions.map((d, i) => `${i + 1}. **${d.title}.** ${d.text} _Evidence: ${d.evidence}_ ${d.proposed}`),
+    ...(r.dashboard && !r.dashboard.checkingSections
+      ? ['## 2–5. Changes, campaigns, risks and decisions', `_${NOT_ON_DASHBOARD}_`]
+      : [
+          '## 2. Top 3 things that changed',
+          ...r.changes.map((c, i) => `${i + 1}. ${c}`),
+          '',
+          '## 3. Campaign results',
+          ...(r.campaigns.length
+            ? r.campaigns.map((c) => `- **${c.name}** (${c.status}, ${c.type}): ${c.result}. ${c.liftLabel}. Cost per incremental primary ${c.costPerIncrementalPrimary} (${c.note}).`)
+            : ['- No Live or Completed campaigns.']),
+          ...r.totals.map((t) => `- ${t.label}: ${t.value}`),
+          `- ${r.feasibility.text}`,
+          '- Campaign effects aren\'t additive; audiences and baselines can overlap.',
+          '',
+          '## 4. Risks and early-warning signals',
+          ...r.risks.map((x) => `- ${x}`),
+          '',
+          '## 5. Decisions needed from leadership',
+          ...r.decisions.map((d, i) => `${i + 1}. **${d.title}.** ${d.text} _Evidence: ${d.evidence}_ ${d.proposed}`),
+        ]),
     '',
     '_All internal figures are synthetic and illustrative. External facts are sourced on the dashboard._',
   ]

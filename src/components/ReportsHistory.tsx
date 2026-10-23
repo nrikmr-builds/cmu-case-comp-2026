@@ -5,8 +5,10 @@ import { useReports } from '../lib/reportStore'
 import type { ReportSnapshot } from '../lib/weeklyReport'
 
 /** "Reports" list in the left history column, separate from saved views. Reports reopen as frozen snapshots. */
-export default function ReportsHistory({ onOpen }: { onOpen: (r: ReportSnapshot) => void }) {
-  const { reports, deleteReport } = useReports()
+export default function ReportsHistory({ onOpen, dashboardId }: { onOpen: (r: ReportSnapshot) => void; dashboardId?: string }) {
+  const { reports: all, deleteReport } = useReports()
+  // On a dashboard, only its own reports (reports from before dashboards existed belong to the default one).
+  const reports = dashboardId ? all.filter((r) => (r.dashboard?.id ?? 'deposit-portfolio') === dashboardId) : all
   return (
     <section aria-labelledby="reports-history-heading" className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
       <h2 id="reports-history-heading" className="flex items-center justify-between border-b border-slate-200 p-3 text-xs font-semibold tracking-wide text-slate-500 uppercase">
@@ -27,7 +29,7 @@ export default function ReportsHistory({ onOpen }: { onOpen: (r: ReportSnapshot)
                 onClick={() => onOpen(r)}
                 className="flex-1 rounded text-left text-sm text-brand-ink hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue"
               >
-                Weekly report · {r.quarter}
+                Weekly report{r.dashboard && r.dashboard.id !== 'deposit-portfolio' ? ` · ${r.dashboard.name}` : ''} · {r.quarter}
                 <span className="block text-xs text-slate-500">Generated {formatTimestamp(r.generatedAt)} · data as of {shortDate(r.internalAsOf)}</span>
               </button>
               <button

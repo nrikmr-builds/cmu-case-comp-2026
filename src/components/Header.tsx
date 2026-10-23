@@ -1,6 +1,8 @@
-import { Bell, UserRound } from 'lucide-react'
+import { Bell, Plus, UserRound } from 'lucide-react'
 import { Link, NavLink } from 'react-router-dom'
 import pncLogo from '../assets/pnc-logo-white.svg'
+import DashboardSwitcher from './DashboardSwitcher'
+import { NewDashboardHost } from './DashboardEditor'
 import DataFreshness from './DataFreshness'
 import GuidedTour from './GuidedTour'
 import HeaderSettings from './HeaderSettings'
@@ -8,6 +10,7 @@ import { opportunities } from '../data/opportunities'
 import { products, reportingPeriod } from '../data/productMetrics'
 import { getStatus } from '../lib/metrics'
 import { useTriggeredAlerts } from '../lib/trackingStore'
+import { createDialog } from '../lib/dashboards'
 
 const hasAtRiskKpi = (productId: string) =>
   products
@@ -41,11 +44,24 @@ export default function Header() {
               Product Intelligence Hub
             </span>
           </div>
-          <div className="flex items-center gap-4 py-2">
+          <div className="flex min-w-0 items-center gap-2 py-2 sm:gap-4">
+            <div className="flex min-w-0 items-center gap-1.5">
+              <DashboardSwitcher />
+              <button
+                type="button"
+                onClick={() => createDialog.open()}
+                title="New dashboard"
+                className="inline-flex shrink-0 items-center gap-1 rounded bg-brand-orange px-2 py-1 text-xs font-semibold text-white hover:brightness-110"
+              >
+                <Plus className="h-3.5 w-3.5" aria-hidden />
+                <span className="hidden lg:inline">New dashboard</span>
+                <span className="sr-only lg:hidden">New dashboard</span>
+              </button>
+            </div>
             <span className="hidden text-xs font-semibold tracking-wider text-slate-200 uppercase md:inline">
               {reportingPeriod.quarter}
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-sm bg-white px-2.5 py-1 text-[11px] font-semibold tracking-wider text-brand-ink uppercase">
+            <span className="hidden items-center gap-1.5 rounded-sm bg-white px-2.5 py-1 sm:inline-flex text-[11px] font-semibold tracking-wider text-brand-ink uppercase">
               <UserRound className="h-3.5 w-3.5" aria-hidden />
               Product Owner
             </span>
@@ -87,6 +103,7 @@ export default function Header() {
       </nav>
       <DataFreshness />
       <GuidedTour />
+      <NewDashboardHost />
     </header>
   )
 }

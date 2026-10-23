@@ -3,6 +3,8 @@ import { ArrowLeft, ImageDown } from 'lucide-react'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { Link, Navigate, NavLink, useLocation, useParams } from 'react-router-dom'
 import ActNow from '../components/ActNow'
+import { dashboardPath, useDashboards } from '../lib/dashboards'
+import { useCurrentDashboard } from '../lib/useCurrentDashboard'
 import ReportsHistory from '../components/ReportsHistory'
 import { CHECKING_TABS, DEFAULT_TAB, isCheckingTab, tabForAnchor, tabPath, type CheckingTab } from '../lib/checkingTabs'
 import AIInsightPanel from '../components/AIInsightPanel'
@@ -128,6 +130,9 @@ function OpportunityDetail({ opportunity, tab }: { opportunity: ProductOpportuni
   const [report, setReport] = useState<ReportSnapshot | null>(null)
   const [exporting, setExporting] = useState(false)
   const segments = opportunity.segments.map((s) => ({ ...s, estimatedConversionRate: rates[s.id] }))
+  // Opportunity pages are shared by every dashboard: "Back" returns to the one the user came from.
+  const backTo = useCurrentDashboard()
+  const { state } = useDashboards()
   const { hash } = useLocation()
   useEffect(() => {
     if (!tab || hash) return
@@ -175,11 +180,11 @@ function OpportunityDetail({ opportunity, tab }: { opportunity: ProductOpportuni
         title={`${opportunity.shortName} Opportunity Intelligence`}
         eyebrow={
           <Link
-            to="/"
+            to={dashboardPath(backTo, state)}
             className="inline-flex items-center gap-1 rounded text-brand-blue hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden />
-            Back to Portfolio
+            Back to {backTo.name}
           </Link>
         }
         icon={PRODUCT_ICONS[opportunity.productId]}
