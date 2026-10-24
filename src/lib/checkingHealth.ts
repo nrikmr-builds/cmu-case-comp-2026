@@ -1,0 +1,136 @@
+// Derived checking activation, health, and drop-off figures. Pages read these instead of doing math inline.
+import type { ActivationFunnel, DropOffSignal, FeeCohort, HealthMix, RiskSegment, SavingsLinkGroup } from '../data/checkingHealth'
+
+export const FUNNEL_STAGES = [
+  { key: 'opened', label: 'Opened' },
+  { key: 'funded', label: 'Funded' },
+  { key: 'activated', label: 'Activated' },
+  { key: 'primary', label: 'Primary' },
+] as const
+
+export type FunnelStage = (typeof FUNNEL_STAGES)[number]['key']
+
+/** Adds every channel together into one funnel. */
+export function getTotalFunnel(channels: ActivationFunnel[]): Record<FunnelStage, number> {
+  const sum = (stage: FunnelStage) => channels.reduce((total, c) => total + c[stage], 0)
+  return { opened: sum('opened'), funded: sum('funded'), activated: sum('activated'), primary: sum('primary') }
+}
+
+/** Share of the previous stage that made it to this one (1 for the first stage). */
+export function getStageConversion(funnel: Record<FunnelStage, number>, index: number): number {
+  if (index === 0) return 1
+  return funnel[FUNNEL_STAGES[index].key] / funnel[FUNNEL_STAGES[index - 1].key]
+}
+
+/** Opened but never made a debit card transaction: the "open and drop off" problem. */
+export function getNeverActivated(funnel: Pick<ActivationFunnel, 'opened' | 'activated'>) {
+  const accounts = funnel.opened - funnel.activated
+  return { accounts, share: accounts / funnel.opened }
+}
+
+export function getHealthTotal(mix: HealthMix): number {
+  return mix.primary + mix.active + mix.slipping + mix.dormant
+}
+
+export function getDormancyRate(mix: HealthMix): number {
+  return mix.dormant / getHealthTotal(mix)
+}
+
+/** Primary tier ÷ all open accounts. Primary = PRIMACY_DEFINITION (direct deposit + 2 bill payments). */
+export function getPrimacyRate(mix: HealthMix): number {
+  return mix.primary / getHealthTotal(mix)
+}
+
+/** Any direct deposit ÷ all open accounts. Broader than primacy: no bill-payment condition. */
+export function getDirectDepositRate(accountsWithDirectDeposit: number, mix: HealthMix): number {
+  return accountsWithDirectDeposit / getHealthTotal(mix)
+}
+
+/** Openings − closures this quarter. Negative means the account base shrank. */
+export function getNetAccountChange(openings: number, closed: number): number {
+  return openings - closed
+}
+
+/** Direct-deposit accounts that aren't Primary (fewer than 2 bill payments); they sit in the Active tier. */
+export function getDirectDepositNotPrimary(accountsWithDirectDeposit: number, mix: HealthMix): number {
+  return accountsWithDirectDeposit - mix.primary
+}
+
+/** "-2,200" with a true minus sign, "+1,500" when positive. */
+export function formatSignedCount(n: number): string {
+  const abs = Math.abs(Math.round(n)).toLocaleString('en-US')
+  return n < 0 ? `−${abs}` : `+${abs}`
+}
+
+/** Accounts closed this quarter ÷ accounts open at the start of the quarter. */
+export function getClosureRate(closed: number, startOfQuarter: HealthMix): number {
+  return closed / getHealthTotal(startOfQuarter)
+}
+
+/** Accounts that went dormant this quarter ÷ accounts open at the start of the quarter. */
+export function getNewDormancyRate(newlyDormant: number, startOfQuarter: HealthMix): number {
+  return newlyDormant / getHealthTotal(startOfQuarter)
+}
+
+/** The signal that best separates churned from retained accounts. */
+export function getStrongestSignal(signals: DropOffSignal[]): DropOffSignal {
+  return signals.reduce((best, s) => (s.lift > best.lift ? s : best))
+}
+
+export function getFeeCohortClosureRate(cohort: FeeCohort): number {
+  return cohort.closedWithin60Days / cohort.accounts
+}
+
+/** Closures above what the no-fee group's rate would predict for the fee group. */
+export function getExcessFeeClosures(feeGroup: FeeCohort, baseline: FeeCohort): number {
+  return Math.round((getFeeCohortClosureRate(feeGroup) - getFeeCohortClosureRate(baseline)) * feeGroup.accounts)
+}
+
+export function getSavingsToCheckingRatio(group: SavingsLinkGroup): number {
+  return group.avgPncSavingsBalance / group.avgCheckingBalance
+}
+
+export function getExternalSavingsShare(group: SavingsLinkGroup): number {
+  return group.recurringExternalSavingsTransfers / group.customers
+}
+
+/** Always one decimal (42.8%, 28.0%), for figures that sit next to each other and must not look alike by rounding. */
+export function formatPercent1(fraction: number): string {
+  return `${(fraction * 100).toFixed(1)}%`
+}
+
+export function formatUsd(value: number): string {
+  return `$${Math.round(value).toLocaleString('en-US')}`
+}
+
+export function formatMultiple(value: number): string {
+  return `${value.toFixed(1)}×`
+}
+
+/** "2026-10-22" → "Oct 22, 2026". */
+export function formatRetrieved(isoDate: string): string {
+  return new Date(`${isoDate}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+/** Offer expiry: ISO dates are formatted, free text (e.g. "Ongoing") is shown as-is. */
+export function formatExpiry(expires: string | undefined): string {
+  if (!expires) return 'Not listed'
+  return /^\d{4}-\d{2}-\d{2}$/.test(expires) ? formatRetrieved(expires) : expires
+}
+
+/** [60, 90] → "60–90 days". */
+export function formatLeadTime([min, max]: [number, number]): string {
+  return `${min}–${max} days`
+}
+
+/** Risk segments ranked by size × the lift of their linked early-warning signal ("Act now" on the Today tab). */
+export function rankRiskSegments(segments: RiskSegment[], signals: DropOffSignal[], link: Record<string, string>, top = 3) {
+  return segments
+    .map((s) => {
+      const signal = signals.find((x) => x.id === link[s.id])
+      const lift = signal?.lift ?? 1
+      return { segment: s, signal, lift, score: s.eligibleCustomers * lift }
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, top)
+}

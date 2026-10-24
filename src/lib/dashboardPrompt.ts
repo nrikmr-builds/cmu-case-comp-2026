@@ -15,7 +15,7 @@ const TOPIC_RULES: { name: string; pattern: RegExp; matches: (kpi: Kpi) => boole
   { name: 'Deposit growth', pattern: /deposit|balance|dollar|\$/i, matches: (k) => k.unit === 'usd' },
   { name: 'Digital adoption', pattern: /digital|online|mobile/i, matches: (k) => /digital/i.test(k.label) },
   { name: 'Renewals', pattern: /renew|retention|retain/i, matches: (k) => /renewal/i.test(k.label) },
-  { name: 'Account activity', pattern: /\bactiv|engag|usage/i, matches: (k) => /active/i.test(k.label) },
+  { name: 'Account activity', pattern: /\bactiv|engag|usage/i, matches: (k) => /active|primacy/i.test(k.label) },
 ]
 
 /** First match wins, so the more specific phrasing comes first. */
@@ -48,9 +48,12 @@ export function generateView(
   const statusRule = STATUS_RULES.find((r) => r.pattern.test(text))
   if (productRules.length === 0 && topicRules.length === 0 && !statusRule) return null
 
+  // A view is a snapshot: it only includes KPIs that existed when it was saved.
+  const savedOn = createdAt.slice(0, 10)
   const kpiIds = products
     .filter((p) => productRules.length === 0 || productRules.some((r) => r.id === p.id))
     .flatMap((p) => p.kpis)
+    .filter((k) => !k.introducedOn || k.introducedOn <= savedOn)
     .filter((k) => topicRules.length === 0 || topicRules.some((r) => r.matches(k)))
     .filter((k) => !statusRule || statusRule.statuses.includes(getStatus(k, reportingPeriod.quarterElapsed)))
     .map((k) => k.id)

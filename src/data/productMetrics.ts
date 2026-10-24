@@ -1,11 +1,19 @@
 // PLACEHOLDER DATA: synthetic values until the team confirms the final KPIs.
 // Both pages read from this file, so update numbers here only.
 import type { Kpi, Product, ReportingPeriod } from '../types'
+import { healthMixHistory, PRIMACY_DEFINITION } from './checkingHealth'
 
 export const reportingPeriod: ReportingPeriod = {
   quarter: 'Q3 2026',
   quarterElapsed: 0.8,
+  // Q3 = Jul 1 – Sep 30. 80% of 92 days ≈ day 74, which is Sep 12.
+  quarterDays: 92,
+  internalAsOf: '2026-09-12',
 }
+
+// Checking rate KPIs come from the account health mix so both pages show the same numbers.
+const latestHealth = healthMixHistory[healthMixHistory.length - 1]
+const latestHealthTotal = latestHealth.primary + latestHealth.active + latestHealth.slipping + latestHealth.dormant
 
 export const products: Product[] = [
   {
@@ -14,8 +22,22 @@ export const products: Product[] = [
     description: 'Everyday transaction accounts',
     kpis: [
       { id: 'checking-new-accounts', productId: 'checking', label: 'New Account Openings', kind: 'cumulative', unit: 'accounts', target: 12000, actual: 7600 },
-      { id: 'checking-digital-completion', productId: 'checking', label: 'Digital Opening Completion Rate', kind: 'rate', unit: 'percent', target: 0.75, actual: 0.69 },
-      { id: 'checking-active-rate', productId: 'checking', label: 'Active Account Rate', kind: 'rate', unit: 'percent', target: 0.85, actual: 0.87 },
+      {
+        id: 'checking-digital-completion', productId: 'checking', label: 'Digital Opening Completion Rate', kind: 'rate', unit: 'percent', target: 0.75, actual: 0.69,
+        related: { label: 'Linked segment: Abandoned Digital Applications', to: '/opportunities/checking/diagnose#segment-abandoned-digital' },
+      },
+      {
+        id: 'checking-active-rate', productId: 'checking', label: 'Active Account Rate', kind: 'rate', unit: 'percent', target: 0.85,
+        actual: (latestHealth.primary + latestHealth.active) / latestHealthTotal,
+        definition: 'Primary + Active tiers, all open accounts',
+      },
+      {
+        id: 'checking-primacy-rate', productId: 'checking', label: 'Primacy Rate', kind: 'rate', unit: 'percent', target: 0.5,
+        introducedOn: '2026-09-12',
+        actual: latestHealth.primary / latestHealthTotal,
+        definition: `Open accounts with ${PRIMACY_DEFINITION}`,
+        related: { label: 'See account health mix', to: '/opportunities/checking/diagnose#health-heading' },
+      },
     ],
   },
   {

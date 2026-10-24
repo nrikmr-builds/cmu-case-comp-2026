@@ -1,8 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-import pncLogo from './assets/pnc-logo-white.svg'
 import Header from './components/Header'
 import OpportunityInsights from './pages/OpportunityInsights'
-import PortfolioOverview from './pages/PortfolioOverview'
+import DashboardPage from './pages/DashboardPage'
 
 export default function App() {
   return (
@@ -11,16 +10,18 @@ export default function App() {
       {/* Pages own their width so their hero band can span the screen. */}
       <main className="flex-1">
         <Routes>
-          <Route path="/" element={<PortfolioOverview />} />
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/d/:slug" element={<DashboardPage />} />
           <Route path="/opportunities/:productId" element={<OpportunityInsights />} />
+          <Route path="/opportunities/:productId/:tab" element={<OpportunityInsights />} />
           <Route path="/cd-opportunities" element={<Navigate to="/opportunities/cd" replace />} />
         </Routes>
       </main>
-      <footer className="pnc-pattern-dark bg-brand-ink">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-6 text-sm text-slate-200 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <img src={pncLogo} alt="PNC" className="h-5 w-auto self-start sm:self-auto" />
-          <p>Product Intelligence Hub prototype · All figures are synthetic and illustrative.</p>
-        </div>
+      {/* Trust guard: this is a concept, not a PNC service. Quiet, on every page. */}
+      <footer className="border-t border-line bg-white">
+        <p className="mx-auto max-w-7xl px-4 py-6 text-xs text-muted sm:px-6">
+          Concept prototype for a case competition · Not an official PNC product · Illustrative data.
+        </p>
       </footer>
     </div>
   )

@@ -1,9 +1,9 @@
 import type { KpiStatus } from '../types'
 
 const BAR_COLORS: Record<KpiStatus, string> = {
-  'on-track': 'bg-green-600',
-  watch: 'bg-amber-500',
-  'at-risk': 'bg-red-600',
+  'on-track': 'bg-positive',
+  watch: 'bg-caution',
+  'at-risk': 'bg-critical',
 }
 
 interface Props {
@@ -11,14 +11,16 @@ interface Props {
   attainment: number
   status: KpiStatus
   label: string
+  /** Hide the % beside the bar when the caller prints a labeled figure instead. */
+  showValue?: boolean
 }
 
-export default function KPIProgressBar({ attainment, status, label }: Props) {
+export default function KPIProgressBar({ attainment, status, label, showValue = true }: Props) {
   const percent = Math.round(attainment * 100)
   return (
     <div className="flex items-center gap-3">
       <div
-        className="h-2 flex-1 overflow-hidden rounded-full bg-slate-200"
+        className="h-2 flex-1 overflow-hidden rounded-full bg-line"
         role="progressbar"
         aria-label={label}
         aria-valuenow={percent}
@@ -27,7 +29,7 @@ export default function KPIProgressBar({ attainment, status, label }: Props) {
       >
         <div className={`h-full rounded-full ${BAR_COLORS[status]}`} style={{ width: `${Math.min(percent, 100)}%` }} />
       </div>
-      <span className="w-10 text-right text-xs tabular-nums text-slate-600">{percent}%</span>
+      {showValue && <span className="w-10 text-right text-xs tabular-nums text-muted">{percent}%</span>}
     </div>
   )
 }

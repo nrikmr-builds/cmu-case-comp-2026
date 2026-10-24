@@ -30,7 +30,11 @@ function loadUserViews(): DashboardView[] {
   }
 }
 
-export function useSavedViews() {
+const DEFAULT_DASHBOARD_ID = 'deposit-portfolio'
+const ownerOf = (v: DashboardView) => v.dashboardId ?? DEFAULT_DASHBOARD_ID
+
+/** Views belong to the dashboard they were saved in; the illustrative samples belong to the default dashboard. */
+export function useSavedViews(dashboardId: string = DEFAULT_DASHBOARD_ID) {
   const [userViews, setUserViews] = useState(loadUserViews)
 
   useEffect(() => {
@@ -41,12 +45,15 @@ export function useSavedViews() {
     }
   }, [userViews])
 
-  const views = [...userViews, ...PAST_VIEWS].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
+  const views = [...userViews, ...PAST_VIEWS]
+    .filter((v) => ownerOf(v) === dashboardId)
+    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
 
   return {
     /** Newest first. */
     views,
-    saveView: (view: DashboardView) => setUserViews((prev) => [view, ...prev]),
+    saveView: (view: DashboardView) =>
+      setUserViews((prev) => [dashboardId === DEFAULT_DASHBOARD_ID ? view : { ...view, dashboardId }, ...prev]),
     deleteView: (id: string) => setUserViews((prev) => prev.filter((v) => v.id !== id)),
     isUserView: (id: string) => userViews.some((v) => v.id === id),
   }

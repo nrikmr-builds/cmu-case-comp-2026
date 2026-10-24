@@ -21,6 +21,12 @@ export interface Kpi {
   unit: KpiUnit
   target: number
   actual: number
+  /** Short plain-language definition shown under the label. */
+  definition?: string
+  /** A related place to dig in, e.g. the segment that explains this KPI. */
+  related?: { label: string; to: string }
+  /** ISO date the KPI was added to the hub. Views saved earlier don't include it. */
+  introducedOn?: string
 }
 
 export interface Product {
@@ -34,6 +40,10 @@ export interface ReportingPeriod {
   quarter: string
   /** Fraction of the quarter that has passed, 0–1. */
   quarterElapsed: number
+  /** Calendar days in the quarter. */
+  quarterDays: number
+  /** ISO date the internal (synthetic) data snapshot represents. */
+  internalAsOf: string
 }
 
 export interface CustomerSegment {
@@ -69,4 +79,6 @@ export interface DashboardView {
   /** ISO timestamp. */
   createdAt: string
   kpiIds: string[]
+  /** The dashboard it was saved in; missing = the default dashboard (incl. the illustrative samples). */
+  dashboardId?: string
 }
